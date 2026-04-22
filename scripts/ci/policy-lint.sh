@@ -25,12 +25,13 @@ fi
 
 # 2. Any YAML under generated-snapshot/ must match the expected shape (has 'schema_version')
 if [ -d policies/generated-snapshot ]; then
-  for f in $(find policies/generated-snapshot -type f -name "*.yaml" 2>/dev/null); do
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
     if ! grep -q "schema_version" "$f"; then
       echo "  ✗ $f missing schema_version" >&2
       exit 1
     fi
-  done
+  done < <(find policies/generated-snapshot -type f -name "*.yaml" 2>/dev/null)
 fi
 
 echo "  ✓ policy layout OK"

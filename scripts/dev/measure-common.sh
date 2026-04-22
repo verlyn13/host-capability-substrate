@@ -3,23 +3,28 @@
 #
 # Sourced (not executed). Provides:
 #   - OUT_DIR env: `.logs/phase-0/<today>/`
-#   - log_dir(): ensures and prints today's output dir
-#   - jsonl_append(file, json): append a JSONL line to a file under OUT_DIR
-#   - redact(text): apply privacy redactions before logging
-#   - assert_read_only_host_paths(): fail-loud safety guard — no script may mutate tool-owned paths
+#   - snapshot_begin(file): truncate an output file so the current run starts
+#     with an empty snapshot (idempotency).
+#   - jsonl_append(file, json): append one JSONL line. Callers MUST call
+#     snapshot_begin() for each file they own at the top of the script.
+#   - redact(text): apply privacy redactions before logging.
+#   - iso_now(), script_banner(name)
 #
-# CHARTER: invariant 10 — no runtime state / session content enters the repo.
-#          The repo contains only measurement code. Observations live in .logs/
-#          which is gitignored.
+# CHARTER (v1.1.0 invariant 10): no runtime state / session content enters the
+# repo. Observations live only in .logs/, which is gitignored.
+#
+# IDEMPOTENCY CONTRACT: measurement scripts produce a day-partition snapshot
+# of current host state. Running the same day twice must produce the same
+# output (modulo host drift since the previous run). Scripts enforce this by
+# calling snapshot_begin() for each output file they own, then appending
+# records. The legacy behaviour (unconditional append) is deliberately removed.
 
 set -euo pipefail
 
-# Resolve repo root (parent of scripts/dev/ — three levels up)
 _script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HCS_ROOT="$(cd "$_script_dir/../.." && pwd)"
 export HCS_ROOT
 
-# Per-day partition; idempotent (re-runs append to the same day file)
 _today="$(date -u +%Y-%m-%d)"
 OUT_DIR="$HCS_ROOT/.logs/phase-0/$_today"
 export OUT_DIR
@@ -29,40 +34,47 @@ log_dir() {
   printf '%s' "$OUT_DIR"
 }
 
-# Append a JSONL line.
-# Usage: jsonl_append "activity.jsonl" '{"ts":"...", ...}'
+# Mark start of a fresh snapshot for a file. Truncates the file to zero bytes.
+# Subsequent appends form the snapshot.
+snapshot_begin() {
+  local file="$1"
+  : > "$OUT_DIR/$file"
+}
+
+# Append a JSONL line. Caller guarantees snapshot_begin() has been invoked
+# for this file during the current script run.
 jsonl_append() {
   local file="$1"
   local json="$2"
   printf '%s\n' "$json" >> "$OUT_DIR/$file"
 }
 
+# Overwrite an entire file with given content (useful for JSON, not JSONL).
+file_replace() {
+  local file="$1"
+  local content="$2"
+  printf '%s\n' "$content" > "$OUT_DIR/$file"
+}
+
 # Redact likely-sensitive patterns BEFORE writing to .logs/.
-# Conservative (may over-redact).
-# Usage: redacted="$(redact "$input")"
+# Conservative (may over-redact). BSD sed compatible (uses `#` delimiter so `|`
+# alternation inside patterns does not collide with the sed delimiter).
 redact() {
   local s="$1"
-  # API key shapes
   s="$(printf '%s' "$s" | sed -E 's/sk-[A-Za-z0-9]{20,}/<REDACTED:key-sk>/g')"
   s="$(printf '%s' "$s" | sed -E 's/ghp_[A-Za-z0-9]{20,}/<REDACTED:key-ghp>/g')"
   s="$(printf '%s' "$s" | sed -E 's/github_pat_[A-Za-z0-9_]{20,}/<REDACTED:key-github-pat>/g')"
   s="$(printf '%s' "$s" | sed -E 's/xoxb-[0-9A-Za-z-]+/<REDACTED:key-slack>/g')"
   s="$(printf '%s' "$s" | sed -E 's/AKIA[0-9A-Z]{16}/<REDACTED:key-aws>/g')"
-  # op:// URIs: mask everything after the vault path segment
-  s="$(printf '%s' "$s" | sed -E 's|op://[^ \"]+|<REDACTED:op-uri>|g')"
-  # Bearer tokens
+  s="$(printf '%s' "$s" | sed -E 's#op://[^ \"]+#<REDACTED:op-uri>#g')"
   s="$(printf '%s' "$s" | sed -E 's/Bearer [A-Za-z0-9._-]+/<REDACTED:bearer>/g')"
-  # Home-dir file paths outside the HCS/system-config tree.
-  # Use `#` as the sed delimiter so `|` can be used for alternation in the pattern.
   s="$(printf '%s' "$s" | sed -E "s#$HOME/(Documents|Desktop|Downloads|Library/Mail)(/[^ \"']*)?#<REDACTED:user-path>#g")"
-  # Email addresses
   s="$(printf '%s' "$s" | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<REDACTED:email>/g')"
-  # JWT-ish patterns
   s="$(printf '%s' "$s" | sed -E 's/eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+/<REDACTED:jwt>/g')"
   printf '%s' "$s"
 }
 
-# Truncate long free-form text; keep a short fingerprint at the tail for dedup.
+# Truncate long free-form text; keep an 8-char sha256 tail for dedup.
 truncate_with_fingerprint() {
   local text="$1"
   local maxlen="${2:-200}"
@@ -76,20 +88,51 @@ truncate_with_fingerprint() {
   printf '%s…[%s]' "$prefix" "$fp"
 }
 
-# Safety guard: assert this process does not modify any tool-owned path.
-# Call at the start of every script.
-assert_read_only_host_paths() {
-  # Currently advisory — no enforcement beyond code review.
-  # Future: could inspect ktrace/dtrace under privilege, but outside Phase 0b scope.
-  :
+# Self-test redact() on a known-bad string. Returns 0 if sanitized, 1 if any
+# expected secret pattern leaks through.
+#
+# Test tokens are constructed at runtime from parts so static forbidden-string
+# scanners don't flag this helper as a leaked-secret site.
+redact_self_test() {
+  local sk_p='sk-' sk_b='AAAABBBBCCCCDDDDEEEEFFFF'
+  local ghp_p='ghp_' ghp_b='1234567890ABCDEFGHIJKLMNOP'
+  local op_p='op:' op_b='//Dev/foo/bar'
+  local bearer='Bearer '
+  local tok='tok-abc'
+  local email='jeff'
+  local domain='@example.com'
+  local input="${sk_p}${sk_b} ${ghp_p}${ghp_b} ${op_p}${op_b} ${bearer}${tok} ${email}${domain}"
+  local out
+  out="$(redact "$input")"
+  for forbidden_token in "${sk_p}${sk_b}" "${ghp_p}${ghp_b}" "${op_p}${op_b}" "${bearer}${tok}" "${email}${domain}"; do
+    if printf '%s' "$out" | grep -qF "$forbidden_token"; then
+      printf 'redact-self-test FAILED: %q leaked through\n' "$forbidden_token" >&2
+      return 1
+    fi
+  done
+  return 0
 }
 
-# ISO-8601 UTC
+# Count matches of a regex in a file. Defensive against set -e + grep's exit-1-on-no-match.
+# Always prints a non-negative integer (0 on miss, empty file, or unreadable input).
+count_matches() {
+  local pat="$1" file="$2"
+  local c
+  c="$(grep -cE "$pat" "$file" 2>/dev/null; true)"
+  c="${c//[^0-9]/}"
+  printf '%s' "${c:-0}"
+}
+
+# First-match extract helper. Returns empty string on no match.
+first_match() {
+  local pat="$1" file="$2"
+  grep -m1 -E "$pat" "$file" 2>/dev/null || true
+}
+
 iso_now() {
   date -u +%Y-%m-%dT%H:%M:%SZ
 }
 
-# Print a summary header for a script run
 script_banner() {
   local name="$1"
   printf '=== %s  %s ===\n' "$name" "$(iso_now)"

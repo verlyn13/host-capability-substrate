@@ -10,8 +10,12 @@ default:
 	@just --list
 
 # Run ALL quality gates. CI runs this. Required before merge.
-verify: format-check lint typecheck test generate-schemas-check boundary-check policy-lint forbidden-string-scan no-live-secrets no-runtime-state-in-repo
+verify: format-check lint typecheck test generate-schemas-check boundary-check policy-lint forbidden-string-scan no-live-secrets no-runtime-state-in-repo shellcheck-scan
 	@echo "✓ all quality gates passed"
+
+# Shellcheck — covers all .sh scripts + shebang-detected files
+shellcheck-scan:
+	@bash scripts/ci/shellcheck-scan.sh
 
 # Format check (no writes)
 format-check:
@@ -84,7 +88,8 @@ env:
 
 # === Phase 0b measurement ===
 
-# Run one measurement pass across all sources. Read-only.
+# Run one measurement pass across all sources. Read-only. Snapshot semantics:
+# each script overwrites its per-day partition outputs, so re-runs are idempotent.
 # See docs/host-capability-substrate/phase-0b-measurement-plan.md.
 measure:
 	@bash scripts/dev/measure-claude-code.sh
@@ -93,8 +98,15 @@ measure:
 	@bash scripts/dev/measure-traps.sh
 	@bash scripts/dev/measure-governance-inventory.sh
 	@bash scripts/dev/measure-protocol-features.sh
+	@bash scripts/dev/measure-redundancy.sh
+	@bash scripts/dev/measure-tokens-estimate.sh
 	@bash scripts/dev/measure-partition-summary.sh
 
 # Summarize the current partition (read-only)
 measure-summary:
 	@bash scripts/dev/measure-partition-summary.sh --detail
+
+# Consolidate all partitions into brief.md + brief.json under .logs/phase-0/.
+# Runs the seven-day soak gate summary.
+measure-brief:
+	@bash scripts/dev/measure-brief.sh
