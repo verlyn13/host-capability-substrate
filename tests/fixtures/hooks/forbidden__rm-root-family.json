@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "forbidden__rm-root-family",
+  "_expected_class": "forbidden",
+  "_description": "rm -rf of $HOME is charter-forbidden",
+  "session_id": "fixture-forbidden-rm-root",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rm -rf \"$HOME\"",
+    "description": "Remove entire home dir"
+  }
+}

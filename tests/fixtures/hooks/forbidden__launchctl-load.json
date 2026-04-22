@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "forbidden__launchctl-load",
+  "_expected_class": "forbidden",
+  "_description": "launchctl load/unload are deprecated per charter invariant 11",
+  "session_id": "fixture-forbidden-launchctl-load",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "launchctl load ~/Library/LaunchAgents/com.example.foo.plist",
+    "description": "Load a LaunchAgent (deprecated)"
+  }
+}

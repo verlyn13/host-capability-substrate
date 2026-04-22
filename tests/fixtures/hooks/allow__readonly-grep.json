@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "allow__readonly-grep",
+  "_expected_class": "read-safe",
+  "_description": "rg over docs — dangerous literal in search pattern must not trigger forbidden",
+  "session_id": "fixture-allow-readonly-grep",
+  "cwd": "/tmp/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "rg 'spctl --master-disable' docs/",
+    "description": "Search docs for a dangerous-looking token (content, not invocation)"
+  }
+}

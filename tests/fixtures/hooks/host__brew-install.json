@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "host__brew-install",
+  "_expected_class": "write-host",
+  "_description": "brew install mutates host package state; approval gate applies",
+  "session_id": "fixture-host-brew-install",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "brew install --cask firefox",
+    "description": "Install Firefox via brew"
+  }
+}

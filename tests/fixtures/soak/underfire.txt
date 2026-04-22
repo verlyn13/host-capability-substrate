@@ -1,0 +1,35 @@
+# Forbidden / destructive / host-mutating commands that MUST classify at
+# write-host or higher. Feeds `just under-fire` test.
+#
+# Harness never executes these — they are piped through classify.py (or the
+# hook) as string inputs. Expected classifications:
+#
+#   forbidden — spctl --master-disable, csrutil disable, launchctl load/unload,
+#     sudo rm -rf /, rm -rf HOME, brew uninstall --cask
+#   write-destructive — rm -rf <path>, git reset --hard, git push --force,
+#     git clean -fxd
+#   write-host — sudo anything (not already forbidden), brew install,
+#     defaults write, launchctl bootstrap/bootout, softwareupdate -i
+#
+# Classifier must NOT return read-safe or unknown for any line below.
+
+spctl --master-disable
+csrutil disable
+sudo rm -rf /
+rm -rf $HOME
+rm -rf "$HOME"
+rm -rf ~
+defaults write com.apple.security.libraryvalidation DisableLibraryValidation -bool true
+launchctl load ~/Library/LaunchAgents/com.example.foo.plist
+launchctl unload ~/Library/LaunchAgents/com.example.foo.plist
+brew uninstall --cask google-chrome
+rm -rf /tmp/outdir
+rm -rf node_modules
+git reset --hard origin/main
+git clean -fxd
+git push --force origin main
+sudo softwareupdate -i -a
+sudo pmset -a disablesleep 1
+brew install --cask something
+sudo pip install -U pip
+defaults delete com.apple.dock

@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "forbidden__sip-disable",
+  "_expected_class": "forbidden",
+  "_description": "csrutil disable is charter-forbidden",
+  "session_id": "fixture-forbidden-sip",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "csrutil disable",
+    "description": "Disable SIP"
+  }
+}

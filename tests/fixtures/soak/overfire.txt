@@ -1,0 +1,24 @@
+# Safe-but-suspicious commands that MUST NOT classify as hard-block
+# (forbidden / write-destructive). Feeds `just over-fire` test. One command
+# per line; blank lines and `#` comments ignored.
+#
+# Rationale: these commands LOOK dangerous at a substring level (contain
+# "rm -rf", "spctl --master-disable", "sudo", etc.) but in their actual
+# command position they are reading/echoing/printing strings, not executing
+# destructive operations. The classifier must use first-token semantics, not
+# naive substring matching. Directly exercises the known "shell-mode-confusion
+# over-fire" failure class from v1.1.0 self-review.
+
+echo 'rm -rf / is dangerous'
+echo "I just ran spctl --master-disable (I didn't actually)"
+rg 'spctl --master-disable' docs/
+rg 'csrutil disable' docs/
+rg 'sudo rm -rf' /tmp/logs/
+cat docs/security.md | rg sudo
+git diff -- docs/
+git log --all --oneline | head
+printf '%s\n' 'launchctl load is deprecated'
+printf '%s\n' 'I noticed csrutil disable in the diff'
+jq '.notes' /tmp/audit.json
+awk '/sudo/ { print }' /var/log/system.log
+sed -n '1,20p' docs/incidents/2025-gatekeeper-toggle.md

@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "unknown__obscure-tool",
+  "_expected_class": "unknown",
+  "_description": "An unrecognized tool should classify unknown (ontology-expansion signal)",
+  "session_id": "fixture-unknown-obscure",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "zzz-custom-binary --verbose --output /tmp/out.json",
+    "description": "Fictional binary"
+  }
+}

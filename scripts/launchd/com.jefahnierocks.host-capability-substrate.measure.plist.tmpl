@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  HCS Phase 0b measurement LaunchAgent — separate label from the future
+  kernel daemon (com.jefahnierocks.host-capability-substrate.plist.tmpl).
+  This one is a scheduled job, not a KeepAlive daemon.
+
+  Install via: scripts/install/install-launchd-measure.sh
+  Remove via:  launchctl bootout gui/$(id -u)/<label>
+  NEVER: launchctl load/unload (deprecated; charter invariant 11 forbids them).
+
+  Tokens substituted at install time:
+    {{LABEL}}     com.jefahnierocks.host-capability-substrate.measure
+    {{HCS_ROOT}}  repo root
+    {{LOG_DIR}}   ~/Library/Logs/host-capability-substrate
+    {{JUST_BIN}}  mise-resolved `just` binary
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{LABEL}}</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>cd {{HCS_ROOT}} &amp;&amp; {{JUST_BIN}} measure &amp;&amp; {{JUST_BIN}} classify &amp;&amp; {{JUST_BIN}} confusion</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>15</integer>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>KeepAlive</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>{{LOG_DIR}}/measure.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{{LOG_DIR}}/measure.stderr.log</string>
+
+  <key>ProcessType</key>
+  <string>Standard</string>
+</dict>
+</plist>

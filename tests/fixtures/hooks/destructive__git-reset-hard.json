@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "destructive__git-reset-hard",
+  "_expected_class": "write-destructive",
+  "_description": "git reset --hard discards uncommitted work",
+  "session_id": "fixture-destructive-reset-hard",
+  "cwd": "/tmp/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git reset --hard origin/main",
+    "description": "Discard all local changes"
+  }
+}

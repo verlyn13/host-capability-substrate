@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "local__sed-inplace",
+  "_expected_class": "write-local",
+  "_description": "sed -i mutates files in the working tree",
+  "session_id": "fixture-local-sed-inplace",
+  "cwd": "/tmp/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "sed -i '' 's/foo/bar/g' README.md",
+    "description": "Replace foo with bar in README"
+  }
+}

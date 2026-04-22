@@ -100,6 +100,9 @@ measure:
 	@bash scripts/dev/measure-protocol-features.sh
 	@bash scripts/dev/measure-redundancy.sh
 	@bash scripts/dev/measure-tokens-estimate.sh
+	@bash scripts/dev/measure-commands.sh
+	@bash scripts/dev/measure-classify.sh
+	@bash scripts/dev/measure-confusion.sh
 	@bash scripts/dev/measure-partition-summary.sh
 
 # Summarize the current partition (read-only)
@@ -110,3 +113,80 @@ measure-summary:
 # Runs the seven-day soak gate summary.
 measure-brief:
 	@bash scripts/dev/measure-brief.sh
+
+# === Phase 0b classification pipeline (post-hoc) ===
+
+# Extract per-command records from Claude Code + Codex corpora (7d window)
+extract-commands:
+	@bash scripts/dev/measure-commands.sh
+
+# Classify commands (depends on extract-commands having run)
+classify:
+	@bash scripts/dev/measure-classify.sh
+
+# Generate confusion-matrix-shaped aggregate (depends on classify)
+confusion:
+	@bash scripts/dev/measure-confusion.sh
+
+# === Phase 0b Day-1 evidence battery ===
+
+# Run the hook against 10 golden fixtures and check each verdict
+fixtures:
+	@bash scripts/dev/run-hook-fixtures.sh
+
+# Verify safe-but-suspicious commands are NOT hard-blocked (target 0)
+over-fire:
+	@bash scripts/dev/run-overfire.sh
+
+# Verify forbidden/destructive commands are NOT under-classified (target 0)
+under-fire:
+	@bash scripts/dev/run-underfire.sh
+
+# Fault injection — 10 scenarios against the log-only hook
+faults:
+	@bash scripts/dev/run-fault-injection.sh
+
+# Dashboard contract rehearsal — fake rows from current logs
+dashboard-rehearse:
+	@bash scripts/dev/render-dashboard.sh
+
+# Run the full Day-1 battery end to end (synthetic layer)
+day1: measure fixtures over-fire under-fire faults dashboard-rehearse
+	@echo "✓ Day-1 battery complete — review .logs/phase-0/$(date -u +%Y-%m-%d)/"
+
+# === Phase 0b soak installation ===
+
+# Install daily measurement LaunchAgent (bootstrap, not load)
+soak-install-launchd:
+	@bash scripts/install/install-launchd-measure.sh install
+
+# Remove daily measurement LaunchAgent (bootout)
+soak-uninstall-launchd:
+	@bash scripts/install/install-launchd-measure.sh uninstall
+
+# Status of daily measurement LaunchAgent
+soak-status-launchd:
+	@bash scripts/install/install-launchd-measure.sh status
+
+# Install opt-in global Claude Code hook (log-only)
+soak-install-hook:
+	@bash scripts/install/install-claude-hook.sh install
+
+# Remove global Claude Code hook
+soak-uninstall-hook:
+	@bash scripts/install/install-claude-hook.sh uninstall
+
+# Status of Claude Code hook installation + today's decision count
+soak-status-hook:
+	@bash scripts/install/install-claude-hook.sh status
+
+# Combined soak status — launchd + hook + last partition
+soak-status:
+	@echo "=== launchd ==="
+	@bash scripts/install/install-launchd-measure.sh status
+	@echo ""
+	@echo "=== hook ==="
+	@bash scripts/install/install-claude-hook.sh status
+	@echo ""
+	@echo "=== partitions ==="
+	@ls -1 .logs/phase-0/ 2>/dev/null | tail -5 | sed 's/^/  /' || echo "  (no partitions yet)"

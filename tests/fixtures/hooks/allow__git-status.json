@@ -1,0 +1,13 @@
+{
+  "_fixture_id": "allow__git-status",
+  "_expected_class": "read-safe",
+  "_description": "bare git status should classify read-safe",
+  "session_id": "fixture-allow-git-status",
+  "cwd": "/tmp",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git status --short --branch",
+    "description": "Check git status"
+  }
+}
