@@ -81,3 +81,20 @@ env:
 	@echo "HCS_STATE_DIR=$HCS_STATE_DIR"
 	@echo "HCS_LOG_DIR=$HCS_LOG_DIR"
 	@echo "HCS_LAUNCH_LABEL=$HCS_LAUNCH_LABEL"
+
+# === Phase 0b measurement ===
+
+# Run one measurement pass across all sources. Read-only.
+# See docs/host-capability-substrate/phase-0b-measurement-plan.md.
+measure:
+	@bash scripts/dev/measure-claude-code.sh
+	@bash scripts/dev/measure-codex.sh
+	@bash scripts/dev/measure-ide-hosts.sh
+	@bash scripts/dev/measure-traps.sh
+	@bash scripts/dev/measure-governance-inventory.sh
+	@bash scripts/dev/measure-protocol-features.sh
+	@bash scripts/dev/measure-partition-summary.sh
+
+# Summarize the current partition (read-only)
+measure-summary:
+	@bash scripts/dev/measure-partition-summary.sh --detail
