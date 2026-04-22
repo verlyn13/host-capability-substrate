@@ -1,0 +1,32 @@
+---
+description: HCS four-ring boundary discipline for Cursor users
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# HCS boundaries (pointer)
+
+This repo has a four-ring architecture. **Live rules are in `docs/host-capability-substrate/implementation-charter.md` v1.1.0+.** This file is a pointer, not an authority.
+
+## Quick reference
+
+- Ring 0 — `packages/schemas/` — ontology, imports nothing above
+- Ring 1 — `packages/kernel/` — kernel services; no adapter imports
+- Ring 2 — `packages/adapters/**`, `packages/dashboard/` — protocol/UI translation; no policy
+- Ring 3 — `.agents/skills/`, `AGENTS.md`, `CLAUDE.md`, `docs/` — workflows
+
+## Must not
+
+- Put policy decisions in adapters
+- Add a universal shell execution tool
+- Represent a shell string as canonical intent (use `OperationShape`)
+- Expose audit-write endpoints to agents
+- Copy live policy into this repo (canonical lives in `system-config/policies/host-capability-substrate/`)
+- Commit runtime state (`$HCS_STATE_DIR` / `$HCS_LOG_DIR` layout)
+
+## Must
+
+- Read the charter before editing `packages/**`
+- Read `AGENTS.md` for cross-tool contract
+- Add canonical skills at `.agents/skills/`; not `.claude/skills/` (Claude-specific wrappers only)
+- Cite the charter version in any PR that adds a capability

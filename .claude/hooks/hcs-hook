@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# hcs-hook — Phase 0a log-only helper for Claude Code hooks.
+#
+# Reads a JSON event from stdin, writes it to .logs/phase-0/hook-events.jsonl,
+# and returns an advisory/block decision via exit code + stderr.
+#
+# Phase 0a scope:
+#   exit 0 → allow (fail-open for non-forbidden commands)
+#   exit 1 → log and continue (non-blocking advisory)
+#   exit 2 → block with stderr as reason (literal-forbidden patterns only)
+#
+# Phase 3+ will upgrade this to call system.tool.resolve.v1 +
+# system.policy.classify_operation.v1 over local RPC with 50ms timeout +
+# cache fallback. Until then, hook body remains thin and literal.
+#
+# DO NOT add tier tables, destructive-pattern enumerations, or forbidden-op
+# lists here beyond the minimal literals. Those live in:
+#   ~/Organizations/jefahnierocks/system-config/policies/host-capability-substrate/
+
+set -euo pipefail
+
+# Phase argument (pre-bash / pre-mcp / post-bash / etc). Optional; ignored in 0a.
+event_kind="${1:-unknown}"
+
+# Log dir is repo-local and gitignored.
+log_dir="${CLAUDE_PROJECT_DIR:-$PWD}/.logs/phase-0"
+mkdir -p "$log_dir"
+log_file="$log_dir/hook-events.jsonl"
+
+ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Read event JSON (or empty) from stdin.
+input="$(cat 2>/dev/null || true)"
+
+# Log the event envelope. Safe even if $input isn't valid JSON.
+printf '{"ts":"%s","event":"%s","client":"claude-code","input":%s}\n' \
+  "$ts" "$event_kind" "${input:-null}" \
+  >> "$log_file" 2>/dev/null || true
+
+# Literal forbidden-pattern block list.
+# Keep this SHORT — it mirrors Layer 4 `forbidden` tier from boundary decision §8.
+# Real classification lives in the substrate (post-Phase 3).
+forbidden_patterns=(
+  "spctl --master-disable"
+  "spctl --global-disable"
+  "csrutil disable"
+  "csrutil enable"
+  "defaults write "
+  "rm -rf /"
+  "rm -rf ~"
+  "rm -rf \$HOME"
+  "rm -rf /Users"
+  "launchctl load "
+  "launchctl unload "
+)
+
+# Scan the input for literal forbidden patterns.
+for pattern in "${forbidden_patterns[@]}"; do
+  if printf '%s' "$input" | grep -qF "$pattern"; then
+    printf 'hcs-hook: BLOCKED literal forbidden pattern matched: %q\n' "$pattern" >&2
+    printf 'hcs-hook: See docs/host-capability-substrate/implementation-charter.md §Forbidden patterns\n' >&2
+    exit 2
+  fi
+done
+
+# Default: allow, with advisory log only.
+exit 0

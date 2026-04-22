@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  HCS LaunchAgent template. Rendered and installed by scripts/install/install-launchd.sh.
+
+  Phase 0a: template only; no substrate binary exists yet.
+  Phase 3+: rendered values substituted for {{...}} tokens and installed.
+
+  Install only via: launchctl bootstrap gui/$(id -u) <target>
+  Remove only via:  launchctl bootout  gui/$(id -u)/<label>
+  NEVER: launchctl load/unload (deprecated; charter invariant 11 forbids them).
+
+  Tokens substituted at install time:
+    {{LABEL}}           com.jefahnierocks.host-capability-substrate
+    {{HCS_ROOT}}        ~/Organizations/jefahnierocks/host-capability-substrate
+    {{HCS_STATE_DIR}}   ~/Library/Application Support/host-capability-substrate
+    {{HCS_LOG_DIR}}     ~/Library/Logs/host-capability-substrate
+    {{HCS_POLICY_DIR}}  ~/Organizations/jefahnierocks/system-config/policies/host-capability-substrate
+    {{NODE_BIN}}        mise-resolved node path
+    {{KERNEL_ENTRY}}    packages/adapters/mcp-stdio/dist/server.js (or dashboard HTTP entry)
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{LABEL}}</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{NODE_BIN}}</string>
+    <string>{{HCS_ROOT}}/{{KERNEL_ENTRY}}</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HCS_ROOT</key>
+    <string>{{HCS_ROOT}}</string>
+    <key>HCS_STATE_DIR</key>
+    <string>{{HCS_STATE_DIR}}</string>
+    <key>HCS_LOG_DIR</key>
+    <string>{{HCS_LOG_DIR}}</string>
+    <key>HCS_POLICY_DIR</key>
+    <string>{{HCS_POLICY_DIR}}</string>
+  </dict>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>{{HCS_LOG_DIR}}/stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>{{HCS_LOG_DIR}}/stderr.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key>
+    <integer>4096</integer>
+  </dict>
+</dict>
+</plist>

@@ -1,0 +1,17 @@
+# Normalize line endings
+* text=auto eol=lf
+
+# Binary files (explicit)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.sqlite binary
+*.sqlite-wal binary
+*.sqlite-shm binary
+
+# Generated files (mark for reviewers)
+packages/schemas/dist/** linguist-generated=true
+policies/generated-snapshot/** linguist-generated=true

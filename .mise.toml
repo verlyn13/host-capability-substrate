@@ -1,0 +1,27 @@
+# Runtime and tool pinning for Host Capability Substrate.
+# Re-evaluated at end of Phase 0b per boundary decision §2.5.
+
+[tools]
+node = "24"
+shellcheck = "latest"
+shfmt = "latest"
+just = "latest"
+
+[env]
+HCS_ROOT = "{{ config_root }}"
+HCS_POLICY_DIR = "{{ env.HOME }}/Organizations/jefahnierocks/system-config/policies/host-capability-substrate"
+HCS_STATE_DIR = "{{ env.HOME }}/Library/Application Support/host-capability-substrate"
+HCS_LOG_DIR = "{{ env.HOME }}/Library/Logs/host-capability-substrate"
+HCS_LAUNCH_LABEL = "com.jefahnierocks.host-capability-substrate"
+
+[tasks.verify]
+description = "Run all quality gates"
+run = "just verify"
+
+[tasks.test]
+description = "Run test suite"
+run = "just test"
+
+[tasks.bootstrap]
+description = "Install Node dependencies after mise install"
+run = "npm install"

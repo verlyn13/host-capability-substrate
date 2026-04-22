@@ -1,0 +1,98 @@
+{
+  "model": "opus",
+  "defaultMode": "ask",
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Grep(**)",
+      "Glob(**)",
+      "Edit(docs/**)",
+      "Edit(packages/**)",
+      "Edit(policies/README.md)",
+      "Edit(scripts/**)",
+      "Edit(.claude/hooks/**)",
+      "Edit(.agents/skills/**)",
+      "Edit(AGENTS.md)",
+      "Edit(CLAUDE.md)",
+      "Edit(PLAN.md)",
+      "Edit(IMPLEMENT.md)",
+      "Edit(DECISIONS.md)",
+      "Edit(README.md)",
+      "Edit(package.json)",
+      "Edit(tsconfig*.json)",
+      "Edit(biome.json)",
+      "Edit(justfile)",
+      "Edit(.mise.toml)",
+      "Edit(.envrc)",
+      "Edit(.gitignore)",
+      "Edit(.editorconfig)",
+      "Edit(.gitattributes)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(just:*)",
+      "Bash(mise:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(npx:*)",
+      "Bash(biome:*)",
+      "Bash(vitest:*)",
+      "Bash(tsc:*)",
+      "Bash(tsx:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(file:*)",
+      "Bash(stat:*)",
+      "Bash(pwd:*)",
+      "Bash(which:*)",
+      "Bash(type:*)",
+      "Bash(test:*)"
+    ],
+    "ask": [
+      "Edit(.claude/settings.json)",
+      "Edit(.claude/agents/**)",
+      "Edit(.claude/skills/**)",
+      "Edit(.codex/**)",
+      "Edit(.cursor/**)",
+      "Edit(.vscode/**)",
+      "Edit(.mcp.json)",
+      "Bash(brew:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(launchctl:*)"
+    ],
+    "deny": [
+      "Bash(defaults write:*)",
+      "Bash(spctl --master-disable:*)",
+      "Bash(spctl --global-disable:*)",
+      "Bash(csrutil:*)",
+      "Bash(sudo:*)",
+      "Bash(launchctl load:*)",
+      "Bash(launchctl unload:*)",
+      "Bash(rm -rf /:*)",
+      "Bash(rm -rf ~:*)",
+      "Bash(rm -rf $HOME:*)",
+      "Bash(rm -rf /Users:*)",
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/credentials*)",
+      "Read(**/secrets/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/hcs-hook pre-bash",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

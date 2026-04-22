@@ -1,0 +1,32 @@
+{
+  "name": "host-capability-substrate",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Host Capability Substrate — horizontal operations kernel providing host state, toolchain resolution, capability registry, policy/gateway, approval grants, audited runs, and dashboard control to every agent on this macOS workstation.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "packages/adapters/*",
+    "packages/fixtures/*"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "just verify"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.0",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

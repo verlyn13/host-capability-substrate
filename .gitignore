@@ -1,0 +1,51 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Claude Code locals
+.claude/settings.local.json
+.claude/logs/
+.claude/cache/
+.claude/worktrees/
+
+# Codex
+.codex/auth.json
+
+# Cursor
+.cursor/mcp.local.json
+
+# VS Code
+.vscode/settings.local.json
+.vscode/*.log
+
+# Node / package managers
+node_modules/
+.pnpm-store/
+.pnp.*
+.yarn/cache/
+.yarn/install-state.gz
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Testing
+.vitest-cache/
+
+# Biome
+.biome/
+
+# Phase-0 hook logs (local only; not committed)
+.logs/
+
+# OS
+.DS_Store
+*.log
+
+# Secrets (safety net; no secret file should exist)
+**/*.pem
+**/*.key
+**/credentials*
+**/secrets/

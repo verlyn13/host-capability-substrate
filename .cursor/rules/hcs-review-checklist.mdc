@@ -1,0 +1,27 @@
+---
+description: HCS review checklist (pointer). See docs/host-capability-substrate/implementation-charter.md for the authoritative rules.
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# HCS review checklist (pointer)
+
+When reviewing a PR in this repo, check:
+
+- [ ] Single ring touched (or explicit justification in PR description for multi-ring)
+- [ ] No cross-ring imports
+- [ ] Policy lives in canonical location (system-config), not in this repo
+- [ ] No universal shell execution tool added
+- [ ] No audit-write agent endpoint added
+- [ ] `OperationShape` upstream of `CommandShape`
+- [ ] Evidence includes provenance (source, observed_at, authority, parser_version, confidence)
+- [ ] Dashboard impact considered
+- [ ] Schema changes: Zod + JSON Schema + ontology.md + tests moved together
+- [ ] Policy changes: `hcs-policy-reviewer` objections filed
+- [ ] Schema changes: `hcs-ontology-reviewer` objections filed
+- [ ] Security-sensitive: `hcs-security-reviewer` objections filed
+- [ ] ADR status current (proposed / accepted / superseded)
+- [ ] Charter version cited in PR description
+- [ ] `just verify` green
+
+Authority: `docs/host-capability-substrate/implementation-charter.md` v1.1.0+
