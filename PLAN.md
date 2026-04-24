@@ -23,7 +23,7 @@ Three-wave plan approved 2026-04-23 after synthesis of two external substrate-co
 
 - `system-config/scripts/lint-claude-settings.py` (new): validates `~/.claude/settings.json` and `~/.claude.json` against both (a) published JSON Schema and (b) installed-CLI runtime parse; flags divergence. Integrates into `system-update` hygiene flow. Outside this repo.
 - Charter v1.2.0 amendment **draft branch** (not merged during soak). Includes invariants 13 (cleanup derivability-authority), 14 (config-spec authority + provenance), and 15 (GUI shell-env non-inheritance; Apple-doc + Anthropic-VS-Code-doc backed). Subagent objections from `hcs-architect`, `hcs-policy-reviewer`, `hcs-security-reviewer`, `hcs-ontology-reviewer` during days 2–3.
-- ADR 0012 credential broker **draft branch** — conditional scope: not built in Phase 1 unless measurement of residual `op` IPC contention (post-OAuth migration) justifies it. Broker, if built, serves CLI via `apiKeyHelper`/`awsCredentialExport` AND GUI via OAuth + Keychain separately — does NOT unify the two surfaces.
+- ADR 0012 credential broker **draft branch** — scope revised 2026-04-24 after D-028 landed (system-config shipped the `host_secret_*` caller-facing contract + HCS_SECRET_* env namespace) AND the IPC deadlock recurred within 24 hours. Scope changes from "conditional, measurement-gated" to **"committed, phased; caller-facing phase already shipped as D-028; HCS work is the broker daemon at `$HCS_BROKER_SOCKET` speaking the existing contract."** Broker serves CLI via `apiKeyHelper`/`awsCredentialExport` AND GUI via OAuth + Keychain separately (apiKeyHelper is CLI-only per metal-verified Anthropic docs); the broker does NOT unify the two surfaces.
 - ADR 0013 forbidden-tier split **draft branch**.
 - ADR 0014 InterventionRecord entity **draft branch**.
 - Daily `just measure` + `just soak-status`; re-run `measure-extended-rubric` + `measure-guidance-load` over new partitions; any field incidents captured under `.logs/phase-0/interventions/`.
@@ -33,8 +33,8 @@ Three-wave plan approved 2026-04-23 after synthesis of two external substrate-co
 1. `just measure-brief` — final narrative over the three partitions with v1.2.0 supplementary surfaces.
 2. Merge charter v1.2.0 PR.
 3. Merge ADR 0012, 0013, 0014 PRs in sequence (broker first, then forbidden-tier, then InterventionRecord).
-4. Scanner parity: add heuristics for traps #16 (`ignored-but-load-bearing-deletion`) and #17 (`harness-config-boolean-type`) to `measure-traps.sh`; closes the 12 → 14 scanner-vs-seed gap (seed is at 17, so gap narrows to 14 vs 17).
-5. **DECISIONS.md batch commit**: D-028 (OAuth-preferred HTTP MCP baseline), D-029 (amend D-022 to public-semver strings), D-031 (Codex profiles are CLI-only opt-ins). D-030 absorbed into D-026 + charter inv. 14 — no standalone row.
+4. Scanner parity: add heuristics for traps #16 (`ignored-but-load-bearing-deletion`), #17 (`harness-config-boolean-type`), and #18 (`agent-echoes-secret-in-env-inspection`) to `measure-traps.sh`; seed is at 18, scanner catches up to match. Hook literal-forbidden-list extension for trap #18's secret-echo regexes lands with this commit so day-over-day `forbidden` classification is consistent before/after closeout.
+5. **DECISIONS.md batch commit (renumbered)**: D-029 (amend D-022 to public-semver strings), D-030 (OAuth-preferred HTTP MCP baseline; `enabled=false` + explicit opt-in, not profile-gating), D-031 (Codex profiles are CLI-only opt-ins). Runtime-governs conflict rule absorbed into D-026 + charter inv. 14 — no standalone row. (D-028 already landed 2026-04-24 as the `host_secret_*` credential plane; see user commit `d59a35c`.)
 6. Closeout narrative `docs/host-capability-substrate/phase-0b-closeout.md` answering the 5 runbook questions.
 7. `phase-0b-self-review.md` v1.2.0 with closeout outcomes.
 
