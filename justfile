@@ -110,9 +110,22 @@ measure-summary:
 	@bash scripts/dev/measure-partition-summary.sh --detail
 
 # Consolidate all partitions into brief.md + brief.json under .logs/phase-0/.
-# Runs the current soak gate summary.
+# Runs the current soak gate summary. Invokes measure-extended-rubric and
+# measure-guidance-load as pre-aggregation steps; see phase-0b-measurement-plan v1.2.0.
 measure-brief:
 	@bash scripts/dev/measure-brief.sh
+
+# Supplementary-rubric scoring over raw cross-agent transcripts (v1.2.0+).
+# Reads raw/source-manifest.jsonl to pick canonical sessions; writes
+# cross-agent-runs-extended.jsonl per partition. Safe during soak.
+measure-extended-rubric:
+	@bash scripts/dev/measure-extended-rubric.sh
+
+# Guidance-load classification over raw cross-agent transcripts (v1.2.0+).
+# Cross-joins with cross-agent-runs.jsonl; writes cross-agent-guidance-load.jsonl
+# per partition. Safe during soak.
+measure-guidance-load:
+	@bash scripts/dev/measure-guidance-load.sh
 
 # === Phase 0b classification pipeline (post-hoc) ===
 
@@ -180,7 +193,7 @@ soak-uninstall-hook:
 soak-status-hook:
 	@bash scripts/install/install-claude-hook.sh status
 
-# Combined soak status — launchd + hook + last partition
+# Combined soak status — launchd + hook + last partition + v1.2.0 supplementary outputs
 soak-status:
 	@echo "=== launchd ==="
 	@bash scripts/install/install-launchd-measure.sh status
@@ -189,4 +202,11 @@ soak-status:
 	@bash scripts/install/install-claude-hook.sh status
 	@echo ""
 	@echo "=== partitions ==="
-	@ls -1 .logs/phase-0/ 2>/dev/null | tail -5 | sed 's/^/  /' || echo "  (no partitions yet)"
+	@ls -1 .logs/phase-0/ 2>/dev/null | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | tail -5 | sed 's/^/  /' || echo "  (no partitions yet)"
+	@echo ""
+	@echo "=== supplementary outputs (v1.2.0) ==="
+	@for d in $(ls -1 .logs/phase-0/ 2>/dev/null | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | tail -3); do \
+		ext=$(wc -l < .logs/phase-0/$d/cross-agent-runs-extended.jsonl 2>/dev/null || echo 0); \
+		gl=$(wc -l < .logs/phase-0/$d/cross-agent-guidance-load.jsonl 2>/dev/null || echo 0); \
+		printf "  %s  extended=%s  guidance-load=%s\n" "$d" "$(echo $ext | tr -d ' ')" "$(echo $gl | tr -d ' ')"; \
+	done

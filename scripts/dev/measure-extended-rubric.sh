@@ -332,12 +332,38 @@ def parse_path(path, partition_root):
             prompt_id = int(m.group(1))
     return agent, prompt_id, os.path.basename(path)
 
+def _walk_variant_of(path):
+    """Infer source_variant from filesystem layout when manifest is absent.
+    Mirrors the manifest's source_variant field so VARIANT_PREFERENCE applies."""
+    if '/export-tmp/' in path:
+        return 'export-tmp'
+    if '/export-home/' in path:
+        return 'export-home'
+    fname = os.path.basename(path)
+    if fname.startswith('rollout-'):
+        return 'rollout-copy'
+    return 'repo-root-copy'
+
+def _walk_session_key(agent, prompt_id, path):
+    """Stable dedup key. For Codex (which ships multiple export variants per
+    session) the UUID from the filename identifies the session; for Claude
+    Code the path itself is the key."""
+    fname = os.path.basename(path)
+    uuid_m = re.search(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', fname)
+    if uuid_m:
+        return (agent, prompt_id, uuid_m.group(0).lower())
+    return (agent, prompt_id, path)
+
 def walk_sessions(partition_root):
-    """Filesystem fallback: walk raw/cross-agent for *.jsonl and *.txt."""
+    """Filesystem fallback when raw/source-manifest.jsonl is absent.
+    Enumerates *.jsonl and *.txt under raw/cross-agent/, groups by
+    (agent, prompt, session-uuid-or-path), then selects one canonical path
+    per group using VARIANT_PREFERENCE so Codex rollout/export-home/export-tmp
+    duplicates collapse to a single record per session."""
     raw_root = os.path.join(partition_root, 'raw', 'cross-agent')
     if not os.path.isdir(raw_root):
         return []
-    out = []
+    by_key = {}
     for root, _dirs, files in os.walk(raw_root):
         for fname in files:
             if not (fname.endswith('.jsonl') or fname.endswith('.txt')):
@@ -346,12 +372,29 @@ def walk_sessions(partition_root):
             agent, prompt_id, session_ref = parse_path(path, partition_root)
             if not agent or not prompt_id:
                 continue
-            out.append({
-                "agent": agent,
-                "prompt_id": prompt_id,
-                "path": path,
-                "session_ref": session_ref,
+            key = _walk_session_key(agent, prompt_id, path)
+            by_key.setdefault(key, []).append({
+                "agent": agent, "prompt_id": prompt_id, "path": path,
+                "session_ref": session_ref, "variant": _walk_variant_of(path),
             })
+    out = []
+    for key, candidates in by_key.items():
+        picked = None
+        for variant in VARIANT_PREFERENCE:
+            for c in candidates:
+                if c['variant'] == variant:
+                    picked = c
+                    break
+            if picked is not None:
+                break
+        if picked is None:
+            picked = candidates[0]
+        out.append({
+            "agent": picked['agent'],
+            "prompt_id": picked['prompt_id'],
+            "path": picked['path'],
+            "session_ref": picked['session_ref'],
+        })
     return out
 
 def load_text(path):
