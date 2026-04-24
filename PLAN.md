@@ -15,6 +15,56 @@ As of 2026-04-23, this repo is running a compressed **3-day Phase 0b soak** on t
 - Daily cadence: `just measure` and `just soak-status`
 - Extension rule: if the 3-day window does not produce a clean go/no-go, extend the soak rather than weakening the gate
 
+### Closeout-week sequence (2026-04-24 → post-closeout)
+
+Three-wave plan approved 2026-04-23 after synthesis of two external substrate-config research reports (see memory `project_substrate_config_research_report1.md`).
+
+**W2 — days 2 + 3 (2026-04-24, 2026-04-25). Held-back drafts + outside-HCS work.**
+
+- `system-config/scripts/lint-claude-settings.py` (new): validates `~/.claude/settings.json` and `~/.claude.json` against both (a) published JSON Schema and (b) installed-CLI runtime parse; flags divergence. Integrates into `system-update` hygiene flow. Outside this repo.
+- Charter v1.2.0 amendment **draft branch** (not merged during soak). Includes invariants 13 (cleanup derivability-authority), 14 (config-spec authority + provenance), and 15 (GUI shell-env non-inheritance; Apple-doc + Anthropic-VS-Code-doc backed). Subagent objections from `hcs-architect`, `hcs-policy-reviewer`, `hcs-security-reviewer`, `hcs-ontology-reviewer` during days 2–3.
+- ADR 0012 credential broker **draft branch** — conditional scope: not built in Phase 1 unless measurement of residual `op` IPC contention (post-OAuth migration) justifies it. Broker, if built, serves CLI via `apiKeyHelper`/`awsCredentialExport` AND GUI via OAuth + Keychain separately — does NOT unify the two surfaces.
+- ADR 0013 forbidden-tier split **draft branch**.
+- ADR 0014 InterventionRecord entity **draft branch**.
+- Daily `just measure` + `just soak-status`; re-run `measure-extended-rubric` + `measure-guidance-load` over new partitions; any field incidents captured under `.logs/phase-0/interventions/`.
+
+**W3 — closeout 2026-04-26. Ordered merge sequence.**
+
+1. `just measure-brief` — final narrative over the three partitions with v1.2.0 supplementary surfaces.
+2. Merge charter v1.2.0 PR.
+3. Merge ADR 0012, 0013, 0014 PRs in sequence (broker first, then forbidden-tier, then InterventionRecord).
+4. Scanner parity: add heuristics for traps #16 (`ignored-but-load-bearing-deletion`) and #17 (`harness-config-boolean-type`) to `measure-traps.sh`; closes the 12 → 14 scanner-vs-seed gap (seed is at 17, so gap narrows to 14 vs 17).
+5. **DECISIONS.md batch commit**: D-028 (OAuth-preferred HTTP MCP baseline), D-029 (amend D-022 to public-semver strings), D-031 (Codex profiles are CLI-only opt-ins). D-030 absorbed into D-026 + charter inv. 14 — no standalone row.
+6. Closeout narrative `docs/host-capability-substrate/phase-0b-closeout.md` answering the 5 runbook questions.
+7. `phase-0b-self-review.md` v1.2.0 with closeout outcomes.
+
+**W4 — post-closeout Phase 1 prep.**
+
+Direct-test queue (combined from report 1 §14 + report 2 verification; blocks work that depends on each outcome):
+
+1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block.
+2. Codex app + CLI + IDE reuse the same MCP OAuth token (same `CODEX_HOME` → same Keychain key).
+3. Codex app honors project-scoped `.codex/config.toml` MCP definitions in trusted projects.
+4. Codex app launched from Spotlight does NOT inherit shell `GITHUB_PAT`.
+5. Claude Desktop uses OAuth-only; does NOT read `apiKeyHelper` or `ANTHROPIC_API_KEY`.
+6. Claude Code #18692 (resolved-secrets-into-`.mcp.json`) does NOT repro on 2.1.119.
+7. `shell_environment_policy.include_only` reliably exposes named var on Codex 0.124.0.
+8. Verify `apiKeyHelper` CLI-only scope statement against live Anthropic docs.
+9. **Q-002**: our `[profiles.hcs-*]` consulted by which Codex surfaces?
+10. Codex app MCP startup happens before worktree setup scripts.
+
+Phase 1 work items (queued, unordered here — sequenced in ADR 0012 and the Phase 1 research plan):
+
+- If W4-1 succeeds: migrate all HTTP MCP servers with OAuth support off `bearer_token_env_var` patterns (per D-028).
+- Sparkle intervention F-08 (kernel RPC for typed per-section diagnostics) — permanent fix for `pipefail+head` class.
+- Sparkle intervention F-09 (hook-decision schema v2 with version field + rotation).
+- Extended-rubric formalization into primary scoring schema (Phase 1 cross-agent layer).
+- `just verify-baseline` recipe — operationalizes charter inv. 14's "retest on upgrade" cadence.
+- Semantic tool-name mapping (Bash ↔ exec_command) — resolves the acceptance-gate "cross-source redundancy = 0" known limitation.
+- Remaining Sparkle follow-ups F-01/F-02/F-03/F-07/F-11/F-13.
+
+Discipline for W2–W3: no changes to `classify.py`, `.claude/hooks/`, `just measure` collectors, Codex profiles, `tiers.yaml`, or charter-on-main during the soak window (2026-04-24 and 2026-04-25). Draft-in-branch is permitted; merges land on 2026-04-26 in the ordered sequence above.
+
 ---
 
 ## Milestone 0 — Repository scaffold
