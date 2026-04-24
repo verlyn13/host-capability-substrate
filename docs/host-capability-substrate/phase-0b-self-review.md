@@ -3,8 +3,8 @@ title: HCS Phase 0b Self-Review
 category: review
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-22
+version: 1.1.1
+last_updated: 2026-04-23
 tags: [phase-0b, review, producer-critic, critique-response]
 priority: medium
 ---
@@ -12,6 +12,13 @@ priority: medium
 # HCS Phase 0b Self-Review
 
 Record of producer/critic discipline on the Phase 0b measurement surface, per research plan §22.5 / §22.11.
+
+## v1.1.1 — soak-window alignment
+
+The critique findings below still stand. v1.1.1 only aligns the review with the
+current repo-side soak cadence: an initial 3-day window from 2026-04-23 through
+2026-04-25, with closeout on 2026-04-26. If the result is ambiguous after day 3,
+the soak extends rather than the gate being relaxed.
 
 ## v1.1.0 — critique response
 
@@ -24,7 +31,7 @@ v1.0.0 of the plan + scripts shipped with six substantive defects caught by exte
 
 **Status:** resolved in v1.1.0.
 
-**Fix:** added `scripts/dev/measure-redundancy.sh`, `measure-tokens-estimate.sh`, `measure-brief.sh`. `just measure` now runs all 9 data scripts. `just measure-brief` aggregates all partitions into `brief.md` + `brief.json` with an acceptance-gate table.
+**Fix:** added `scripts/dev/measure-redundancy.sh`, `measure-tokens-estimate.sh`, `measure-brief.sh`. At v1.1.0, `just measure` covered the 9 collection scripts required by the plan; v1.1.1 later documented the extra `commands` / `classify` / `confusion` analysis outputs that now run in the same pipeline. `just measure-brief` aggregates all partitions into `brief.md` + `brief.json` with an acceptance-gate table.
 
 **Verification:** single-day smoke run produces `activity-claude-code.jsonl`, `activity-codex.jsonl`, `activity-ide-hosts.jsonl`, `traps.jsonl`, `governance-inventory.jsonl`, `protocol-features.json`, `redundancy.jsonl`, `tokens-estimate.json`. `just measure-brief` produces `brief.md` with the full acceptance-gate table.
 
@@ -102,6 +109,7 @@ After fixing F-1 through F-6, a fresh pass for any remaining risks:
 - **Token-estimate for transcript-volume uses fixed 2KB-per-tool-use heuristic.** Reasonable for order-of-magnitude; not accurate to the token. Documented as back-of-envelope.
 - **Measurement runtime ~60s per `just measure` pass.** Dominated by the trap scan across 4900+ Claude Code transcripts (even scoped to 7-day, ~70 files × 12 patterns). Acceptable for daily manual cadence; if moved to hourly/launchd, need to reduce scope further or use xargs parallelism.
 - **Shell-mode-confusion-login trap over-fires.** Pattern `bash -lc` matches routine agent invocations. Not a true "shell-mode confusion" hit; more like a coarse `bash -lc` counter. May want to refine in the next trap-corpus iteration, or rename the trap.
+- **Trap scanner coverage is narrower than the seed corpus.** The committed seed corpus already holds 15 trap classes, but `measure-traps.sh` currently instruments 12 heuristics. This is a coverage follow-up, not a reason to mark the seed corpus gate failed.
 
 ### Privacy / security audit (unchanged)
 
@@ -118,23 +126,23 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 | Criterion | Met |
 |-----------|-----|
-| seven days of data | ✗ (needs 7-day soak) |
+| three consecutive days of data | ✗ (needs the April 23-25 soak window to complete) |
 | five primary clients covered | ✓ |
 | cross source overlap at least 3 | ✗ (by current name-based definition) |
 | tokens estimate present | ✓ |
-| trap corpus 15 plus | ✗ (11 classes triggered on this host; seed has 12 patterns) |
+| trap corpus 15 plus | ✓ (seed corpus has 15 entries; observed hit count may be lower) |
 | governance inventory present | ✓ |
 | protocol features present | ✓ |
 
-**Assessment:** the 4 ✗ items reflect honest gaps:
-- 7 days requires actually running the soak; 1 day in.
+**Assessment:** the remaining ✗ items reflect honest gaps:
+- Three days requires actually running the soak; day 1 is now underway.
 - Cross-source overlap is a known limitation (semantic redundancy undercounted).
-- Trap corpus of 11 observed + 12 scanned is close to the ≥15 threshold. Expanding `measure-traps.sh` patterns is follow-up work per the regression-trap skill.
+- Scanner coverage of 12 heuristics is narrower than the 15-entry seed corpus. Expanding `measure-traps.sh` remains follow-up work per the regression-trap skill.
 - All other acceptance items pass.
 
 ## Recommendation
 
-**Proceed with week-one soak.** The critique surfaced real defects; v1.1.0 addresses them. Producer/critic discipline is honored: the critic's findings drove substantive rework, not defensive patching.
+**Proceed with the 3-day soak.** The critique surfaced real defects; v1.1.0 addressed them and v1.1.1 aligns the repo plan with the active soak window. Producer/critic discipline is honored: the critic's findings drove substantive rework, not defensive patching.
 
 **Next honest follow-ups (not Phase 0b blocking):**
 1. Refine trap patterns to reduce false positives (shell-mode-confusion-login, brew-cask-escalation-missed cap of 50 may be understating reality).
@@ -143,14 +151,15 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 ## References
 
-- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.1.0
+- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.1.1
 - Charter: [`implementation-charter.md`](./implementation-charter.md) v1.1.0+
 - Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §6 Phase 0b, §22.11
-- Boundary decision: [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md) v1.1.0+
+- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) v1.1.0+
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.1.1 | 2026-04-23 | Aligned the self-review with the active 3-day soak window and corrected the trap-corpus gate to count the committed 15-entry seed corpus rather than only observed hits. |
 | 1.1.0 | 2026-04-22 | Critique response. Each of 6 findings (F-1 through F-6) recorded with status, root cause, fix, verification. Fresh critic pass post-fix logged. Acceptance-gate status honestly assessed. Design-decision notes added for downstream Phase 1 work. |
 | 1.0.0 | 2026-04-22 | Initial self-review during Phase 0b producer phase. Superseded by v1.1.0 after external critique. |

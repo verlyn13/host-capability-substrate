@@ -1,6 +1,6 @@
 # Host Capability Substrate — task runner.
 # See docs/host-capability-substrate/implementation-charter.md §Package boundary enforcement
-# and docs/host-capability-substrate/0001-repo-boundary-decision.md §10 Quality gates.
+# and docs/host-capability-substrate/adr/0001-repo-boundary.md §10 Quality gates.
 
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 set dotenv-load := false
@@ -110,7 +110,7 @@ measure-summary:
 	@bash scripts/dev/measure-partition-summary.sh --detail
 
 # Consolidate all partitions into brief.md + brief.json under .logs/phase-0/.
-# Runs the seven-day soak gate summary.
+# Runs the current soak gate summary.
 measure-brief:
 	@bash scripts/dev/measure-brief.sh
 

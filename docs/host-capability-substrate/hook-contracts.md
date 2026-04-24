@@ -3,15 +3,15 @@ title: HCS Hook Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.1.0
-last_updated: 2026-04-22
+version: 0.2.0
+last_updated: 2026-04-23
 tags: [hooks, claude-code, codex, policy, contracts]
 priority: medium
 ---
 
 # HCS Hook Contracts
 
-Defines how hooks interact with the HCS substrate. Populated in Phase 3 when the kernel exposes `system.tool.resolve.v1` and `system.policy.classify_operation.v1`. At Phase 0a, hooks log only.
+Defines how hooks interact with the HCS substrate. Populated in Phase 3 when the kernel exposes `system.tool.resolve.v1` and `system.policy.classify_operation.v1`. At Phase 0a, hooks log only. During the current Phase 0b soak, a separate measurement hook is also available.
 
 ## Phase 0a (log-only)
 
@@ -24,6 +24,21 @@ Defines how hooks interact with the HCS substrate. Populated in Phase 3 when the
   - 0 → allow
   - 1 → log and continue (advisory)
   - 2 → block with stderr reason
+
+## Phase 0b (current soak)
+
+Two hook surfaces coexist during the soak:
+
+- `.claude/hooks/hcs-hook` remains the repo-local minimal guardrail for work inside this repo.
+- `scripts/dev/hcs-hook-cli.sh` is the opt-in global measurement hook installed by `just soak-install-hook`.
+
+The Phase 0b measurement hook:
+
+- Reads the same JSON hook envelope from stdin
+- Classifies shell commands with `scripts/dev/classify.py`
+- Writes decision records to `.logs/phase-0/<YYYY-MM-DD>/hook-decisions.jsonl`
+- Always returns `allow` in Phase 0b; it is measurement-only, never the enforcement boundary
+- Exists to collect evidence for the April 23-25, 2026 soak, not to replace substrate policy
 
 ## Phase 3+ (RPC to substrate)
 
@@ -66,4 +81,5 @@ Advisory only. Bash-only coverage per D-007. Codex hook logs + warns; substrate 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.0 | 2026-04-23 | Added the Phase 0b measurement-hook contract and clarified the distinction between the repo-local guardrail hook and the opt-in soak hook. |
 | 0.1.0 | 2026-04-22 | Initial stub. |

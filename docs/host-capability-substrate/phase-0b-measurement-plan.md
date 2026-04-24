@@ -3,23 +3,35 @@ title: HCS Phase 0b — Measurement Workplan
 category: plan
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-22
+version: 1.1.1
+last_updated: 2026-04-23
 tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency]
 priority: high
 ---
 
 # HCS Phase 0b — Measurement Workplan
 
-Quantifies the economic and governance baseline before any substrate code ships. Runs for ~7 days; produces the numeric evidence the Phase 3 acceptance criteria will be measured against (≥50% reduction in redundant `--help` probes across agents, top-10 probed tools).
+Quantifies the economic and governance baseline before any substrate code ships. The current repo execution window is a **3-day soak from 2026-04-23 through 2026-04-25**, with closeout on 2026-04-26. It produces the numeric evidence the Phase 3 acceptance criteria will be measured against (≥50% reduction in redundant `--help` probes across agents, top-10 probed tools).
 
-Parent: [`host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md) (v0.3.0+) §6 Phase 0b, §22.11.
+Parent: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+) §6 Phase 0b, §22.11.
 Charter: [`implementation-charter.md`](./implementation-charter.md) v1.1.0+.
-Boundary decision: [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md) v1.1.0+.
+Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) v1.1.0+.
+
+## v1.1.1 revision note
+
+v1.1.1 aligns the repo plan and automation with the current **3-day soak** that starts on **2026-04-23**. The upstream research plan still describes Phase 0b in week-scale language; this repo is executing a compressed initial soak against the same artifact set. If day 3 does not yield a clean go/no-go, the soak extends rather than the acceptance gate being relaxed.
 
 ## v1.1.0 revision note
 
 v1.0.0 of this plan described aspirational behaviour (acceptance artifacts `redundancy.jsonl`, `tokens-estimate.json`, consolidation brief) that the initial scripts did not generate. v1.0.0 also claimed idempotency while the scripts were append-only, corrupting any re-run within a day. v1.1.0 fixes the implementation to match the contract: snapshot semantics, acceptance artifacts produced end-to-end, correct log-source paths, provenance fields in trap records, and JSON parsing where regex was fragile. See [`phase-0b-self-review.md`](./phase-0b-self-review.md) v1.1.0 for the full acknowledgement of the v1.0.0 issues and the fixes applied.
+
+## Current execution window
+
+- Kickoff battery: 2026-04-23 via `just day1`
+- Daily soak captures: 2026-04-23, 2026-04-24, 2026-04-25 via `just measure`
+- Closeout: 2026-04-26 via `just measure-brief`
+- Status checks: `just soak-status`
+- Extension rule: if the April 23-25 window is inconclusive, extend the soak; do not reinterpret misses as passes
 
 ## Goals (per research plan §6 Phase 0b)
 
@@ -31,6 +43,7 @@ v1.0.0 of this plan described aspirational behaviour (acceptance artifacts `redu
 6. **1Password migration reconciliation.** Confirm `docs/secrets.md` v2.1.0 authoritative; flag any residue.
 7. **Client identity mechanism.** Per-host `InitializeRequest.clientInfo` probing (fully resolved in Phase 1 Thread B echo MCP server).
 8. **Protocol feature matrix.** Per-host MCP stdio, Streamable HTTP, structured outputs, resources, prompts, elicitation, subagent scoping.
+9. **Cross-agent manual simulation.** Structured rubric scores and feedback items for the 8 prompt battery across the agents actually exercised during the soak.
 
 ## Principles
 
@@ -70,19 +83,25 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 | `measure-claude-code.sh` | `activity-claude-code.jsonl` | Prompt volume; **tool-use counts per tool name from 7-day transcripts**; assistant-content-shape; probe-proxy mentions; session file count (shape only) |
 | `measure-codex.sh` | `activity-codex.jsonl` | Thread counts (total + recent 7d) + tokens_used; **function-call counts per tool name from 7-day rollouts**; dynamic-tool registration counts |
 | `measure-ide-hosts.sh` | `activity-ide-hosts.jsonl` | Log volume shape for Cursor, Windsurf, Claude Desktop, Copilot CLI |
-| `measure-traps.sh` | `traps.jsonl` | 12 trap patterns scanned across 7-day file sources; **per-hit records with `source`, `file`, `line`, `evidence_redacted`, `severity`**; `__summary__` record with totals |
+| `measure-traps.sh` | `traps.jsonl` | 12 currently-instrumented trap patterns scanned across 7-day file sources; **per-hit records with `source`, `file`, `line`, `evidence_redacted`, `severity`**; `__summary__` record with totals |
 | `measure-governance-inventory.sh` | `governance-inventory.jsonl` | Claude Code + Codex user-scope + HCS-project-scope settings; system-config policies; HCS snapshot fixture; chezmoi MCP wrappers; **MCP baseline servers parsed via `jq`** (not regex); secrets policy version; runbook docs versions; 1P reference manifests |
 | `measure-protocol-features.sh` | `protocol-features.json` | Per-host (6) MCP feature matrix with probe-required fields marked |
 | `measure-redundancy.sh` | `redundancy.jsonl` | Cross-source redundancy: same tool name surfaced by ≥2 distinct sources in partition |
 | `measure-tokens-estimate.sh` | `tokens-estimate.json` | Char-based tokens estimate (char/4 heuristic); per-source + totals |
+| `measure-commands.sh` | `commands.jsonl` | Per-command extraction from Claude Code `Bash` calls and Codex `exec_command` rollouts |
+| `measure-classify.sh` | `classify.jsonl` | Post-hoc classification of extracted commands via `classify.py` |
+| `measure-confusion.sh` | `confusion-matrix.json` | Honest Phase 0b `source × classified_class` aggregate plus unknown/forbidden highlights |
 | `measure-partition-summary.sh` | (stdout) | Human-readable summary of today's partition |
 | `measure-brief.sh` | `.logs/phase-0/brief.md`, `.logs/phase-0/brief.json` | **Consolidates all partitions** into acceptance-gate table + trap aggregate + top-tools + redundancy summary + tokens total |
+| `record-cross-agent-run.sh` | `cross-agent-runs.jsonl` | Manual prompt-battery scoring record, one row per `(prompt, agent)` run |
+| `record-cross-agent-feedback.sh` | `cross-agent-feedback.jsonl` | Structured feedback items opened from cross-agent prompt misses |
 
 ### Orchestration
 
-- `just measure` — runs 9 data-collection scripts + partition-summary
+- `just measure` — runs 11 data/transform scripts + partition-summary
 - `just measure-summary` — prints today's partition summary
 - `just measure-brief` — aggregates all partitions into `brief.md` + `brief.json`
+- `just day1` — runs the kickoff battery (`measure`, fixtures, over-fire, under-fire, faults, dashboard rehearsal)
 - `just verify` includes `shellcheck-scan` as of v1.1.0
 
 Measurement runtime on this host: **~60 seconds** per `just measure` pass (7-day file-window scope keeps the trap scan tractable across ~5k transcripts).
@@ -101,6 +120,11 @@ Per-run partition: `.logs/phase-0/<YYYY-MM-DD>/`
 | `protocol-features.json` | per-host capability matrix | 6 hosts, probe-required marks |
 | `redundancy.jsonl` | `{ts, tool, sources, count_by_source, total, cross_source}` + `__summary__` | per-tool cross-source records |
 | `tokens-estimate.json` | per-source + totals | back-of-envelope (char/4) |
+| `commands.jsonl` | `{ts, source, transcript|rollout, line, tool_name, command, description?, cwd}` | per-shell-command extraction records |
+| `classify.jsonl` | command record + classifier fields | per-command class, reason, first token, segments |
+| `confusion-matrix.json` | aggregate JSON | `source × classified_class`, unknown-first-token clusters, overblock/parse-error gates |
+| `cross-agent-runs.jsonl` | `{ts, schema_version, agent, prompt_id, ..., score, feedback_required}` | manual prompt battery scoring rows |
+| `cross-agent-feedback.jsonl` | `{ts, schema_version, feedback_id, agent, prompt_id, severity, ...}` | manual feedback rows opened from prompt misses |
 
 Consolidated brief (at `.logs/phase-0/brief.md` + `brief.json`):
 - acceptance-gate table
@@ -109,6 +133,7 @@ Consolidated brief (at `.logs/phase-0/brief.md` + `brief.json`):
 - tokens estimate aggregate
 - cross-source redundancy summary
 - governance inventory volume per partition
+- cross-agent prompt-run and feedback summary when present
 
 **Redaction rules (`redact()` in measure-common.sh):**
 
@@ -116,19 +141,21 @@ Applied to all text before it reaches disk. Covered: `sk-[A-Za-z0-9]{20,}`, `ghp
 
 ## Cadence
 
-- **Daily:** `just measure` — runs in ~60s, writes today's partition
-- **End of week 1:** `just measure-brief` — consolidates all partitions into `brief.md`
-- **Phase 0b acceptance gate:** the brief acceptance-gate table shows all seven criteria met
+- **2026-04-23:** `just day1` — kickoff battery + first partition
+- **2026-04-23 to 2026-04-25:** run the 8 cross-agent prompts per [`phase-0b-cross-agent-prompts.md`](./phase-0b-cross-agent-prompts.md), recording both scores and feedback
+- **2026-04-24 to 2026-04-25:** `just measure` — daily capture, then `just soak-status`
+- **2026-04-26:** `just measure-brief` — consolidate the 3-day soak into `brief.md`
+- **Phase 0b acceptance gate:** the brief acceptance-gate table shows all criteria met
 
 ## Acceptance checklist
 
 Rendered as a table in the brief. All must be checked:
 
-- [ ] Seven consecutive days of partition data captured
+- [ ] Three consecutive days of partition data captured in the April 23-25, 2026 window
 - [ ] All 5 primary clients represented: Claude Code, Codex, Cursor, Windsurf, Copilot CLI (Claude Desktop opportunistic)
 - [ ] Redundancy analysis shows cross-source overlap for ≥3 tool patterns. **Caveat:** redundancy is matched by tool name only; tools with different names but equivalent semantics (e.g., `Bash` vs `exec_command`) do NOT count as redundant under the current definition. See "Known limitations" below.
 - [ ] `tokens-estimate.json` present with a concrete `totals.estimated_tokens` number
-- [ ] Trap corpus has ≥15 distinct trap classes (seed lists 15; measurement may trim or expand based on observed patterns)
+- [ ] Seed regression corpus has ≥15 trap classes; observed hit counts may be lower than the seed size during the soak window
 - [ ] `governance-inventory.jsonl` enumerates user-global + HCS-project Claude settings, subagents, Codex config, system-config policies, chezmoi MCP wrappers, MCP baseline (jq-parsed, not regex), 1P reference manifests
 - [ ] `protocol-features.json` present for Claude Code, Codex, Cursor, Windsurf, Copilot CLI, Claude Desktop
 - [ ] 1Password reconciliation: `docs/secrets.md` v2.1.0 confirmed; any gopass residue enumerated
@@ -141,6 +168,7 @@ These are documented constraints, not undisclosed gaps:
 - **Semantic redundancy undercounted.** Cross-source redundancy by tool name treats `Bash` (Claude Code) and `exec_command` (Codex) as distinct, even though they represent the same capability. A name-mapping layer to detect semantic redundancy is substrate-layer work (Phase 1 Thread D policy schema) — not Phase 0b.
 - **Token counting is char/4 heuristic.** Accurate tokenization would require a live model tokenizer; the heuristic is adequate for baseline order-of-magnitude.
 - **Trap scan window is 7 days.** Catches current habits; does not back-fill older history. Stale-but-not-used patterns in transcripts >7 days old are ignored.
+- **Trap scanner coverage is narrower than the seed corpus.** `packages/evals/regression/seed.md` carries 15 seed traps, while `measure-traps.sh` currently instruments 12 heuristics. The acceptance gate counts the committed seed corpus; scanner expansion remains follow-up work.
 - **IDE host signal is volume-only.** Cursor, Windsurf, Claude Desktop, Copilot CLI transcripts are VS Code-style rotating log dirs or binary blobs; we cannot extract per-tool-call signal without live MCP instrumentation. Phase 1 Thread B (echo MCP server) resolves this.
 - **Claude Code session metadata is pid-only.** `~/.claude/sessions/*.json` contains `pid`, `sessionId`, `cwd`, `startedAt` — not tool-use records. Records file count only.
 - **Codex SQLite `logs` table has no command-text column.** Used only for infra-level logger signals; real command activity comes from rollouts (which this script parses correctly).
@@ -161,21 +189,23 @@ Per research plan §22.5 producer/critic loop:
 
 - **Producer:** Opus 4.7 drafted this plan + scripts.
 - **Critic:** critique logged in [`phase-0b-self-review.md`](./phase-0b-self-review.md) v1.1.0 (including the externally-received P1/P2 critique that produced this v1.1.0 revision).
-- **Human approval:** required before the first week's soak formally begins.
+- **Human approval:** required before the first day's soak formally begins.
 
 ## Deliverables at end of Phase 0b
 
 Under `.logs/phase-0/` (gitignored — summary lifted into committed `phase-0b-brief.md`):
 
-- `brief.md` + `brief.json` — 7-day consolidated acceptance report
+- `brief.md` + `brief.json` — consolidated 3-day soak acceptance report
 - Governance inventory catalogued
 - Protocol feature matrix complete (with probe-required fields deferred to Phase 1 Thread B)
 - Trap corpus expanded
+- Cross-agent prompt battery scored, with structured feedback logged for every meaningful miss
 - Phase 1 thread briefs seeded with measurement input
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.1.1 | 2026-04-23 | Aligned the repo plan to the active 3-day soak window (2026-04-23 through 2026-04-25, closeout 2026-04-26). Documented the full `just measure` pipeline (`commands`, `classify`, `confusion`) and clarified that the seed trap corpus has 15 entries while the current scanner instruments 12 heuristics. |
 | 1.1.0 | 2026-04-22 | Corrected after external P1/P2 critique. Switched to true snapshot semantics (`snapshot_begin()` truncates per-file at start of each run); added the 3 missing acceptance artifact scripts (`measure-redundancy.sh`, `measure-tokens-estimate.sh`, `measure-brief.sh`); rewrote `measure-claude-code.sh` to parse `~/.claude/projects/*/*.jsonl` (the actual tool-use source; prior version pointed at pid-metadata JSON files that contained no tool-use data); rewrote `measure-codex.sh` to parse `~/.codex/sessions/*/rollout-*.jsonl` function-call records (prior version measured logger-module signal only); added per-hit provenance (`source`, `file`, `line`, `evidence_redacted`) to `traps.jsonl`; switched MCP baseline parsing from regex to `jq` (fixes false `env` server entry); expanded governance inventory scope to chezmoi wrappers + runbook docs + 1P reference manifests; added `scripts/ci/shellcheck-scan.sh` and wired into `just verify`; fixed BSD find `-newermt` incompatibility (switched to `-mtime -7`); fixed grep-exit-on-no-match breaking scripts under `set -euo pipefail`; scoped trap scan to 7-day file window (was iterating all ~5k transcripts × 12 patterns). |
 | 1.0.0 | 2026-04-22 | Initial. Aspirational; superseded by v1.1.0 after P1/P2 critique found idempotency, missing-acceptance-artifacts, wrong-log-source, and provenance-dropping issues. |

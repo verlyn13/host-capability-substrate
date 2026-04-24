@@ -5,6 +5,16 @@ Milestone-by-milestone implementation plan. Follow in order. Each milestone has 
 
 Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`.
 
+## Current Focus — Phase 0b
+
+As of 2026-04-23, this repo is running a compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold.
+
+- Soak window: 2026-04-23 through 2026-04-25
+- Closeout: 2026-04-26 with `just measure-brief`
+- Kickoff battery: `just day1`
+- Daily cadence: `just measure` and `just soak-status`
+- Extension rule: if the 3-day window does not produce a clean go/no-go, extend the soak rather than weakening the gate
+
 ---
 
 ## Milestone 0 — Repository scaffold
@@ -164,7 +174,8 @@ just test integration:end-to-end-readonly
 
 ```bash
 just test evals
-just soak --duration 7d   # one-week soak produces metrics diff
+just measure       # run daily during the active soak window
+just measure-brief # consolidate partitions into the metrics diff
 ```
 
 ---

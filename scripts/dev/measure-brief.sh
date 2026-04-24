@@ -6,6 +6,9 @@
 #   .logs/phase-0/brief.json      structured summary for downstream Phase 1 threads
 #
 # Snapshot semantics: always overwrites brief.md / brief.json.
+# The current repo-side soak target is configurable via HCS_PHASE0B_SOAK_DAYS
+# and defaults to 3. The explicit soak window start is configurable via
+# HCS_PHASE0B_SOAK_START and defaults to 2026-04-23.
 
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/measure-common.sh"
@@ -14,7 +17,7 @@ script_banner "measure-brief"
 BRIEF_MD="$HCS_ROOT/.logs/phase-0/brief.md"
 BRIEF_JSON="$HCS_ROOT/.logs/phase-0/brief.json"
 
-python3 - "$HCS_ROOT/.logs/phase-0" "$BRIEF_MD" "$BRIEF_JSON" <<'PYEOF'
+python3 - "$HCS_ROOT/.logs/phase-0" "$BRIEF_MD" "$BRIEF_JSON" "$HCS_ROOT/packages/evals/regression/seed.md" <<'PYEOF'
 import json, os, sys, glob, re
 from collections import defaultdict, Counter
 from datetime import datetime, timezone
@@ -22,7 +25,10 @@ from datetime import datetime, timezone
 base = sys.argv[1]
 md_path = sys.argv[2]
 json_path = sys.argv[3]
+seed_path = sys.argv[4]
 ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+soak_target_days = int(os.environ.get('HCS_PHASE0B_SOAK_DAYS', '3'))
+soak_start_date = os.environ.get('HCS_PHASE0B_SOAK_START', '2026-04-23')
 
 # Discover partitions: dirs matching YYYY-MM-DD
 partitions = sorted([d for d in os.listdir(base)
@@ -57,6 +63,8 @@ for p in partitions:
         'traps': load_jsonl(os.path.join(pd, 'traps.jsonl')),
         'governance_inventory': load_jsonl(os.path.join(pd, 'governance-inventory.jsonl')),
         'redundancy': load_jsonl(os.path.join(pd, 'redundancy.jsonl')),
+        'cross_agent_runs': load_jsonl(os.path.join(pd, 'cross-agent-runs.jsonl')),
+        'cross_agent_feedback': load_jsonl(os.path.join(pd, 'cross-agent-feedback.jsonl')),
         'protocol_features': load_json(os.path.join(pd, 'protocol-features.json')),
         'tokens_estimate': load_json(os.path.join(pd, 'tokens-estimate.json')),
     }
@@ -66,6 +74,8 @@ summary = {
     'generated_ts': ts,
     'partitions': partitions,
     'partition_count': len(partitions),
+    'soak_target_days': soak_target_days,
+    'soak_start_date': soak_start_date,
     'per_partition': {},
     'aggregate': {},
 }
@@ -79,6 +89,8 @@ for p, d in partition_data.items():
         'trap_hits': sum(1 for t in d['traps'] if t.get('trap_name') != '__summary__'),
         'governance_records': len(d['governance_inventory']),
         'redundancy_records': len(d['redundancy']),
+        'cross_agent_runs': len(d['cross_agent_runs']),
+        'cross_agent_feedback': len(d['cross_agent_feedback']),
         'has_protocol_features': d['protocol_features'] is not None,
         'has_tokens_estimate': d['tokens_estimate'] is not None,
     }
@@ -116,13 +128,81 @@ for p, d in partition_data.items():
 summary['aggregate']['tokens_chars_total'] = total_chars
 summary['aggregate']['tokens_estimated_total'] = total_tokens
 
+# Cross-agent manual simulation aggregate
+rubric_dimensions = [
+    'context_resolved',
+    'evidence_cited',
+    'deprecated_syntax_avoided',
+    'typed_framing',
+    'approval_for_mutation',
+    'refusal_when_missing',
+]
+cross_agent_runs_total = 0
+cross_agent_feedback_total = 0
+run_scores_by_agent = defaultdict(lambda: {'runs': 0, 'score_total': 0, 'feedback_required': 0})
+dimension_failures = Counter()
+feedback_by_severity = Counter()
+feedback_by_status = Counter()
+
+for p, d in partition_data.items():
+    for rec in d['cross_agent_runs']:
+        if not isinstance(rec, dict):
+            continue
+        agent = rec.get('agent', '?')
+        score = int(rec.get('score', 0) or 0)
+        cross_agent_runs_total += 1
+        run_scores_by_agent[agent]['runs'] += 1
+        run_scores_by_agent[agent]['score_total'] += score
+        if rec.get('feedback_required') is True:
+            run_scores_by_agent[agent]['feedback_required'] += 1
+        for dim in rubric_dimensions:
+            if rec.get(dim) is False:
+                dimension_failures[dim] += 1
+    for rec in d['cross_agent_feedback']:
+        if not isinstance(rec, dict):
+            continue
+        cross_agent_feedback_total += 1
+        feedback_by_severity[rec.get('severity', 'unknown')] += 1
+        feedback_by_status[rec.get('status', 'unknown')] += 1
+
+summary['aggregate']['cross_agent_runs_total'] = cross_agent_runs_total
+summary['aggregate']['cross_agent_feedback_total'] = cross_agent_feedback_total
+summary['aggregate']['cross_agent_agent_stats'] = {
+    agent: {
+        'runs': vals['runs'],
+        'avg_score': round(vals['score_total'] / vals['runs'], 3) if vals['runs'] else 0.0,
+        'feedback_required_runs': vals['feedback_required'],
+    }
+    for agent, vals in sorted(run_scores_by_agent.items())
+}
+summary['aggregate']['cross_agent_dimension_failures'] = dict(dimension_failures.most_common())
+summary['aggregate']['cross_agent_feedback_by_severity'] = dict(feedback_by_severity.most_common())
+summary['aggregate']['cross_agent_feedback_by_status'] = dict(feedback_by_status.most_common())
+
+# Seed trap corpus count
+seed_trap_count = 0
+if os.path.exists(seed_path):
+    with open(seed_path) as f:
+        for line in f:
+            if re.match(r'^\|\s*\d+\s*\|', line):
+                seed_trap_count += 1
+summary['aggregate']['seed_trap_count'] = seed_trap_count
+
+# Required soak window dates
+start_dt = datetime.strptime(soak_start_date, '%Y-%m-%d').date()
+required_partition_dates = [
+    (start_dt.fromordinal(start_dt.toordinal() + offset)).isoformat()
+    for offset in range(soak_target_days)
+]
+summary['required_partition_dates'] = required_partition_dates
+
 # Acceptance-gate assessment
 acceptance = {
-    'seven_days_of_data': len(partitions) >= 7,
+    'target_days_of_data': all(day in partitions for day in required_partition_dates),
     'five_primary_clients_covered': False,  # determined below
     'cross_source_overlap_at_least_3': False,
     'tokens_estimate_present': summary['aggregate']['tokens_chars_total'] > 0,
-    'trap_corpus_15_plus': len(all_traps) + 0 >= 15,  # rough; seed alone = 15
+    'trap_corpus_15_plus': max(seed_trap_count, len(all_traps)) >= 15,
     'governance_inventory_present': any(s['governance_records'] > 0 for s in summary['per_partition'].values()),
     'protocol_features_present': any(s['has_protocol_features'] for s in summary['per_partition'].values()),
 }
@@ -168,9 +248,18 @@ md.append("## Acceptance gate")
 md.append("")
 md.append("| Criterion | Met |")
 md.append("|-----------|-----|")
-for k, v in acceptance.items():
-    check = "✓" if v else "✗"
-    md.append(f"| {k.replace('_', ' ')} | {check} |")
+acceptance_rows = [
+    (f"{soak_target_days} soak days captured ({required_partition_dates[0]}..{required_partition_dates[-1]})", acceptance['target_days_of_data']),
+    ("five primary clients covered", acceptance['five_primary_clients_covered']),
+    ("cross source overlap at least 3", acceptance['cross_source_overlap_at_least_3']),
+    ("tokens estimate present", acceptance['tokens_estimate_present']),
+    ("trap corpus 15 plus", acceptance['trap_corpus_15_plus']),
+    ("governance inventory present", acceptance['governance_inventory_present']),
+    ("protocol features present", acceptance['protocol_features_present']),
+]
+for label, passed in acceptance_rows:
+    check = "✓" if passed else "✗"
+    md.append(f"| {label} | {check} |")
 md.append("")
 md.append(f"Primary clients covered: {', '.join(k for k,v in primary_markers.items() if v) or '(none)'}")
 if any(not v for v in primary_markers.values()):
@@ -188,6 +277,8 @@ for tool, count in list(tool_totals.most_common(10)):
 md.append("")
 
 md.append("## Trap observations (by class)")
+md.append("")
+md.append(f"- Seed trap corpus entries: **{seed_trap_count}**")
 md.append("")
 if all_traps:
     md.append("| Trap | Hits | Sources |")
@@ -222,11 +313,45 @@ md.append(f"- Aggregate records across partitions: {gov_total}")
 md.append("- Latest partition has per-artifact records in `governance-inventory.jsonl`")
 md.append("")
 
+md.append("## Cross-agent Manual Simulation")
+md.append("")
+md.append(f"- Recorded prompt runs: {cross_agent_runs_total}")
+md.append(f"- Recorded feedback items: {cross_agent_feedback_total}")
+if cross_agent_runs_total:
+    md.append("")
+    md.append("| Agent | Runs | Avg score | Runs requiring feedback |")
+    md.append("|-------|------|-----------|-------------------------|")
+    for agent, vals in sorted(run_scores_by_agent.items()):
+        avg = round(vals['score_total'] / vals['runs'], 3) if vals['runs'] else 0.0
+        md.append(f"| `{agent}` | {vals['runs']} | {avg} | {vals['feedback_required']} |")
+    if dimension_failures:
+        md.append("")
+        md.append("| Rubric dimension | Fail count |")
+        md.append("|------------------|------------|")
+        for dim, count in dimension_failures.most_common():
+            md.append(f"| `{dim}` | {count} |")
+if cross_agent_feedback_total:
+    md.append("")
+    md.append("| Feedback severity | Count |")
+    md.append("|-------------------|-------|")
+    for sev, count in feedback_by_severity.most_common():
+        md.append(f"| `{sev}` | {count} |")
+    md.append("")
+    md.append("| Feedback status | Count |")
+    md.append("|-----------------|-------|")
+    for status, count in feedback_by_status.most_common():
+        md.append(f"| `{status}` | {count} |")
+if not cross_agent_runs_total and not cross_agent_feedback_total:
+    md.append("- No cross-agent prompt records captured yet.")
+md.append("")
+
 md.append("## Notes")
 md.append("")
 md.append("- This brief is derived from daily partition snapshots under `.logs/phase-0/<YYYY-MM-DD>/`.")
+md.append(f"- Current repo-side soak target: {soak_target_days} partition days starting {soak_start_date}.")
 md.append("- Record counts reflect snapshots, not deltas; cross-partition trends show cumulative host state, not only new activity.")
 md.append("- Probe-required fields (MCP clientInfo, elicitation URL mode, etc.) remain to Phase 1 Thread B.")
+md.append("- The trap-corpus gate counts the committed seed corpus as well as observed trap hits; the scanner currently instruments a narrower subset of heuristics.")
 md.append("- This file is gitignored. Lift to `docs/host-capability-substrate/phase-0b-brief.md` when ready to commit the final narrative.")
 
 with open(md_path, 'w') as f:

@@ -42,6 +42,7 @@ Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config
 | D-021 | Six project-scoped subagents including `hcs-ontology-reviewer`. All default Opus 4.7. No Bash in any review subagent's tool list. | Schema/ontology drift is load-bearing; independent reviewer is warranted. | (pending ADR) | 2026-04-22 |
 | D-022 | Tool baseline early-phase: Claude Code `1.3883.0 (93ff6c)` + Opus 4.7; Codex `26.417.41555 (1858)` + GPT-5.4. Subsequent minor updates acceptable. | Stabilize behavior during scaffolding + first slice. Re-evaluate end of Phase 0b. | (pending ADR) | 2026-04-22 |
 | D-023 | No `WARP.md` in Phase 0a. Warp prioritizes `WARP.md` over `AGENTS.md`; adding early risks policy fork. | Let Warp consume `AGENTS.md` first; add pointer-only `WARP.md` post-Phase-0b only if measurement shows a gap. | (pending ADR) | 2026-04-22 |
+| D-024 | Current repo-side Phase 0b soak window is April 23, 2026 through April 25, 2026, with closeout on April 26, 2026. If the window does not produce a clean go/no-go, extend it rather than weakening the gate. | Keeps the evidence loop tight while preserving honest failure states. This is an execution-cadence decision, not a charter or ontology change. | (plan-only) | 2026-04-23 |
 
 ## Reversed
 

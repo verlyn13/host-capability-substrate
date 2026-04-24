@@ -6,7 +6,7 @@ HCS is infrastructure. It is the substrate on which every agent's actions compos
 
 ## Status
 
-Phase 0a — governance scaffold. No substrate code yet; this repo enforces its own architecture from commit 1.
+Phase 0b — 3-day measurement soak underway for April 23, 2026 through April 25, 2026. The governance scaffold is in place; kernel, adapters, and dashboard code are still intentionally unimplemented.
 
 ## Canonical governance
 
@@ -14,7 +14,7 @@ Authoritative documents live in [`system-config`](https://github.com/verlyn13/sy
 
 - Research plan — `docs/host-capability-substrate-research-plan.md` (v0.3.0+)
 - Implementation charter — `docs/host-capability-substrate/implementation-charter.md` (v1.1.0+) — copy vendored here at `docs/host-capability-substrate/implementation-charter.md`
-- Boundary decision — `docs/host-capability-substrate/0001-repo-boundary-decision.md` (v1.1.0+)
+- Boundary decision — in-repo pointer: `docs/host-capability-substrate/adr/0001-repo-boundary.md` (v1.1.0+; master lives in `system-config`)
 - Tooling surface matrix — `docs/host-capability-substrate/tooling-surface-matrix.md` (v1.0.0+) — copy vendored here
 - Live runtime policy — `policies/host-capability-substrate/` (**canonical; not in this repo**)
 
@@ -41,6 +41,9 @@ Subsequent minor updates acceptable. Re-evaluate at end of Phase 0b.
 ```bash
 mise install       # Node LTS, shellcheck, shfmt, just
 just verify        # lint + typecheck + tests + all boundary checks
+just day1          # kickoff battery for the current Phase 0b soak
+just measure       # daily partition capture during the soak window
+just measure-brief # consolidated soak readout
 ```
 
 ## Project contract

@@ -4,7 +4,7 @@ category: reference
 component: host_capability_substrate
 status: active
 version: 1.0.0
-last_updated: 2026-04-22
+last_updated: 2026-04-23
 tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration]
 priority: high
 ---
@@ -13,7 +13,7 @@ priority: high
 
 Authoritative reference for which config file belongs to which tool, what each tool can enforce vs observe, where skills and policy actually live, and what posture each surface must hold at Phase 0a / Phase 3 / Phase 4. Intended to prevent "where should this go?" drift.
 
-Parent decision: [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md) (v1.1.0+). Charter: [`implementation-charter.md`](./implementation-charter.md).
+Parent decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+). Charter: [`implementation-charter.md`](./implementation-charter.md).
 
 ## Tool baseline (binding during early phases)
 
@@ -197,11 +197,11 @@ When adding X to the repo, route by type:
 
 ### Internal
 
-- [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md) (v1.1.0+)
+- [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+)
 - [`implementation-charter.md`](./implementation-charter.md) (v1.1.0+)
-- [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md)
-- [`../mcp-config.md`](../mcp-config.md)
-- [`../project-conventions.md`](../project-conventions.md)
+- `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`
+- `~/Organizations/jefahnierocks/system-config/docs/mcp-config.md`
+- `~/Organizations/jefahnierocks/system-config/docs/project-conventions.md`
 
 ### External
 

@@ -44,7 +44,9 @@ done
 file_count=$(wc -l < "$file_list_tmp" | tr -d ' ')
 echo "  scoping: $file_count file(s) within 7d window"
 
-# Trap patterns (Phase 0a seed + 4 new from self-review C-6).
+# Trap patterns currently instrumented for the Phase 0b scanner.
+# This is narrower than the 15-entry seed corpus in
+# packages/evals/regression/seed.md; scanner expansion is follow-up work.
 # key => pattern
 declare -A trap_patterns=(
   [launchctl-deprecated-verbs]='launchctl[[:space:]]+(load|unload)[[:space:]]'

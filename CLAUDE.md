@@ -72,4 +72,4 @@ Parent research plan (in system-config): `~/Organizations/jefahnierocks/system-c
 
 Charter: `docs/host-capability-substrate/implementation-charter.md` (v1.1.0+).
 Tooling surface matrix: `docs/host-capability-substrate/tooling-surface-matrix.md`.
-Boundary decision: see system-config `docs/host-capability-substrate/0001-repo-boundary-decision.md` (v1.1.0+).
+Boundary decision: see `docs/host-capability-substrate/adr/0001-repo-boundary.md` in this repo (master document lives in system-config, v1.1.0+).

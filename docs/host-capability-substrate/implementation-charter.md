@@ -4,7 +4,7 @@ category: charter
 component: host_capability_substrate
 status: active
 version: 1.1.0
-last_updated: 2026-04-22
+last_updated: 2026-04-23
 tags: [substrate, kernel, adapters, ontology, policy, four-rings, non-import, skills, deployment-boundary]
 priority: critical
 ---
@@ -13,7 +13,7 @@ priority: critical
 
 Binding rule for everyone (human and agent) touching HCS. Citable from every PR. Violations block merge.
 
-Parent research plan: [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md). Boundary decision: [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md). Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md).
+Parent research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`. Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md). Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md).
 
 ## The four rings
 
@@ -137,11 +137,11 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 
 ## References
 
-- Research plan: [`../host-capability-substrate-research-plan.md`](../host-capability-substrate-research-plan.md) (v0.3.0+)
-- Boundary decision: [`0001-repo-boundary-decision.md`](./0001-repo-boundary-decision.md) (v1.1.0+)
+- Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+)
+- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+)
 - Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md) (v1.0.0+)
 - Target-repo templates: [`./templates/`](./templates/)
-- Existing governance precedents: [`../../policies/version-policy.md`](../../policies/version-policy.md), [`../../policies/opa/policy.rego`](../../policies/opa/policy.rego)
+- Existing governance precedents: `~/Organizations/jefahnierocks/system-config/policies/version-policy.md`, `~/Organizations/jefahnierocks/system-config/policies/opa/policy.rego`
 
 ## Change log
 
