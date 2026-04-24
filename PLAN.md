@@ -41,20 +41,26 @@ Three-wave plan approved 2026-04-23 after synthesis of two external substrate-co
 
 **W4 — post-closeout Phase 1 prep.**
 
-Direct-test queue (combined from report 1 §14 + report 2 verification; blocks work that depends on each outcome):
+The shell-environment research v2.0.0 (`docs/host-capability-substrate/shell-environment-research.md`) lays out a formal 10-working-day research program (2026-04-27 → 2026-05-08, ~55–60 hours) using prompt IDs P01–P13. The existing direct-test queue items below cross-reference those prompt IDs; several are resolved at the documentation level and reduce to confirmatory smoke tests.
 
-1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block.
-2. Codex app + CLI + IDE reuse the same MCP OAuth token (same `CODEX_HOME` → same Keychain key).
+Direct-test queue (combined from report 1 §14 + report 2 verification + shell research v2.0.0 P01–P13; blocks work that depends on each outcome):
+
+1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block. *(Related: shell research v2 **P01** — resolved at doc level; this is the operational migration step.)*
+2. Codex app + CLI + IDE reuse the same MCP OAuth token (same `CODEX_HOME` → same Keychain key). *(Shell research v2 **P01**: resolved at doc level — Keychain service `"Codex Auth"`, account `cli|<sha256(CODEX_HOME)[:16]>`. Smoke test only, 1h.)*
 3. Codex app honors project-scoped `.codex/config.toml` MCP definitions in trusted projects.
-4. Codex app launched from Spotlight does NOT inherit shell `GITHUB_PAT`.
-5. Claude Desktop uses OAuth-only; does NOT read `apiKeyHelper` or `ANTHROPIC_API_KEY`.
+4. Codex app launched from Spotlight does NOT inherit shell `GITHUB_PAT`. *(Shell research v2 **P02**: strongly inferred from launchd + issues #10695 / #13566; direct differential test on this host, 2h.)*
+5. Claude Desktop uses OAuth-only; does NOT read `apiKeyHelper` or `ANTHROPIC_API_KEY`. *(Shell research v2 **P05**: resolved at doc level via Anthropic authentication.md. Confirmatory smoke test only, 1h.)*
 6. Claude Code #18692 (resolved-secrets-into-`.mcp.json`) does NOT repro on 2.1.119.
-7. `shell_environment_policy.include_only` reliably exposes named var on Codex 0.124.0.
-8. Verify `apiKeyHelper` CLI-only scope statement against live Anthropic docs.
+7. `shell_environment_policy.include_only` reliably exposes named var on Codex 0.124.0. *(Shell research v2 **P04**: schema documented but cross-surface behavior undocumented; issue #3064 suggests divergence. Matrix test with env vectors, 10h.)*
+8. Verify `apiKeyHelper` CLI-only scope statement against live Anthropic docs. *(Shell research v2 §2.3 confirms at doc level.)*
 9. **Q-002**: our `[profiles.hcs-*]` consulted by which Codex surfaces?
-10. Codex app MCP startup happens before worktree setup scripts.
+10. Codex app MCP startup happens before worktree setup scripts. *(Shell research v2 **P03**: genuinely undocumented; marker-based timing test with synthetic repo, 8h.)*
+11. **NEW — P06**: Shell wrapper-log validation. Install `/usr/local/bin/hcs-shell-logger` that logs argv/flags/PPID/cwd then `exec`s `/bin/bash`; route each surface through it. Confirms Codex CLI = `bash -lc`, Claude fresh = `bash -c`, apiKeyHelper = `/bin/sh -c`. 4h.
+12. **NEW — P13**: Codex app sandbox boundary characterization (new `ExecutionContext` class). Inspect app bundle Info.plist + embedded sandbox profile + `codesign -d --entitlements -`; probe Keychain access, FS scope, network scope, env injection; cross-reference issue #10695. 4h.
+13. **NEW — P08**: Provenance snapshot — capture each surface's PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME value + provenance tags; commit as `packages/fixtures/provenance-snapshot-YYYY-MM-DD.json` golden data. 6h.
+14. **NEW — P09**: direnv + mise cross-surface visibility. Synthetic repo with `.envrc` `HCS_DIRENV_MARKER` + `.mise.toml [env] HCS_MISE_MARKER`. Test terminal-launched vs GUI-launched for each surface. 6h.
 
-Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, and the Phase 1 research plan):
+Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, ADR 0016/0017/0018, and the Phase 1 research plan):
 
 - If W4-1 succeeds: migrate all HTTP MCP servers with OAuth support off `bearer_token_env_var` patterns (per D-028).
 - Sparkle intervention F-08 (kernel RPC for typed per-section diagnostics) — permanent fix for `pipefail+head` class.
@@ -63,11 +69,42 @@ Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, 
 - `just verify-baseline` recipe — operationalizes charter inv. 14's "retest on upgrade" cadence.
 - Semantic tool-name mapping (Bash ↔ exec_command) — resolves the acceptance-gate "cross-source redundancy = 0" known limitation.
 - Remaining Sparkle follow-ups F-01/F-02/F-03/F-07/F-11/F-13.
-- **Ring-0 entity additions from ADR 0015 scope** (Milestone 1 20-entity list expands to ~26 or collapses some new entries into sub-types of existing entities; design choice deferred to ADR 0015 drafting): `RateLimitObservation` (specialization of `Evidence`), `RemoteMutationReceipt` (specialization of `Evidence`), `CredentialIssuanceReceipt` (new entity; distinct from `SecretReference` because it carries one-time-secret capture provenance), `ProviderObjectReference` (disambiguates provider-object-id from credential-secret; distinct from `SecretReference`), `PathCoverage` (helper schema for Cloudflare-like wildcard-scope warnings), `McpAuthorizationSurface` (typed MCP OAuth discovery: protected-resource metadata URL, authorization-server metadata URL, issuer, audience, scopes, token-storage authority, PKCE support, redirect-URI constraints).
-- **Trap scaffold expansion for #19–#25** (one file each under `packages/evals/regression/`, matching the #16/#18 scaffold format). Scaffolding requires live-provider fixtures (Cloudflare Access + `op item create` + HTTP MCP OAuth handshake) that are Phase 1 access work.
-- **Cloudflare Stage 3a eval fixture** — `cloudflare-access-stage3a-rate-limit-and-secret-capture.fixture.md` encoding the real trajectory under `packages/evals/fixtures/`. Seed trajectory documented in the Cloudflare lessons brief; turning it into a scoreable fixture is Phase 1 work.
-- **Charter v1.3.0 candidate invariant 16** — "external-control-plane evidence-first": operations against remote control planes must produce typed evidence receipts (RateLimitObservation, RemoteMutationReceipt, CredentialIssuanceReceipt) and distinguish ProviderObjectReference from SecretReference. Queue-only; v1.2.0 remains the active charter-amendment draft through W3.
-- **Principal-level `ResourceBudget` rollup** — the Cloudflare 5-minute/1200-request limit is a user-level budget cumulative across dashboard/API-key/API-token surfaces, not per-agent. A principal-scoped `ResourceBudget` abstraction is required to gate multi-agent contention against the same user quota. Design work in ADR 0015; implementation queued for the execute-lane milestone.
+- **Ring-0 entity additions from ADR 0015 scope** (Milestone 1 20-entity list expands; design choice of new-entity vs. Evidence-subtype deferred to ADR 0015 drafting): `RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `ProviderObjectReference`, `PathCoverage`, `McpAuthorizationSurface`.
+- **Ring-0 entity additions from shell research v2 (ADRs 0016/0017)**: `ExecutionContext` (per-surface type with sub-classes `codex_cli`, `codex_app_sandboxed`, `codex_ide_ext`, `claude_code_cli`, `claude_desktop`, `claude_code_ide_ext`, `zed_external_agent`, `warp_terminal`; each with shell+invocation+startup-files+sandbox+env-inheritance facets per §II table). `EnvProvenance` (adopts devcontainer dichotomy: baked/runtime-applied/probed; carries provenance tags from the 14-source enum in §II). `CredentialSource` (10 classes listed in §II including `macos_keychain`, `long_lived_setup_token`, `api_key_helper`, `1password`, `infisical`, `devenv_secretspec`). `StartupPhase` (14-phase timeline from `boot` → `tool_call_subprocess` per §II.StartupPhase; enables temporal reasoning about env availability). These partially overlap ADR 0015's entities — reconciliation happens in the ADR 0016 drafting (shell research v2 §VIII).
+- **Trap scaffold expansion for #19–#30** (12 traps total: #19–#25 from Cloudflare brief + #26–#30 from shell research v2). One file each under `packages/evals/regression/`, matching the #16/#18 scaffold format. Scaffolding requires live-provider/surface fixtures available in Phase 1 test harness.
+- **Cloudflare Stage 3a eval fixture** — `cloudflare-access-stage3a-rate-limit-and-secret-capture.fixture.md` encoding the real trajectory. Seed trajectory in the Cloudflare lessons brief.
+- **`hcs env-inspect` prototype** (shell research v2 §V.P12, 10h). Modes: `names_only | existence_check | classified | hashed`. Classifiers report "present + looks like JWT" / "present + looks like AWS key" / "present + non-secret shape" without echoing values. Includes regression trap for the `printenv | grep` anti-pattern. First-class operational surface for trap #18 defense-in-depth (text rule + hook + operation-shape).
+- **Provenance snapshot data** (shell research v2 §V.P08, 6h) — committed as `packages/fixtures/provenance-snapshot-YYYY-MM-DD.json` golden regression fixture; re-snapshot on tool version changes per charter inv. 14.
+- **Charter v1.3.0 candidate invariant 16** — "external-control-plane evidence-first": operations against remote control planes must produce typed evidence receipts (RateLimitObservation, RemoteMutationReceipt, CredentialIssuanceReceipt) and distinguish ProviderObjectReference from SecretReference. Queue-only; v1.2.0 remains active through W3.
+- **Charter v1.3.0 candidate invariant 17** — "execution-context is declared, not inferred": every operation carries a resolved `ExecutionContext.surface` reference; agents must not assume a subprocess inherits credentials, env, or sandbox scope from the parent context. Motivated by shell research v2 conclusions 1, 8, 9, 10; §VI.
+- **Principal-level `ResourceBudget` rollup** — the Cloudflare 5-minute/1200-request limit is a user-level budget cumulative across dashboard/API-key/API-token surfaces. Principal-scoped `ResourceBudget` abstraction queued in ADR 0015.
+
+### Phase 1 shell/environment research program (shell research v2.0.0, 2026-04-27 → 2026-05-08)
+
+Formal 10-working-day research program from `docs/host-capability-substrate/shell-environment-research.md` §IV. Secret-safe testing constraint throughout: existence-only checks, name-only capture, hashes, or classified/redacted — no raw secret values in transcripts. Grounded in trap #18 + NIST SP 800-92 + CWE-532/200 + OWASP logging guidance.
+
+| Wave | Days | Prompts | Hours | Deliverable |
+|------|------|---------|-------|-------------|
+| Foundation | Mon 04-27 | — | 4 | Redaction-safe harness, synthetic repo, evidence template, redaction rules |
+| Wave 1 — resolved/near-resolved | 04-27 → 04-29 | P01, P05, P02, P13, P06 | 12 | Five memos + wrapper logs + sandbox characterization |
+| Wave 2 — genuinely open | 04-30 → 05-06 | P04, P03, P08, P09 | 30 | Cross-surface matrix + MCP/setup-script trace + provenance snapshot + direnv/mise matrix |
+| Wave 3 — design + prototype (parallel with Wave 2) | 04-29 → 05-06 | P11, P12 | 16–20 | LaunchAgent-env policy table + `hcs env-inspect` prototype |
+| Synthesis | 05-07 → 05-08 | — | 6 | ADR 0016 + 0017 + 0018 drafts, updated Ring-0 schemas, regression trap scaffolds #26–#30 |
+
+**ADR candidates from synthesis (scoped by shell research v2 §VIII):**
+
+- **ADR 0016 — Shell/environment ownership boundaries.** Policy conclusions 1–11 from shell research v2 §VI. Codifies: shell-exported secrets as CLI convenience only, prefer OAuth+Keychain or long-lived setup-token over env inheritance, project config vs shell/bootstrap config separation, no shell-persistence assumption between agent commands, explicit shell ownership for helper scripts, adopt Codex `shell_environment_policy` vocabulary for operator layer, adopt devcontainer `containerEnv`/`remoteEnv`/`userEnvProbe` for typing layer, `CLAUDE_ENV_FILE` as best-effort not durable, preserve subagent isolation as a security feature.
+- **ADR 0017 — Codex app as distinct ExecutionContext.** Incorporates P13 sandbox characterization. Models Codex app's Seatbelt boundary as a strict-sandbox sub-class of `ExecutionContext` with its own capability matrix (Keychain access = false, shell-env inheritance = launchd-user-session-only, env injection = none). Blocks "Codex is Codex" mental model; makes the app/CLI divergence first-class.
+- **ADR 0018 — Long-lived-token vs OAuth credential preference.** Reflects Anthropic's 2025–2026 removal of third-party OAuth support. Recommends `claude setup-token`-style 365-day tokens + API keys + 1Password service accounts over pure-subscription OAuth for HCS-integrated tooling. Subscription OAuth becomes a shrinking surface HCS must not architect around.
+
+**Remaining unknowns** (shell research v2 §VII — upstream questions, not blocking Phase 1):
+
+- `apiKeyHelper` Windows behavior (PowerShell vs cmd inconsistency).
+- `CLAUDE_ENV_FILE` path uniqueness across parallel Claude Code sessions.
+- Whether Codex `shell_snapshot` captures credential-shaped env vars under the default exclude filter.
+- Whether `mise activate` runs in a non-TTY ACP session (Zed → Claude Agent).
+- Whether Codex app Seatbelt profile is strictly tighter than CLI's.
+- Claude Desktop Keychain service name vs CLI's `"Claude Code-credentials"`.
 
 Discipline for W2–W3: no changes to `classify.py`, `.claude/hooks/`, `just measure` collectors, Codex profiles, `tiers.yaml`, or charter-on-main during the soak window (2026-04-24 and 2026-04-25). Draft-in-branch is permitted; merges land on 2026-04-26 in the ordered sequence above.
 
