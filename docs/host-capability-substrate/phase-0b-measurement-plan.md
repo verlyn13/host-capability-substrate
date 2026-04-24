@@ -3,9 +3,9 @@ title: HCS Phase 0b — Measurement Workplan
 category: plan
 component: host_capability_substrate
 status: active
-version: 1.1.1
+version: 1.2.0
 last_updated: 2026-04-23
-tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency]
+tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency, supplementary-rubric, guidance-load]
 priority: high
 ---
 
@@ -16,6 +16,38 @@ Quantifies the economic and governance baseline before any substrate code ships.
 Parent: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+) §6 Phase 0b, §22.11.
 Charter: [`implementation-charter.md`](./implementation-charter.md) v1.1.0+.
 Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) v1.1.0+.
+
+## v1.2.0 revision note
+
+v1.2.0 adds three supplementary measurement surfaces on top of v1.1.1 without
+modifying the existing collectors or the primary acceptance gate. All three
+are post-hoc analyses that read raw cross-agent transcripts already staged in
+`.logs/phase-0/<partition>/raw/cross-agent/` and are safe to run during an
+active soak without contaminating captured data:
+
+1. **Extended (supplementary) rubric** (`measure-extended-rubric.sh` →
+   `cross-agent-runs-extended.jsonl`). Heuristic scoring on three additional
+   dimensions — `derivability_check`, `mutation_snapshot_intent`,
+   `upstream_spec_provenance`. Uses null/applicable gating so the pass rate
+   is computed only over dimensions the transcript triggered. Supplementary,
+   not a replacement for the six-dim primary rubric.
+2. **Guidance-load classification** (`measure-guidance-load.sh` →
+   `cross-agent-guidance-load.jsonl`). Textual-reference extractor over raw
+   transcripts, cross-joined with `cross-agent-runs.jsonl`, producing a
+   three-way split (`loaded` / `loaded_behavior_divergent` / `unread`).
+   Resolves the v1.1.1 acceptance ambiguity "Claude Code + Codex both load
+   expected guidance → mixed".
+3. **Known-limitations metadata for traps**
+   (`packages/evals/regression/trap-known-limitations.yaml`). Annotates the
+   brief's Trap observations table so raw hit counts from known-lossy
+   heuristics (`shell-mode-confusion-login` FP-heavy; `brew-cask-escalation-missed`
+   hard-capped at 50) are not read as true incident counts.
+
+`measure-brief.sh` invokes the first two as pre-aggregation steps and reads
+the third to annotate the trap table. Canonical session selection is driven
+by `raw/source-manifest.jsonl` with `VARIANT_PREFERENCE` = (rollout-copy,
+repo-root-copy, export-home, export-tmp) so duplicates across export variants
+collapse to exactly one record per (agent, prompt_id).
 
 ## v1.1.1 revision note
 
@@ -92,7 +124,9 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 | `measure-classify.sh` | `classify.jsonl` | Post-hoc classification of extracted commands via `classify.py` |
 | `measure-confusion.sh` | `confusion-matrix.json` | Honest Phase 0b `source × classified_class` aggregate plus unknown/forbidden highlights |
 | `measure-partition-summary.sh` | (stdout) | Human-readable summary of today's partition |
-| `measure-brief.sh` | `.logs/phase-0/brief.md`, `.logs/phase-0/brief.json` | **Consolidates all partitions** into acceptance-gate table + trap aggregate + top-tools + redundancy summary + tokens total |
+| `measure-brief.sh` | `.logs/phase-0/brief.md`, `.logs/phase-0/brief.json` | **Consolidates all partitions** into acceptance-gate table + trap aggregate + top-tools + redundancy summary + tokens total + extended-rubric supplementary + guidance-load classification + hook-decision attribution. Invokes `measure-extended-rubric.sh` and `measure-guidance-load.sh` as pre-aggregation steps. |
+| `measure-extended-rubric.sh` (v1.2.0) | `cross-agent-runs-extended.jsonl` (per partition) | Post-hoc heuristic scoring on 3 supplementary dims (`derivability_check`, `mutation_snapshot_intent`, `upstream_spec_provenance`). Manifest-driven canonical-session selection; null/applicable gating. |
+| `measure-guidance-load.sh` (v1.2.0) | `cross-agent-guidance-load.jsonl` (per partition) | Textual-reference extractor over raw transcripts; three-way classification (`loaded` / `loaded_behavior_divergent` / `unread`) cross-joined with `cross-agent-runs.jsonl`. |
 | `record-cross-agent-run.sh` | `cross-agent-runs.jsonl` | Manual prompt-battery scoring record, one row per `(prompt, agent)` run |
 | `record-cross-agent-feedback.sh` | `cross-agent-feedback.jsonl` | Structured feedback items opened from cross-agent prompt misses |
 
@@ -125,6 +159,8 @@ Per-run partition: `.logs/phase-0/<YYYY-MM-DD>/`
 | `confusion-matrix.json` | aggregate JSON | `source × classified_class`, unknown-first-token clusters, overblock/parse-error gates |
 | `cross-agent-runs.jsonl` | `{ts, schema_version, agent, prompt_id, ..., score, feedback_required}` | manual prompt battery scoring rows |
 | `cross-agent-feedback.jsonl` | `{ts, schema_version, feedback_id, agent, prompt_id, severity, ...}` | manual feedback rows opened from prompt misses |
+| `cross-agent-runs-extended.jsonl` | `{ts, schema_version, agent, prompt_id, session_ref, derivability_check, mutation_snapshot_intent, upstream_spec_provenance, applicable_dims[], supplementary_score, supplementary_score_max, evidence[]}` | heuristic supplementary-rubric per session (v1.2.0+) |
+| `cross-agent-guidance-load.jsonl` | `{ts, schema_version, agent, prompt_id, session_ref, references[], references_by_type, reference_count, classification, paired_run?}` | guidance-load classification per session (v1.2.0+) |
 
 Consolidated brief (at `.logs/phase-0/brief.md` + `brief.json`):
 - acceptance-gate table
@@ -206,6 +242,7 @@ Under `.logs/phase-0/` (gitignored — summary lifted into committed `phase-0b-b
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.0 | 2026-04-23 | Added three post-hoc supplementary surfaces (all measurement-safe during an active soak): (1) `measure-extended-rubric.sh` emits `cross-agent-runs-extended.jsonl` with heuristic scoring on `derivability_check`, `mutation_snapshot_intent`, `upstream_spec_provenance` using null/applicable gating; (2) `measure-guidance-load.sh` emits `cross-agent-guidance-load.jsonl` with three-way classification (`loaded` / `loaded_behavior_divergent` / `unread`) cross-joined with `cross-agent-runs.jsonl`; (3) `packages/evals/regression/trap-known-limitations.yaml` annotates trap hits with known false-positive and cap semantics. `measure-brief.sh` renders Extended rubric, Guidance-load classification, and Hook-decision attribution sections, annotates the Trap table from the known-limitations yaml, and invokes the two new scripts as pre-aggregation steps. Canonical-session selection is driven by `raw/source-manifest.jsonl` with variant preference (`rollout-copy` > `repo-root-copy` > `export-home` > `export-tmp`) so session duplicates collapse to exactly one record per `(agent, prompt_id)`. Seed-trap corpus bumped from 15 to 17 (`ignored-but-load-bearing-deletion`, `harness-config-boolean-type`). |
 | 1.1.1 | 2026-04-23 | Aligned the repo plan to the active 3-day soak window (2026-04-23 through 2026-04-25, closeout 2026-04-26). Documented the full `just measure` pipeline (`commands`, `classify`, `confusion`) and clarified that the seed trap corpus has 15 entries while the current scanner instruments 12 heuristics. |
 | 1.1.0 | 2026-04-22 | Corrected after external P1/P2 critique. Switched to true snapshot semantics (`snapshot_begin()` truncates per-file at start of each run); added the 3 missing acceptance artifact scripts (`measure-redundancy.sh`, `measure-tokens-estimate.sh`, `measure-brief.sh`); rewrote `measure-claude-code.sh` to parse `~/.claude/projects/*/*.jsonl` (the actual tool-use source; prior version pointed at pid-metadata JSON files that contained no tool-use data); rewrote `measure-codex.sh` to parse `~/.codex/sessions/*/rollout-*.jsonl` function-call records (prior version measured logger-module signal only); added per-hit provenance (`source`, `file`, `line`, `evidence_redacted`) to `traps.jsonl`; switched MCP baseline parsing from regex to `jq` (fixes false `env` server entry); expanded governance inventory scope to chezmoi wrappers + runbook docs + 1P reference manifests; added `scripts/ci/shellcheck-scan.sh` and wired into `just verify`; fixed BSD find `-newermt` incompatibility (switched to `-mtime -7`); fixed grep-exit-on-no-match breaking scripts under `set -euo pipefail`; scoped trap scan to 7-day file window (was iterating all ~5k transcripts × 12 patterns). |
 | 1.0.0 | 2026-04-22 | Initial. Aspirational; superseded by v1.1.0 after P1/P2 critique found idempotency, missing-acceptance-artifacts, wrong-log-source, and provenance-dropping issues. |

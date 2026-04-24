@@ -1,0 +1,34 @@
+---
+# Known-limitations metadata for the measurement-side trap scanner.
+#
+# Read by scripts/dev/measure-brief.sh to annotate the Trap observations
+# table in the consolidated brief. Does NOT affect the scanner itself;
+# these are labels on the interpretation of observed hit counts.
+#
+# Add an entry only when a trap heuristic has a documented accuracy caveat
+# that the brief reader must know to avoid over-reading the raw count.
+# Remove the entry when the underlying heuristic is refined enough that
+# the caveat no longer applies.
+#
+# Schema:
+#   traps.<trap-name>.note: string — one-line human-readable caveat
+#   traps.<trap-name>.hit_count_interpretation: string — enum:
+#     - "overstates_real"   (raw count is higher than true incidents)
+#     - "understates_real"  (raw count is lower than true incidents; e.g., capped)
+#     - "unclear"           (direction unknown)
+#   traps.<trap-name>.recommended_action: string — follow-up for the next cycle
+#   traps.<trap-name>.cap: int — optional; scanner cap applied to hits
+
+schema_version: 1
+
+traps:
+  shell-mode-confusion-login:
+    note: "Pattern matches routine `bash -lc` agent invocations; not all hits are real shell-mode confusion."
+    hit_count_interpretation: "overstates_real"
+    recommended_action: "Refine pattern or rename trap post-closeout (Phase 1 scanner-coverage catch-up)."
+
+  brew-cask-escalation-missed:
+    note: "Scanner caps hits per trap at 50; true incident count may exceed recorded value."
+    hit_count_interpretation: "understates_real"
+    recommended_action: "Raise or remove cap post-closeout if useful; otherwise document the cap as intentional throttle."
+    cap: 50

@@ -14,10 +14,17 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/measure-common.sh"
 script_banner "measure-brief"
 
+# Pre-aggregation: refresh supplementary-rubric and guidance-load analyses
+# across all partitions before rolling up. These scripts are read-only on
+# raw transcripts and snapshot-overwrite their per-partition outputs.
+bash "$(dirname "${BASH_SOURCE[0]}")/measure-extended-rubric.sh"
+bash "$(dirname "${BASH_SOURCE[0]}")/measure-guidance-load.sh"
+
 BRIEF_MD="$HCS_ROOT/.logs/phase-0/brief.md"
 BRIEF_JSON="$HCS_ROOT/.logs/phase-0/brief.json"
+KNOWN_LIMITS_YAML="$HCS_ROOT/packages/evals/regression/trap-known-limitations.yaml"
 
-python3 - "$HCS_ROOT/.logs/phase-0" "$BRIEF_MD" "$BRIEF_JSON" "$HCS_ROOT/packages/evals/regression/seed.md" <<'PYEOF'
+python3 - "$HCS_ROOT/.logs/phase-0" "$BRIEF_MD" "$BRIEF_JSON" "$HCS_ROOT/packages/evals/regression/seed.md" "$KNOWN_LIMITS_YAML" <<'PYEOF'
 import json, os, sys, glob, re
 from collections import defaultdict, Counter
 from datetime import datetime, timezone
@@ -26,6 +33,7 @@ base = sys.argv[1]
 md_path = sys.argv[2]
 json_path = sys.argv[3]
 seed_path = sys.argv[4]
+known_limits_path = sys.argv[5] if len(sys.argv) > 5 else ''
 ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 soak_target_days = int(os.environ.get('HCS_PHASE0B_SOAK_DAYS', '3'))
 soak_start_date = os.environ.get('HCS_PHASE0B_SOAK_START', '2026-04-23')
@@ -64,10 +72,41 @@ for p in partitions:
         'governance_inventory': load_jsonl(os.path.join(pd, 'governance-inventory.jsonl')),
         'redundancy': load_jsonl(os.path.join(pd, 'redundancy.jsonl')),
         'cross_agent_runs': load_jsonl(os.path.join(pd, 'cross-agent-runs.jsonl')),
+        'cross_agent_runs_extended': load_jsonl(os.path.join(pd, 'cross-agent-runs-extended.jsonl')),
+        'cross_agent_guidance_load': load_jsonl(os.path.join(pd, 'cross-agent-guidance-load.jsonl')),
         'cross_agent_feedback': load_jsonl(os.path.join(pd, 'cross-agent-feedback.jsonl')),
+        'hook_decisions': load_jsonl(os.path.join(pd, 'hook-decisions.jsonl')),
         'protocol_features': load_json(os.path.join(pd, 'protocol-features.json')),
         'tokens_estimate': load_json(os.path.join(pd, 'tokens-estimate.json')),
     }
+
+# Known-limitations metadata for traps (read-only YAML). Used to annotate
+# the Trap observations section so raw hit counts aren't over-read.
+known_limits = {}
+if known_limits_path and os.path.exists(known_limits_path):
+    try:
+        # Minimal YAML parser for this file's shape (top-level `traps:` dict of
+        # dicts with scalar values). Avoids adding a PyYAML dependency.
+        with open(known_limits_path) as f:
+            raw = f.read()
+        current_trap = None
+        for line in raw.splitlines():
+            if not line.strip() or line.lstrip().startswith('#'):
+                continue
+            m = re.match(r'^  ([a-z0-9_-]+):\s*$', line)
+            if m:
+                current_trap = m.group(1)
+                known_limits[current_trap] = {}
+                continue
+            m = re.match(r'^    ([a-z_]+):\s*(.*?)\s*$', line)
+            if m and current_trap:
+                key = m.group(1)
+                val = m.group(2).strip('"').strip("'")
+                if val.lstrip('-').isdigit():
+                    val = int(val)
+                known_limits[current_trap][key] = val
+    except Exception:
+        known_limits = {}
 
 # Build aggregates
 summary = {
@@ -179,6 +218,86 @@ summary['aggregate']['cross_agent_dimension_failures'] = dict(dimension_failures
 summary['aggregate']['cross_agent_feedback_by_severity'] = dict(feedback_by_severity.most_common())
 summary['aggregate']['cross_agent_feedback_by_status'] = dict(feedback_by_status.most_common())
 
+# Extended (supplementary) rubric aggregation
+extended_dims = ('derivability_check', 'mutation_snapshot_intent', 'upstream_spec_provenance')
+ext_totals = defaultdict(lambda: {'applicable': 0, 'true': 0, 'false': 0, 'null': 0})
+ext_by_agent = defaultdict(lambda: {'sessions': 0, 'supp_score': 0, 'supp_max': 0})
+ext_total_sessions = 0
+for p, d in partition_data.items():
+    for rec in d['cross_agent_runs_extended']:
+        if not isinstance(rec, dict):
+            continue
+        ext_total_sessions += 1
+        agent = rec.get('agent', '?')
+        ext_by_agent[agent]['sessions'] += 1
+        ext_by_agent[agent]['supp_score'] += int(rec.get('supplementary_score', 0) or 0)
+        ext_by_agent[agent]['supp_max'] += int(rec.get('supplementary_score_max', 0) or 0)
+        for dim in extended_dims:
+            val = rec.get(dim)
+            if val is True:
+                ext_totals[dim]['true'] += 1
+                ext_totals[dim]['applicable'] += 1
+            elif val is False:
+                ext_totals[dim]['false'] += 1
+                ext_totals[dim]['applicable'] += 1
+            else:
+                ext_totals[dim]['null'] += 1
+summary['aggregate']['extended_rubric_sessions'] = ext_total_sessions
+summary['aggregate']['extended_rubric_by_dim'] = {dim: dict(vals) for dim, vals in ext_totals.items()}
+summary['aggregate']['extended_rubric_by_agent'] = {
+    agent: {
+        'sessions': vals['sessions'],
+        'supplementary_score_total': vals['supp_score'],
+        'supplementary_score_max_total': vals['supp_max'],
+        'pass_rate': round(vals['supp_score'] / vals['supp_max'], 3) if vals['supp_max'] else None,
+    }
+    for agent, vals in sorted(ext_by_agent.items())
+}
+
+# Guidance-load classification aggregation
+gl_by_agent = defaultdict(lambda: Counter())
+gl_classification_total = Counter()
+gl_total_sessions = 0
+for p, d in partition_data.items():
+    for rec in d['cross_agent_guidance_load']:
+        if not isinstance(rec, dict):
+            continue
+        gl_total_sessions += 1
+        agent = rec.get('agent', '?')
+        cls = rec.get('classification', 'unknown')
+        gl_by_agent[agent][cls] += 1
+        gl_classification_total[cls] += 1
+summary['aggregate']['guidance_load_sessions'] = gl_total_sessions
+summary['aggregate']['guidance_load_totals'] = dict(gl_classification_total.most_common())
+summary['aggregate']['guidance_load_by_agent'] = {
+    agent: dict(cnt) for agent, cnt in sorted(gl_by_agent.items())
+}
+
+# Hook-decision attribution: session_id × classified_class. The Phase 0b hook
+# emits `{ts, hook_event, tool, session_id, cwd, command_redacted,
+#        classified_class, classified_reason, classified_first_token}`.
+hook_total = 0
+hook_by_session = Counter()
+hook_by_class = Counter()
+hook_by_tool = Counter()
+hook_session_class = defaultdict(Counter)
+for p, d in partition_data.items():
+    for rec in d['hook_decisions']:
+        if not isinstance(rec, dict):
+            continue
+        hook_total += 1
+        sid = rec.get('session_id') or rec.get('session_ref') or '?'
+        hook_by_session[sid] += 1
+        cls = rec.get('classified_class') or rec.get('decision') or rec.get('action') or '?'
+        hook_by_class[cls] += 1
+        tool = rec.get('tool') or '?'
+        hook_by_tool[tool] += 1
+        hook_session_class[sid][cls] += 1
+summary['aggregate']['hook_decisions_total'] = hook_total
+summary['aggregate']['hook_decisions_top_sessions'] = dict(hook_by_session.most_common(10))
+summary['aggregate']['hook_decisions_by_class'] = dict(hook_by_class.most_common())
+summary['aggregate']['hook_decisions_by_tool'] = dict(hook_by_tool.most_common(10))
+
 # Seed trap corpus count
 seed_trap_count = 0
 if os.path.exists(seed_path):
@@ -279,13 +398,30 @@ md.append("")
 md.append("## Trap observations (by class)")
 md.append("")
 md.append(f"- Seed trap corpus entries: **{seed_trap_count}**")
+if known_limits:
+    md.append(f"- Trap entries annotated with known-limitations metadata: **{len(known_limits)}**")
 md.append("")
 if all_traps:
-    md.append("| Trap | Hits | Sources |")
-    md.append("|------|------|---------|")
+    md.append("| Trap | Hits | Sources | Known limitation |")
+    md.append("|------|------|---------|------------------|")
     for name, count in all_traps.most_common():
         sources = ', '.join(f"{s} ({c})" for s, c in trap_source_counts[name].most_common())
-        md.append(f"| `{name}` | {count} | {sources} |")
+        lim_info = known_limits.get(name)
+        if lim_info:
+            interp = lim_info.get('hit_count_interpretation', '')
+            note = lim_info.get('note', '')
+            cap = lim_info.get('cap')
+            parts = []
+            if interp:
+                parts.append(f"*{interp}*")
+            if cap is not None:
+                parts.append(f"cap={cap}")
+            if note:
+                parts.append(note)
+            lim_cell = ' — '.join(parts)
+        else:
+            lim_cell = ''
+        md.append(f"| `{name}` | {count} | {sources} | {lim_cell} |")
 else:
     md.append("No trap hits observed across partitions.")
 md.append("")
@@ -343,6 +479,75 @@ if cross_agent_feedback_total:
         md.append(f"| `{status}` | {count} |")
 if not cross_agent_runs_total and not cross_agent_feedback_total:
     md.append("- No cross-agent prompt records captured yet.")
+md.append("")
+
+md.append("## Extended rubric (supplementary)")
+md.append("")
+md.append("Post-hoc heuristic scoring of three supplementary dimensions. Applicable-only scoring; `null` means the dimension was not triggered by the transcript and is excluded from pass-rate math.")
+md.append("")
+md.append(f"- Sessions scored: **{ext_total_sessions}**")
+md.append("")
+if ext_total_sessions:
+    md.append("| Dimension | Applicable | True | False | N/A (null) |")
+    md.append("|-----------|-----------:|-----:|------:|-----------:|")
+    for dim in extended_dims:
+        vals = ext_totals.get(dim, {'applicable': 0, 'true': 0, 'false': 0, 'null': 0})
+        md.append(f"| `{dim}` | {vals['applicable']} | {vals['true']} | {vals['false']} | {vals['null']} |")
+    md.append("")
+    md.append("| Agent | Sessions | Supp-score | Supp-max | Pass rate |")
+    md.append("|-------|---------:|-----------:|---------:|----------:|")
+    for agent, vals in summary['aggregate']['extended_rubric_by_agent'].items():
+        pr = vals['pass_rate']
+        pr_s = f"{pr:.3f}" if pr is not None else "—"
+        md.append(f"| `{agent}` | {vals['sessions']} | {vals['supplementary_score_total']} | {vals['supplementary_score_max_total']} | {pr_s} |")
+else:
+    md.append("_No extended-rubric records yet. Run `scripts/dev/measure-extended-rubric.sh` once raw cross-agent transcripts are staged._")
+md.append("")
+
+md.append("## Guidance-load classification")
+md.append("")
+md.append("Textual-reference extractor over raw transcripts, cross-joined with `cross-agent-runs.jsonl`. Resolves the \"mixed — did the agent read AGENTS.md?\" ambiguity by splitting *didn't read* from *read and behavior diverged*.")
+md.append("")
+md.append(f"- Sessions classified: **{gl_total_sessions}**")
+md.append("")
+if gl_total_sessions:
+    md.append("| Classification | Sessions |")
+    md.append("|----------------|---------:|")
+    for cls, count in gl_classification_total.most_common():
+        md.append(f"| `{cls}` | {count} |")
+    md.append("")
+    md.append("| Agent | loaded | loaded_behavior_divergent | unread | loaded_no_paired_run |")
+    md.append("|-------|-------:|--------------------------:|-------:|---------------------:|")
+    for agent in sorted(gl_by_agent.keys()):
+        cnt = gl_by_agent[agent]
+        md.append(f"| `{agent}` | {cnt.get('loaded', 0)} | {cnt.get('loaded_behavior_divergent', 0)} | {cnt.get('unread', 0)} | {cnt.get('loaded_no_paired_run', 0)} |")
+else:
+    md.append("_No guidance-load records yet. Run `scripts/dev/measure-guidance-load.sh` once raw cross-agent transcripts are staged._")
+md.append("")
+
+md.append("## Hook-decision attribution")
+md.append("")
+md.append(f"- Recorded hook decisions (aggregate across partitions): **{hook_total}**")
+md.append("- Phase 0b hook is log-only / always-allow; `classified_class` is the advisory decision emitted per invocation.")
+md.append("")
+if hook_total:
+    md.append("| Classified class | Count |")
+    md.append("|------------------|------:|")
+    for cls, count in hook_by_class.most_common():
+        md.append(f"| `{cls}` | {count} |")
+    md.append("")
+    md.append("| Tool | Count |")
+    md.append("|------|------:|")
+    for tool, count in hook_by_tool.most_common(10):
+        md.append(f"| `{tool}` | {count} |")
+    md.append("")
+    md.append("| Top session_id | Decisions | Dominant class |")
+    md.append("|----------------|----------:|----------------|")
+    for sid, count in hook_by_session.most_common(10):
+        dominant = hook_session_class[sid].most_common(1)[0][0] if hook_session_class[sid] else '?'
+        md.append(f"| `{sid}` | {count} | `{dominant}` |")
+else:
+    md.append("_No `hook-decisions.jsonl` records found under any partition. The global Claude Code PreToolUse hook writes here when installed._")
 md.append("")
 
 md.append("## Notes")
