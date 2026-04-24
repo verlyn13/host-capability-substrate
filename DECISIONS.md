@@ -13,7 +13,7 @@ Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config
 
 | ID | Question | Owner | Due before | Status |
 |----|----------|-------|------------|--------|
-|    |          |       |            |        |
+| Q-001 | D-022's tool baseline uses version strings that do not match `--version` output on this host: `Claude Code 1.3883.0 (93ff6c)` vs live `2.1.119`; `Codex 26.417.41555 (1858)` vs live `0.124.0`. Are those internal build identifiers with a documented mapping to public semver, or stale baseline values? Resolution candidate **D-029 (post-closeout)**: amend D-022 to use public-semver strings matching `--version` output, and document any build-number mapping if we retain both. | user | closeout 2026-04-26 | Pending — verified live on 2026-04-23; external research report 1 also uses public-semver shape throughout. |
 
 ## Accepted
 
