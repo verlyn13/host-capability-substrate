@@ -47,7 +47,11 @@ active soak without contaminating captured data:
 the third to annotate the trap table. Canonical session selection is driven
 by `raw/source-manifest.jsonl` with `VARIANT_PREFERENCE` = (rollout-copy,
 repo-root-copy, export-home, export-tmp) so duplicates across export variants
-collapse to exactly one record per (agent, prompt_id).
+collapse to exactly one record per (agent, prompt_id). The manifest schema
+is documented separately in
+[`phase-0b-source-manifest-schema.md`](./phase-0b-source-manifest-schema.md);
+consumers also carry a filesystem-walk fallback that infers variants from
+path shape when the manifest is absent.
 
 ## v1.1.1 revision note
 

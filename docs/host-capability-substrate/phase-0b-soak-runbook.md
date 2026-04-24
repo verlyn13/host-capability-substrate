@@ -140,7 +140,7 @@ Every prompt session has a verbatim source artifact. Stage it under the day's pa
   external/<source>/                   # upstream findings docs referenced by this window
 ```
 
-Manifest schema is documented in the day-1 manifest itself. Each record carries `original_path`, `canonical_path`, `bytes`, `sha256`, and a `source_variant` tag. After staging, original copies at the repo root or in `~` may be deleted only if hash-equality with the canonical copy is verified by the manifest.
+Manifest schema is documented in [`phase-0b-source-manifest-schema.md`](./phase-0b-source-manifest-schema.md). Each record carries `original_path`, `canonical_path`, `bytes`, `sha256`, and a `source_variant` tag (`rollout-copy`, `repo-root-copy`, `export-home`, `export-tmp`, `already-in-place`, `system-config-copy`). After staging, original copies at the repo root or in `~` may be deleted only if hash-equality with the canonical copy is verified by the manifest.
 
 Codex prompt-id assignment follows the first `payload.type=="user_message"` event in each rollout. Claude Code prompt-id follows the original export filename text.
 
