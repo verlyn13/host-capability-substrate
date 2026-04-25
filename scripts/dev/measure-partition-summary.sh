@@ -21,7 +21,11 @@ if [ "$mode" = "--detail" ]; then
   for f in "$d"/*.jsonl; do
     [ -f "$f" ] && printf "  %-40s  %6s records\n" "$(basename "$f")" "$(wc -l < "$f" | tr -d ' ')"
   done
-  [ -f "$d/protocol-features.json" ] && printf "  %-40s  %s\n" "$(basename "$d/protocol-features.json")" "present"
+  if [ -f "$d/protocol-features.json" ]; then
+    printf "  %-40s  %s\n" "$(basename "$d/protocol-features.json")" "present"
+  fi
 else
   ls -l "$d"/ 2>/dev/null || true
 fi
+
+exit 0

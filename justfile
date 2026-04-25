@@ -206,7 +206,7 @@ soak-status:
 	@echo ""
 	@echo "=== supplementary outputs (v1.2.0) ==="
 	@for d in $(ls -1 .logs/phase-0/ 2>/dev/null | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | tail -3); do \
-		ext=$(wc -l < .logs/phase-0/$d/cross-agent-runs-extended.jsonl 2>/dev/null || echo 0); \
-		gl=$(wc -l < .logs/phase-0/$d/cross-agent-guidance-load.jsonl 2>/dev/null || echo 0); \
+		if [ -f .logs/phase-0/$d/cross-agent-runs-extended.jsonl ]; then ext=$(wc -l < .logs/phase-0/$d/cross-agent-runs-extended.jsonl); else ext=0; fi; \
+		if [ -f .logs/phase-0/$d/cross-agent-guidance-load.jsonl ]; then gl=$(wc -l < .logs/phase-0/$d/cross-agent-guidance-load.jsonl); else gl=0; fi; \
 		printf "  %s  extended=%s  guidance-load=%s\n" "$d" "$(echo $ext | tr -d ' ')" "$(echo $gl | tr -d ' ')"; \
 	done
