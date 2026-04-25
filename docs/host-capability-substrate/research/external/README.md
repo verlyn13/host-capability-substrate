@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.3.0
-last_updated: 2026-04-24
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, rate-limit, credential-broker, coordination, knowledge-store, rag]
+version: 1.4.0
+last_updated: 2026-04-25
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag]
 priority: medium
 ---
 
@@ -31,6 +31,7 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-23-substrate-config-research-v2.md` | 2026-04-23 | Architectural advisory: same topic scope, tighter evidence discipline, Anthropic-first-party citation that `apiKeyHelper` is CLI-only. ~130 lines, ~40 citations. |
 | `2026-04-24-cloudflare-lessons.md` | 2026-04-24 | External-control-plane automation lessons from the Cloudflare Access Stage 3a service-token workflow. Produced by the Stage 3a executing agent after the incident; hand-delivered to HCS. Proposes 8 design rules, 7 regression-trap candidates, and 4 new Ring-0 entity classes (`RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `PathCoverage`) plus `ProviderObjectReference`/`McpAuthorizationSurface`. Synthesis memory: `project_cloudflare_stage3a_lessons.md`. |
 | `2026-04-24-cloudflare-tunnel-audience-addendum.md` | 2026-04-24 | Field addendum from the later Codex/Hetzner coordination thread. Corrects the follow-on 403 root cause to `cloudflared` tunnel-side JWT audience validation (`audTag` missing the child Access app AUD), not Access policy evaluation. Queues Q-004, trap seed #36, and ADR 0015 entity/taxonomy work for `AudienceValidationBinding` vs `OriginAccessValidator`. |
+| `2026-04-25-cloudflare-mcp-diagnostics-addendum.md` | 2026-04-25 | Field addendum from the temporary MCP usage collector and Cloudflare diagnostics. Confirms authenticated Cloudflare MCP fan-out across Claude/Codex hosts, 9 -> 0 authenticated-session drop after quarantine, docs-MCP degraded mode, and queues trap #38 plus ADR 0015/0012 broker requirements for principal-scoped rate-limit budgets. |
 | `2026-04-24-coordination-lessons.md` | 2026-04-24 | Shared-state / coordination-store lessons from a separate "three-repo incident" (release coordination across producer/consumer/shared-worktree repos where prose, local checkouts, live infra, GHCR, 1Password, and docs drifted as competing partial sources of truth). Frames HCS shared state as **typed evidence + coordination + retrieval index — not agent memory**. Proposes ADR 0019 (knowledge-and-coordination store), 4 new Ring-0 entity classes (`KnowledgeSource`, `KnowledgeChunk`, `CoordinationFact`, `DerivedSummary`), 5 regression-trap candidates #31–#35, charter v1.3.0 invariant 18 candidate ("RAG may discover; only typed evidence may decide"), D-033 candidate, and a promotion workflow (agent proposes → verifier promotes). Five sub-decisions bundled as **Q-003 pending** rather than silently adopted — scope/sequencing/taxonomy is a major design commitment. Synthesis memory: `project_coordination_lessons_shared_state.md`. |
 
 ## Reconciled conclusions
@@ -70,6 +71,19 @@ Queued integration:
 - **Fixture candidate**: `cloudflare-access-tunnel-audience-mismatch.fixture.md`.
 - **D-032 wording**: distinguish Access app AUDs, tunnel validator allowlists, and origin reachability receipts from provider object ids, public client ids, secret material, and `SecretReference` values.
 - **ADR 0015 requirement**: before proposing another Access policy mutation, collect evidence for "Access accepted/denied", "tunnel validator accepted/denied", and "origin reached/not reached" as separate facts.
+
+### 2026-04-25 Cloudflare MCP diagnostics addendum
+
+The temporary MCP usage collector and Cloudflare diagnostics confirm that the 429 lesson is principal-scoped fan-out, not just per-request retry hygiene. In the inspected window, authenticated Cloudflare MCP sessions peaked at 11 concurrent `mcp-remote` sessions against the same account-scoped token, across Claude Code CLI, Claude Code macOS app, Claude Desktop, and Codex CLI. Quarantine reduced authenticated Cloudflare MCP sessions from 9 to 0 in the next sample while `cloudflare-docs` remained available.
+
+Queued integration:
+
+- **Trap seed #38**: `cloudflare-mcp-mutation-without-fanout-check`.
+- **ADR 0015 requirement**: Cloudflare mutations consume a principal-scoped `ResourceBudget`; agents must check local MCP fan-out, `last_cf_mcp_429`, and quarantine state before writes.
+- **ADR 0012 broker requirement**: authenticated Cloudflare MCP should become a brokered surface with in-memory bearer handling, per-token/account serialization, and a shared quiet-window clock.
+- **Entity/taxonomy candidate**: `McpSessionObservation` or an `Evidence` subtype for endpoint/owner/session-count diagnostics; `ControlPlaneBackoffMarker` or a `RateLimitObservation` subtype for `last_cf_mcp_429`.
+- **Degraded-mode rule**: keep `cloudflare-docs` separate from authenticated Cloudflare API MCP so docs lookup remains available during quarantine.
+- **Process-inspection dependency**: permanent diagnostics should use the typed process-inspection operation from trap #37; the temporary collector redacts persisted argv but still relies on process-command inspection internally.
 
 ### 2026-04-24 Coordination / shared-state lessons (three-repo incident)
 
@@ -136,6 +150,7 @@ Reports should be staged here verbatim from the source; do not edit the content 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.4.0 | 2026-04-25 | Staged `2026-04-25-cloudflare-mcp-diagnostics-addendum.md`. Added trap #38 and ADR 0015/0012 integration notes for authenticated Cloudflare MCP fan-out, quarantine, principal-scoped `ResourceBudget`, and docs-MCP degraded mode. |
 | 1.3.0 | 2026-04-24 | Staged `2026-04-24-cloudflare-tunnel-audience-addendum.md`, preserving the original Cloudflare lessons brief as first received. Added Q-004 / trap #36 / ADR 0015 integration notes for `cloudflared` tunnel-side audience validation (`audTag` missing child Access app AUD). |
 | 1.2.0 | 2026-04-24 | Staged `2026-04-24-coordination-lessons.md` (shared-state / coordination-store brief from "three-repo incident"). Added Reconciled-conclusions subsection with four-category mapping (already-covered / strengthens-existing / genuinely-new / five-major-decisions-deferred). ADR 0019 candidate scoped for post-Phase-1, four Ring-0 entity additions queued, five trap seeds #31–#35 seeded, D-033 candidate queued (NOT in W3 batch), charter v1.3.0 invariant 18 candidate queued, **Q-003 pending added to DECISIONS.md** bundling five sub-decisions. Explicit discipline: the brief is highly aligned with existing HCS posture but committing to the three-layer architecture is a whole-system design commitment requiring deliberate consideration, not closeout-week silent adoption. |
 | 1.1.0 | 2026-04-24 | Staged `2026-04-24-cloudflare-lessons.md` (external-control-plane automation brief from Cloudflare Stage 3a). Added Reconciled-conclusions subsection locking the queued integration matrix (ADR 0015 draft, 6 Ring-0 entity additions, 7 trap seeds #19–#25, D-032 candidate, v1.3.0 inv. 16 candidate, ADR 0012 broker-scope expansion). Added "What the reports do not cover" gaps list specific to the Cloudflare brief. |
