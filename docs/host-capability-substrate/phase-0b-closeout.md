@@ -3,9 +3,9 @@ title: HCS Phase 0b Closeout
 category: closeout
 component: host_capability_substrate
 status: active
-version: 1.0.0
+version: 1.1.0
 last_updated: 2026-04-26
-tags: [phase-0b, closeout, measurement, soak, traps, phase-1]
+tags: [phase-0b, closeout, measurement, soak, traps, phase-1, semantic-redundancy]
 priority: high
 ---
 
@@ -21,29 +21,30 @@ Closeout for the compressed Phase 0b measurement soak.
 
 ## Executive outcome
 
-Phase 0b produced enough evidence to proceed into Phase 1, but not as a "clean
-green" measurement gate. The raw capture gate succeeded; the cross-source
-redundancy gate remains an honest known limitation because current measurement
-matches tool names literally and does not yet map equivalent capabilities across
-clients (`Bash` versus `exec_command`, for example).
+Phase 0b produced enough evidence to proceed into Phase 1. The initial closeout
+at `2026-04-26T17:18:54Z` was not a "clean green" measurement gate because the
+cross-source redundancy metric still matched tool names literally. A same-day
+post-closeout follow-up added measurement-only semantic mapping and regenerated
+the brief at `2026-04-26T18:31:09Z`; the current brief now shows all acceptance
+criteria met.
 
 The correct decision is:
 
 ```text
-Proceed to Phase 1 with declared measurement debt.
-Do not weaken the gate retroactively.
-Carry semantic tool mapping, scanner parity, and fixture expansion into Phase 1.
+Proceed to Phase 1.
+Do not reinterpret the initial name-only miss as a pass; record the follow-up fix.
+Carry formal capability ontology, scanner parity, and fixture expansion into Phase 1.
 ```
 
 ## Acceptance gate
 
-From the refreshed brief generated at `2026-04-26T17:18:54Z`:
+From the refreshed brief generated at `2026-04-26T18:31:09Z`:
 
 | Criterion | Result | Closeout interpretation |
 |---|---|---|
 | 3 soak days captured (2026-04-23..2026-04-25) | pass | Required partitions exist. |
 | Five primary clients covered | pass | Claude Code, Codex, Cursor, Windsurf, Copilot markers present. |
-| Cross-source overlap >= 3 | fail | Name-based metric cannot see semantic equivalence across agent tool names. |
+| Cross-source semantic overlap >= 3 | pass | `semantic-tool-map-v1` finds 6 semantic capabilities across Claude Code and Codex while preserving raw tool names. |
 | Tokens estimate present | pass | 646,313,789 chars; 161,578,445 estimated tokens. |
 | Trap corpus >= 15 | pass | Corpus is 38 seed traps at closeout. |
 | Governance inventory present | pass | 223 aggregate inventory records. |
@@ -142,8 +143,8 @@ Tightened in the closeout flow:
 
 Immediate Phase 1 work should start from these queues:
 
-- Semantic tool-name mapping (`Bash` <-> `exec_command`) for real redundancy
-  measurement.
+- Formal capability identity in the Ring 0 ontology/policy schema, extending
+  beyond the measurement-only `semantic-tool-map-v1`.
 - Thread B protocol probes for client identity and MCP capability negotiation.
 - Shell/environment direct-test program P01-P13, with secret-safe harness first.
 - Ring 0 schema reconciliation for `ExecutionContext`, `EnvProvenance`,
@@ -174,4 +175,5 @@ shellcheck all pass.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.0 | 2026-04-26 | Recorded the same-day semantic redundancy measurement follow-up and refreshed all-green brief while preserving the historical initial closeout miss. |
 | 1.0.0 | 2026-04-26 | Initial Phase 0b closeout narrative. |

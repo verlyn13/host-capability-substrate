@@ -1,0 +1,4 @@
+{"ts":"2026-04-26T00:00:00Z","source":"claude-code-transcripts","category":"tool-use-shape","tool":"Bash","count":4}
+{"ts":"2026-04-26T00:00:00Z","source":"claude-code-transcripts","category":"tool-use-shape","tool":"TaskUpdate","count":2}
+{"ts":"2026-04-26T00:00:00Z","source":"claude-code-transcripts","category":"tool-use-shape","tool":"AskUserQuestion","count":1}
+{"ts":"2026-04-26T00:00:00Z","source":"claude-code-transcripts","category":"tool-use-shape","tool":"Read","count":8}

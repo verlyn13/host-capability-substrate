@@ -7,10 +7,11 @@ Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config
 
 ## Current Focus — Phase 0b closeout / Phase 1 prep
 
-As of 2026-04-26, this repo has completed the compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold. Closeout is a go-forward with known measurement debt: the capture quality is sufficient for Phase 1, but cross-source redundancy still needs semantic tool-name mapping before it can be treated as a clean green gate.
+As of 2026-04-26, this repo has completed the compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold. The same-day post-closeout follow-up landed measurement-only semantic redundancy mapping, and the refreshed brief is now green on the Phase 0b acceptance gate. Phase 1 still owns the larger formal capability ontology/policy work.
 
 - Soak window: 2026-04-23 through 2026-04-25
 - Closeout: 2026-04-26 with `just measure-brief`, charter v1.2.0, ADR 0012-0015, D-029-D-032, and scanner/hook parity for traps #16-#18
+- Post-closeout measurement follow-up: `semantic-tool-map-v1` in `measure-redundancy.sh`, latest-partition redundancy selection in `measure-brief.sh`, and `just redundancy-fixture` wired into `just verify`
 - Kickoff battery: `just day1`
 - Daily cadence during the soak: `just measure` and `just soak-status`
 - Extension rule: if a future soak window does not produce a clean go/no-go, extend the soak rather than weakening the gate
@@ -68,7 +69,7 @@ Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, 
 - Sparkle intervention F-09 (hook-decision schema v2 with version field + rotation).
 - Extended-rubric formalization into primary scoring schema (Phase 1 cross-agent layer).
 - `just verify-baseline` recipe — operationalizes charter inv. 14's "retest on upgrade" cadence.
-- Semantic tool-name mapping (Bash ↔ exec_command) — resolves the acceptance-gate "cross-source redundancy = 0" known limitation.
+- Formal semantic capability identity — extend beyond the measurement-only `semantic-tool-map-v1` into Ring 0 ontology/policy schema so equivalent operation surfaces are first-class substrate facts.
 - Remaining Sparkle follow-ups F-01/F-02/F-03/F-07/F-11/F-13.
 - **Ring-0 entity additions from ADR 0015 scope** (Milestone 1 20-entity list expands; design choice of new entity vs. Evidence subtype remains a Phase 1 schema decision): `RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `ProviderObjectReference`, `PathCoverage`, `McpAuthorizationSurface`, `OriginAccessValidator` with nested/linked `AudienceValidationBinding` semantics (resolved by ADR 0015; motivated by `cloudflared` `audTag` mismatch), and `McpSessionObservation` / `ControlPlaneBackoffMarker` candidates (or Evidence subtypes) for authenticated MCP fan-out and `last_cf_mcp_429` diagnostics.
 - **Ring-0 entity additions from shell research v2 (ADRs 0016/0017)**: `ExecutionContext` (per-surface type with sub-classes `codex_cli`, `codex_app_sandboxed`, `codex_ide_ext`, `claude_code_cli`, `claude_desktop`, `claude_code_ide_ext`, `zed_external_agent`, `warp_terminal`; each with shell+invocation+startup-files+sandbox+env-inheritance facets per §II table). `EnvProvenance` (adopts devcontainer dichotomy: baked/runtime-applied/probed; carries provenance tags from the 14-source enum in §II). `CredentialSource` (10 classes listed in §II including `macos_keychain`, `long_lived_setup_token`, `api_key_helper`, `1password`, `infisical`, `devenv_secretspec`). `StartupPhase` (14-phase timeline from `boot` → `tool_call_subprocess` per §II.StartupPhase; enables temporal reasoning about env availability). These partially overlap ADR 0015's entities — reconciliation happens in the ADR 0016 drafting (shell research v2 §VIII).

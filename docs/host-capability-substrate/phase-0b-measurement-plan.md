@@ -3,9 +3,9 @@ title: HCS Phase 0b — Measurement Workplan
 category: plan
 component: host_capability_substrate
 status: active
-version: 1.2.0
-last_updated: 2026-04-23
-tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency, supplementary-rubric, guidance-load]
+version: 1.2.1
+last_updated: 2026-04-26
+tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency, supplementary-rubric, guidance-load, semantic-redundancy]
 priority: high
 ---
 
@@ -16,6 +16,22 @@ Quantifies the economic and governance baseline before any substrate code ships.
 Parent: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+) §6 Phase 0b, §22.11.
 Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+.
 Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md).
+
+## v1.2.1 revision note
+
+v1.2.1 retires the literal-tool-name redundancy limitation in the measurement
+layer. `measure-redundancy.sh` now emits `semantic-tool-map-v1`, aggregating a
+small set of known cross-client aliases such as `Bash`/`exec_command`,
+`TaskUpdate`/`update_plan`, `AskUserQuestion`/`request_user_input`, and matching
+Runpod MCP aliases. Raw tool names remain preserved on every row for audit.
+
+`measure-brief.sh` now selects the newest partition with a redundancy summary,
+so a current semantic-map run is not shadowed by older name-only partitions. A
+new `redundancy-fixture` recipe is wired into `just verify` to assert the
+semantic map continues to report at least three cross-source capabilities.
+
+This is a Phase 0b measurement fix only. Formal capability ontology and policy
+schema work remains a Phase 1 concern.
 
 ## v1.2.0 revision note
 
@@ -122,7 +138,7 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 | `measure-traps.sh` | `traps.jsonl` | 12 currently-instrumented trap patterns scanned across 7-day file sources; **per-hit records with `source`, `file`, `line`, `evidence_redacted`, `severity`**; `__summary__` record with totals |
 | `measure-governance-inventory.sh` | `governance-inventory.jsonl` | Claude Code + Codex user-scope + HCS-project-scope settings; system-config policies; HCS snapshot fixture; chezmoi MCP wrappers; **MCP baseline servers parsed via `jq`** (not regex); secrets policy version; runbook docs versions; 1P reference manifests |
 | `measure-protocol-features.sh` | `protocol-features.json` | Per-host (6) MCP feature matrix with probe-required fields marked |
-| `measure-redundancy.sh` | `redundancy.jsonl` | Cross-source redundancy: same tool name surfaced by ≥2 distinct sources in partition |
+| `measure-redundancy.sh` | `redundancy.jsonl` | Cross-source redundancy: same semantic tool capability surfaced by ≥2 distinct sources in partition, using `semantic-tool-map-v1` while preserving raw tool names |
 | `measure-tokens-estimate.sh` | `tokens-estimate.json` | Char-based tokens estimate (char/4 heuristic); per-source + totals |
 | `measure-commands.sh` | `commands.jsonl` | Per-command extraction from Claude Code `Bash` calls and Codex `exec_command` rollouts |
 | `measure-classify.sh` | `classify.jsonl` | Post-hoc classification of extracted commands via `classify.py` |
@@ -139,6 +155,7 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 - `just measure` — runs 11 data/transform scripts + partition-summary
 - `just measure-summary` — prints today's partition summary
 - `just measure-brief` — aggregates all partitions into `brief.md` + `brief.json`
+- `just redundancy-fixture` — regression test for semantic tool mapping
 - `just day1` — runs the kickoff battery (`measure`, fixtures, over-fire, under-fire, faults, dashboard rehearsal)
 - `just verify` includes `shellcheck-scan` as of v1.1.0
 
@@ -156,7 +173,7 @@ Per-run partition: `.logs/phase-0/<YYYY-MM-DD>/`
 | `traps.jsonl` | `{ts, trap_name, source, file, line, evidence_redacted, severity}` + `__summary__` | per-hit provenance records |
 | `governance-inventory.jsonl` | `{ts, category, path, kind, excerpt}` | per-artifact records |
 | `protocol-features.json` | per-host capability matrix | 6 hosts, probe-required marks |
-| `redundancy.jsonl` | `{ts, tool, sources, count_by_source, total, cross_source}` + `__summary__` | per-tool cross-source records |
+| `redundancy.jsonl` | `{ts, tool, semantic_tool, semantic_label, semantic_mapping_version, raw_tools, sources, count_by_source, count_by_raw_tool, total, cross_source}` + `__summary__` | per-semantic-tool cross-source records; `unique_tools_observed` remains raw-name count, `unique_semantic_tools_observed` is the mapped capability count |
 | `tokens-estimate.json` | per-source + totals | back-of-envelope (char/4) |
 | `commands.jsonl` | `{ts, source, transcript|rollout, line, tool_name, command, description?, cwd}` | per-shell-command extraction records |
 | `classify.jsonl` | command record + classifier fields | per-command class, reason, first token, segments |
@@ -171,7 +188,7 @@ Consolidated brief (at `.logs/phase-0/brief.md` + `brief.json`):
 - tool-use totals aggregated across partitions
 - trap observations by class with source distribution
 - tokens estimate aggregate
-- cross-source redundancy summary
+- cross-source semantic redundancy summary
 - governance inventory volume per partition
 - cross-agent prompt-run and feedback summary when present
 
@@ -193,7 +210,7 @@ Rendered as a table in the brief. All must be checked:
 
 - [ ] Three consecutive days of partition data captured in the April 23-25, 2026 window
 - [ ] All 5 primary clients represented: Claude Code, Codex, Cursor, Windsurf, Copilot CLI (Claude Desktop opportunistic)
-- [ ] Redundancy analysis shows cross-source overlap for ≥3 tool patterns. **Caveat:** redundancy is matched by tool name only; tools with different names but equivalent semantics (e.g., `Bash` vs `exec_command`) do NOT count as redundant under the current definition. See "Known limitations" below.
+- [ ] Redundancy analysis shows cross-source overlap for ≥3 semantic tool capabilities under `semantic-tool-map-v1`; raw tool names are preserved for audit and unmapped tools retain literal-name semantics.
 - [ ] `tokens-estimate.json` present with a concrete `totals.estimated_tokens` number
 - [ ] Seed regression corpus has ≥15 trap classes; observed hit counts may be lower than the seed size during the soak window
 - [ ] `governance-inventory.jsonl` enumerates user-global + HCS-project Claude settings, subagents, Codex config, system-config policies, chezmoi MCP wrappers, MCP baseline (jq-parsed, not regex), 1P reference manifests
@@ -205,7 +222,7 @@ Rendered as a table in the brief. All must be checked:
 
 These are documented constraints, not undisclosed gaps:
 
-- **Semantic redundancy undercounted.** Cross-source redundancy by tool name treats `Bash` (Claude Code) and `exec_command` (Codex) as distinct, even though they represent the same capability. A name-mapping layer to detect semantic redundancy is substrate-layer work (Phase 1 Thread D policy schema) — not Phase 0b.
+- **Semantic redundancy map is intentionally small.** `semantic-tool-map-v1` covers known aliases needed for Phase 0b acceptance, but it is not the final substrate ontology or policy schema. Unmapped tools retain literal-name semantics until Phase 1 formalizes capability identity.
 - **Token counting is char/4 heuristic.** Accurate tokenization would require a live model tokenizer; the heuristic is adequate for baseline order-of-magnitude.
 - **Trap scan window is 7 days.** Catches current habits; does not back-fill older history. Stale-but-not-used patterns in transcripts >7 days old are ignored.
 - **Trap scanner coverage is narrower than the seed corpus.** `packages/evals/regression/seed.md` carries 15 seed traps, while `measure-traps.sh` currently instruments 12 heuristics. The acceptance gate counts the committed seed corpus; scanner expansion remains follow-up work.
@@ -246,6 +263,7 @@ Under `.logs/phase-0/` (gitignored — summary lifted into committed `phase-0b-b
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.1 | 2026-04-26 | Added `semantic-tool-map-v1` to `measure-redundancy.sh`, preserved raw tool names per row, changed `measure-brief.sh` to use the newest redundancy partition, and wired `just redundancy-fixture` into `just verify`. |
 | 1.2.0 | 2026-04-23 | Added three post-hoc supplementary surfaces (all measurement-safe during an active soak): (1) `measure-extended-rubric.sh` emits `cross-agent-runs-extended.jsonl` with heuristic scoring on `derivability_check`, `mutation_snapshot_intent`, `upstream_spec_provenance` using null/applicable gating; (2) `measure-guidance-load.sh` emits `cross-agent-guidance-load.jsonl` with three-way classification (`loaded` / `loaded_behavior_divergent` / `unread`) cross-joined with `cross-agent-runs.jsonl`; (3) `packages/evals/regression/trap-known-limitations.yaml` annotates trap hits with known false-positive and cap semantics. `measure-brief.sh` renders Extended rubric, Guidance-load classification, and Hook-decision attribution sections, annotates the Trap table from the known-limitations yaml, and invokes the two new scripts as pre-aggregation steps. Canonical-session selection is driven by `raw/source-manifest.jsonl` with variant preference (`rollout-copy` > `repo-root-copy` > `export-home` > `export-tmp`) so session duplicates collapse to exactly one record per `(agent, prompt_id)`. Seed-trap corpus bumped from 15 to 17 (`ignored-but-load-bearing-deletion`, `harness-config-boolean-type`). |
 | 1.1.1 | 2026-04-23 | Aligned the repo plan to the active 3-day soak window (2026-04-23 through 2026-04-25, closeout 2026-04-26). Documented the full `just measure` pipeline (`commands`, `classify`, `confusion`) and clarified that the seed trap corpus has 15 entries while the current scanner instruments 12 heuristics. |
 | 1.1.0 | 2026-04-22 | Corrected after external P1/P2 critique. Switched to true snapshot semantics (`snapshot_begin()` truncates per-file at start of each run); added the 3 missing acceptance artifact scripts (`measure-redundancy.sh`, `measure-tokens-estimate.sh`, `measure-brief.sh`); rewrote `measure-claude-code.sh` to parse `~/.claude/projects/*/*.jsonl` (the actual tool-use source; prior version pointed at pid-metadata JSON files that contained no tool-use data); rewrote `measure-codex.sh` to parse `~/.codex/sessions/*/rollout-*.jsonl` function-call records (prior version measured logger-module signal only); added per-hit provenance (`source`, `file`, `line`, `evidence_redacted`) to `traps.jsonl`; switched MCP baseline parsing from regex to `jq` (fixes false `env` server entry); expanded governance inventory scope to chezmoi wrappers + runbook docs + 1P reference manifests; added `scripts/ci/shellcheck-scan.sh` and wired into `just verify`; fixed BSD find `-newermt` incompatibility (switched to `-mtime -7`); fixed grep-exit-on-no-match breaking scripts under `set -euo pipefail`; scoped trap scan to 7-day file window (was iterating all ~5k transcripts × 12 patterns). |

@@ -1,0 +1,4 @@
+{"ts":"2026-04-26T00:00:00Z","source":"codex-rollouts","category":"function-call-shape","tool":"exec_command","count":5}
+{"ts":"2026-04-26T00:00:00Z","source":"codex-rollouts","category":"function-call-shape","tool":"update_plan","count":3}
+{"ts":"2026-04-26T00:00:00Z","source":"codex-rollouts","category":"function-call-shape","tool":"request_user_input","count":1}
+{"ts":"2026-04-26T00:00:00Z","source":"codex-rollouts","category":"function-call-shape","tool":"view_image","count":1}

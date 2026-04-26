@@ -339,12 +339,22 @@ primary_markers = {
     'copilot': any('copilot' in s for s in sources_seen),
 }
 acceptance['five_primary_clients_covered'] = all(primary_markers.values())
-# cross-source overlap
+# cross-source overlap. Use the newest partition with a redundancy summary so
+# re-runs of the current measurement scripts are not shadowed by older brief
+# partitions that used an earlier metric definition.
 redundancy_summary = None
-for p, d in partition_data.items():
+redundancy_partition = None
+redundancy_records = []
+for p in reversed(partitions):
+    d = partition_data[p]
     for rec in d['redundancy']:
         if rec.get('category') == '__summary__':
             redundancy_summary = rec
+            redundancy_partition = p
+            redundancy_records = [
+                r for r in d['redundancy']
+                if isinstance(r, dict) and r.get('category') != '__summary__'
+            ]
             break
     if redundancy_summary: break
 if redundancy_summary:
@@ -352,6 +362,22 @@ if redundancy_summary:
 
 summary['acceptance'] = acceptance
 summary['primary_client_markers'] = primary_markers
+summary['aggregate']['redundancy_latest_partition'] = redundancy_partition
+summary['aggregate']['redundancy_latest_summary'] = redundancy_summary or {}
+summary['aggregate']['redundancy_latest_top_cross_source'] = [
+    {
+        'semantic_tool': rec.get('semantic_tool') or rec.get('tool'),
+        'semantic_label': rec.get('semantic_label') or rec.get('tool'),
+        'raw_tools': rec.get('raw_tools') or [rec.get('tool')],
+        'sources': rec.get('sources', []),
+        'total': int(rec.get('total', 0) or 0),
+    }
+    for rec in sorted(
+        [r for r in redundancy_records if r.get('cross_source') is True],
+        key=lambda r: int(r.get('total', 0) or 0),
+        reverse=True,
+    )[:10]
+]
 
 with open(json_path, 'w') as f:
     json.dump(summary, f, indent=2)
@@ -370,7 +396,7 @@ md.append("|-----------|-----|")
 acceptance_rows = [
     (f"{soak_target_days} soak days captured ({required_partition_dates[0]}..{required_partition_dates[-1]})", acceptance['target_days_of_data']),
     ("five primary clients covered", acceptance['five_primary_clients_covered']),
-    ("cross source overlap at least 3", acceptance['cross_source_overlap_at_least_3']),
+    ("cross source semantic overlap at least 3", acceptance['cross_source_overlap_at_least_3']),
     ("tokens estimate present", acceptance['tokens_estimate_present']),
     ("trap corpus 15 plus", acceptance['trap_corpus_15_plus']),
     ("governance inventory present", acceptance['governance_inventory_present']),
@@ -435,9 +461,21 @@ md.append("")
 md.append("## Cross-source redundancy")
 md.append("")
 if redundancy_summary:
-    md.append(f"- Unique tools observed: {redundancy_summary.get('unique_tools_observed', '?')}")
-    md.append(f"- Cross-source redundant tools: **{redundancy_summary.get('cross_source_redundant_tools', 0)}**")
+    md.append(f"- Partition: `{redundancy_partition}`")
+    md.append(f"- Raw tools observed: {redundancy_summary.get('unique_tools_observed', '?')}")
+    md.append(f"- Semantic capabilities observed: {redundancy_summary.get('unique_semantic_tools_observed', redundancy_summary.get('unique_tools_observed', '?'))}")
+    md.append(f"- Mapping version: `{redundancy_summary.get('semantic_mapping_version', 'literal-tool-name')}`")
+    md.append(f"- Cross-source redundant semantic capabilities: **{redundancy_summary.get('cross_source_redundant_tools', 0)}**")
     md.append(f"- Total redundant calls: {redundancy_summary.get('total_redundant_calls', 0)}")
+    top_redundant = summary['aggregate']['redundancy_latest_top_cross_source']
+    if top_redundant:
+        md.append("")
+        md.append("| Semantic capability | Raw tools | Sources | Total calls |")
+        md.append("|---------------------|-----------|---------|------------:|")
+        for rec in top_redundant:
+            raw_tools = ', '.join(f"`{t}`" for t in rec.get('raw_tools', []) if t)
+            sources = ', '.join(f"`{s}`" for s in rec.get('sources', []) if s)
+            md.append(f"| `{rec.get('semantic_tool', '?')}` | {raw_tools or '—'} | {sources or '—'} | {rec.get('total', 0)} |")
 else:
     md.append("_No redundancy analysis in any partition._")
 md.append("")

@@ -3,9 +3,9 @@ title: HCS Phase 0b Self-Review
 category: review
 component: host_capability_substrate
 status: active
-version: 1.2.0
+version: 1.3.0
 last_updated: 2026-04-26
-tags: [phase-0b, review, producer-critic, critique-response]
+tags: [phase-0b, review, producer-critic, critique-response, semantic-redundancy]
 priority: medium
 ---
 
@@ -13,14 +13,34 @@ priority: medium
 
 Record of producer/critic discipline on the Phase 0b measurement surface, per research plan §22.5 / §22.11.
 
+## v1.3.0 — semantic redundancy follow-up
+
+The initial 2026-04-26 closeout correctly refused to mark the name-only
+redundancy metric green. The same-day follow-up now fixes that measurement
+limitation without changing runtime policy:
+
+- `measure-redundancy.sh` emits `semantic-tool-map-v1`, aggregating known
+  cross-client aliases while preserving raw tool names on every row.
+- `measure-brief.sh` selects the newest partition with a redundancy summary, so
+  current semantic-map runs are not shadowed by older name-only partitions.
+- `just redundancy-fixture` is wired into `just verify`.
+- Refreshed `.logs/phase-0/brief.json` reports 6 cross-source semantic
+  capabilities in the 2026-04-26 partition, so the acceptance table is now green
+  on `cross_source_overlap_at_least_3`.
+
+This retires the Phase 0b measurement debt. The remaining Phase 1 work is to
+formalize capability identity in the ontology/policy schema, not to keep the
+brief green by ad hoc metric interpretation.
+
 ## v1.2.0 — closeout assessment
 
 The April 23-25, 2026 soak produced the required daily data and surfaced enough
-high-value failure classes to justify entering Phase 1, but the closeout is not
-an all-green gate. The cross-source redundancy metric still reports zero
-because it is name-based and does not yet know that Claude Code `Bash` and Codex
-`exec_command` are equivalent capability surfaces. This is measurement debt,
-not grounds to reinterpret the metric as a pass.
+high-value failure classes to justify entering Phase 1. At initial closeout, the
+gate was not all green because the cross-source redundancy metric reported zero:
+it was name-based and did not yet know that Claude Code `Bash` and Codex
+`exec_command` are equivalent capability surfaces. That was measurement debt,
+not grounds to reinterpret the metric as a pass. v1.3.0 above records the
+follow-up measurement fix.
 
 Closeout work landed the following corrections:
 
@@ -36,9 +56,10 @@ Closeout work landed the following corrections:
 - Classifier/hook parity for trap #18's secret-value env inspection patterns.
 - Closeout narrative at `docs/host-capability-substrate/phase-0b-closeout.md`.
 
-The remaining open work is deliberately Phase 1 work: semantic tool-name
-mapping, Thread B protocol probes, shell/environment P01-P13 direct tests, trap
-fixture expansion #19-#38, typed process inspection, and `hcs env-inspect`.
+The remaining open work is deliberately Phase 1 work: formal capability
+ontology/policy mapping, Thread B protocol probes, shell/environment P01-P13
+direct tests, trap fixture expansion #19-#38, typed process inspection, and
+`hcs env-inspect`.
 
 Validation: `just verify` passes in the Phase 0 scaffold. Biome and `tsc` remain
 soft-skipped because dependencies are intentionally not installed yet; boundary,
@@ -127,7 +148,7 @@ v1.0.0 of the plan + scripts shipped with six substantive defects caught by exte
 
 ### Assumptions and shellcheck critique
 
-- **"If some outputs are intended to be produced manually later, state that in the plan."** — Addressed in v1.1.0 of the plan. The "Known limitations" section now enumerates every constraint explicitly: semantic redundancy undercounted, char/4 tokenization, 7-day trap window, IDE-host volume-only signal, Claude Code session metadata limits, Codex logs infra-only.
+- **"If some outputs are intended to be produced manually later, state that in the plan."** — Addressed in v1.1.0 of the plan and revised again in v1.3.0. The "Known limitations" section now enumerates every constraint explicitly: measurement-only semantic map scope, char/4 tokenization, 7-day trap window, IDE-host volume-only signal, Claude Code session metadata limits, Codex logs infra-only.
 - **"shellcheck warnings existed and weren't part of `just verify`."** — Addressed. Added `scripts/ci/shellcheck-scan.sh` which scans all shell scripts (including shebang-detected ones in non-`.sh` paths). Wired into `just verify`. Fixed warnings: `SC2044` in `policy-lint.sh` (for-loop over find → while-read from process substitution), and `SC1072/SC1073` false positive on the em-dash-prefixed comment in `shellcheck-scan.sh` itself (renamed to ASCII-safe comment). Shellcheck clean on all 20 scripts.
 
 ## Fresh critic pass (v1.1.0)
@@ -136,7 +157,7 @@ After fixing F-1 through F-6, a fresh pass for any remaining risks:
 
 ### Remaining non-blocking items
 
-- **Cross-source redundancy reports 0 despite 43 unique tools.** Correct by the current definition (same tool NAME across sources), because Claude Code and Codex never share a tool name. Semantic redundancy (Bash ≡ exec_command) requires a name-mapping layer, which is Phase 1 Thread D policy schema territory. Documented in the plan's "Known limitations" section. Not a Phase 0b blocker; the information is still captured via per-source counts.
+- **Cross-source redundancy reported 0 despite 43 unique tools.** Correct under the old literal-name definition. Resolved in v1.3.0 by `semantic-tool-map-v1` in the measurement layer; formal capability identity remains Phase 1 ontology/policy work.
 - **Token-estimate for transcript-volume uses fixed 2KB-per-tool-use heuristic.** Reasonable for order-of-magnitude; not accurate to the token. Documented as back-of-envelope.
 - **Measurement runtime ~60s per `just measure` pass.** Dominated by the trap scan across 4900+ Claude Code transcripts (even scoped to 7-day, ~70 files × 12 patterns). Acceptable for daily manual cadence; if moved to hourly/launchd, need to reduce scope further or use xargs parallelism.
 - **Shell-mode-confusion-login trap over-fires.** Pattern `bash -lc` matches routine agent invocations. Not a true "shell-mode confusion" hit; more like a coarse `bash -lc` counter. May want to refine in the next trap-corpus iteration, or rename the trap.
@@ -151,7 +172,7 @@ After fixing F-1 through F-6, a fresh pass for any remaining risks:
 - BSD sed + BSD find compatibility verified (critical on macOS default shell).
 - `just verify` passes all 12 gates (format/lint/typecheck advisory for tsc/biome-not-yet-installed; schema-drift noop; boundary-check, policy-lint, forbidden-string-scan, no-live-secrets, no-runtime-state-in-repo, shellcheck-scan all clean).
 
-## Acceptance-gate status (after v1.1.0 fixes)
+## Acceptance-gate status (after v1.1.0 fixes; superseded by v1.3.0 semantic map)
 
 From `.logs/phase-0/brief.json` after one smoke run:
 
@@ -159,7 +180,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 |-----------|-----|
 | three consecutive days of data | ✗ (needs the April 23-25 soak window to complete) |
 | five primary clients covered | ✓ |
-| cross source overlap at least 3 | ✗ (by current name-based definition) |
+| cross source overlap at least 3 | ✗ (by old name-based definition) |
 | tokens estimate present | ✓ |
 | trap corpus 15 plus | ✓ (seed corpus has 15 entries; observed hit count may be lower) |
 | governance inventory present | ✓ |
@@ -167,7 +188,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 **Assessment:** the remaining ✗ items reflect honest gaps:
 - Three days requires actually running the soak; day 1 is now underway.
-- Cross-source overlap is a known limitation (semantic redundancy undercounted).
+- Cross-source overlap was a known limitation under the old name-only metric; v1.3.0 resolves it in the measurement layer.
 - Scanner coverage of 12 heuristics is narrower than the 15-entry seed corpus. Expanding `measure-traps.sh` remains follow-up work per the regression-trap skill.
 - All other acceptance items pass.
 
@@ -178,11 +199,11 @@ From `.logs/phase-0/brief.json` after one smoke run:
 **Next honest follow-ups (not Phase 0b blocking):**
 1. Refine trap patterns to reduce false positives (shell-mode-confusion-login, brew-cask-escalation-missed cap of 50 may be understating reality).
 2. When Phase 1 Thread B ships the echo MCP server, resolve all `probe-required` fields in protocol-features.json.
-3. Introduce a semantic-tool-name mapping (Bash ↔ exec_command ↔ subprocess.run) for real cross-agent redundancy measurement. This is Phase 1 Thread D policy-schema work.
+3. Formalize capability identity beyond the measurement-only `semantic-tool-map-v1` so Phase 1 policy/schema can reason over equivalent operation surfaces.
 
 ## References
 
-- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.1.1
+- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.2.1
 - Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+
 - Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §6 Phase 0b, §22.11
 - Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md)
@@ -191,6 +212,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.0 | 2026-04-26 | Recorded the post-closeout semantic redundancy measurement fix, latest-partition brief selection, and fixture-backed all-green acceptance table. |
 | 1.2.0 | 2026-04-26 | Added closeout assessment, recorded the honest redundancy-gate miss, and summarized charter/ADR/decision/scanner parity work plus Phase 1 carry-forward. |
 | 1.1.1 | 2026-04-23 | Aligned the self-review with the active 3-day soak window and corrected the trap-corpus gate to count the committed 15-entry seed corpus rather than only observed hits. |
 | 1.1.0 | 2026-04-22 | Critique response. Each of 6 findings (F-1 through F-6) recorded with status, root cause, fix, verification. Fresh critic pass post-fix logged. Acceptance-gate status honestly assessed. Design-decision notes added for downstream Phase 1 work. |

@@ -26,7 +26,11 @@ HCS_ROOT="$(cd "$_script_dir/../.." && pwd)"
 export HCS_ROOT
 
 _today="$(date -u +%Y-%m-%d)"
-OUT_DIR="$HCS_ROOT/.logs/phase-0/$_today"
+if [ -n "${HCS_MEASURE_OUT_DIR:-}" ]; then
+  OUT_DIR="$HCS_MEASURE_OUT_DIR"
+else
+  OUT_DIR="$HCS_ROOT/.logs/phase-0/$_today"
+fi
 export OUT_DIR
 mkdir -p "$OUT_DIR"
 

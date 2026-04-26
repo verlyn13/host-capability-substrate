@@ -10,12 +10,16 @@ default:
 	@just --list
 
 # Run ALL quality gates. CI runs this. Required before merge.
-verify: format-check lint typecheck test generate-schemas-check boundary-check policy-lint forbidden-string-scan no-live-secrets no-runtime-state-in-repo shellcheck-scan
+verify: format-check lint typecheck test generate-schemas-check boundary-check policy-lint forbidden-string-scan no-live-secrets no-runtime-state-in-repo redundancy-fixture shellcheck-scan
 	@echo "✓ all quality gates passed"
 
 # Shellcheck — covers all .sh scripts + shebang-detected files
 shellcheck-scan:
 	@bash scripts/ci/shellcheck-scan.sh
+
+# Semantic redundancy mapping regression fixture
+redundancy-fixture:
+	@bash scripts/dev/run-redundancy-fixture.sh
 
 # Format check (no writes)
 format-check:
