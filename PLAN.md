@@ -51,7 +51,7 @@ P13 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04
 
 P01 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` captures metadata-only Codex auth state. Current host did not show a `Codex Auth` Keychain item with the safe lookup, while `${CODEX_HOME}/auth.json` exists; do not migrate MCP auth off env/PAT patterns until the interactive OAuth flow and restart check pass.
 
-P02 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P02-codex-app-launch-env-partial.md` records that terminal `open -n` forwarded a synthetic marker into a new Codex app process, so terminal `open` is not a valid Spotlight/Dock/Finder proxy. The true GUI-origin cold-start absence check remains open.
+P02 validated evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P02-codex-app-gui-launch-env.md` records that terminal `open -n` forwarded a synthetic marker into a new Codex app process, so terminal `open` is not a valid GUI proxy. A true Finder-origin cold start did not inherit the synthetic terminal-only marker (`p02_gui_marker_present=false`), supporting the rule that Codex app GUI sessions must not be modeled as inheriting shell-exported credentials.
 
 P05 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` captures read-only Claude Desktop app/config metadata. It found Claude.app 1.4758.0, no top-level `env` or `apiKeyHelper` in `claude_desktop_config.json`, and only the `MEMORY_FILE_PATH` env key name in Desktop MCP config; GUI runtime smoke remains open.
 
