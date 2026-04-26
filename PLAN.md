@@ -45,6 +45,8 @@ Three-wave plan approved 2026-04-23 after synthesis of two external substrate-co
 
 The shell-environment research v2.0.0 (`docs/host-capability-substrate/shell-environment-research.md`) lays out a formal 10-working-day research program (2026-04-27 → 2026-05-08, ~55–60 hours) using prompt IDs P01–P13. The existing direct-test queue items below cross-reference those prompt IDs; several are resolved at the documentation level and reduce to confirmatory smoke tests.
 
+Execution runbook: `docs/host-capability-substrate/phase-1-shell-env-direct-test-runbook.md`. It records local preflight evidence as of 2026-04-26, the Wave 1 order, secret-safe artifact contract, and operation-proof stubs. Current blocker: local Claude Code is 2.1.119, so the `#18692 does not repro on 2.1.120` check must wait for a CLI update.
+
 Direct-test queue (combined from report 1 §14 + report 2 verification + shell research v2.0.0 P01–P13; blocks work that depends on each outcome):
 
 1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block. *(Related: shell research v2 **P01** — resolved at doc level; this is the operational migration step.)*
