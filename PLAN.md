@@ -47,6 +47,8 @@ The shell-environment research v2.0.0 (`docs/host-capability-substrate/shell-env
 
 Execution runbook: `docs/host-capability-substrate/phase-1-shell-env-direct-test-runbook.md`. It records local preflight evidence as of 2026-04-26, the Wave 1 order, secret-safe artifact contract, and operation-proof stubs. Current blocker: local Claude Code is 2.1.119, so the `#18692 does not repro on 2.1.120` check must wait for a CLI update.
 
+Next-agent handoff: `docs/host-capability-substrate/phase-1-shell-env-handoff-2026-04-26.md` captures the committed status, host-local wrapper install state, expected validation output, and open approvals.
+
 P13 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` captures read-only Codex app bundle/signing metadata plus live process sandbox flags. Helpers show Electron/Chromium sandbox markers (`--seatbelt-client`, `--enable-sandbox`, `--service-sandbox-type=network`), while entitlement extraction remains unusable and app-internal Keychain/filesystem/network probes remain open. P02 now covers GUI env inheritance for a Finder-origin cold start.
 
 P01 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` captures metadata-only Codex auth state. Current host did not show a `Codex Auth` Keychain item with the safe lookup, while `${CODEX_HOME}/auth.json` exists; do not migrate MCP auth off env/PAT patterns until the interactive OAuth flow and restart check pass.
@@ -62,7 +64,7 @@ Direct-test queue (combined from report 1 §14 + report 2 verification + shell r
 1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block. *(Related: shell research v2 **P01** — resolved at doc level; this is the operational migration step.)*
 2. Codex app + CLI + IDE reuse the same MCP OAuth token (same `CODEX_HOME` → same Keychain key). *(Shell research v2 **P01**: resolved at doc level — Keychain service `"Codex Auth"`, account `cli|<sha256(CODEX_HOME)[:16]>`. Smoke test only, 1h.)*
 3. Codex app honors project-scoped `.codex/config.toml` MCP definitions in trusted projects.
-4. Codex app launched from Spotlight does NOT inherit shell `GITHUB_PAT`. *(Shell research v2 **P02**: strongly inferred from launchd + issues #10695 / #13566; direct differential test on this host, 2h.)*
+4. Codex app GUI cold start does NOT inherit terminal-only markers. *(Shell research v2 **P02**: validated locally for Finder-origin cold start on 2026-04-26; terminal `open -n` is explicitly not a GUI proxy. Retest on Codex app upgrades.)*
 5. Claude Desktop uses OAuth-only; does NOT read `apiKeyHelper` or `ANTHROPIC_API_KEY`. *(Shell research v2 **P05**: resolved at doc level via Anthropic authentication.md. Confirmatory smoke test only, 1h.)*
 6. Claude Code #18692 (resolved-secrets-into-`.mcp.json`) does NOT repro on 2.1.120.
 7. `shell_environment_policy.include_only` reliably exposes named var on Codex CLI 0.125.0 and Codex macOS app 26.422.30944 (2080). *(Shell research v2 **P04**: schema documented but cross-surface behavior undocumented; issue #3064 suggests divergence. Matrix test with env vectors, 10h.)*
@@ -70,7 +72,7 @@ Direct-test queue (combined from report 1 §14 + report 2 verification + shell r
 9. Confirm D-031 surface coverage: `[profiles.hcs-*]` are CLI-only opt-ins unless a future Codex app/IDE probe proves otherwise.
 10. Codex app MCP startup happens before worktree setup scripts. *(Shell research v2 **P03**: genuinely undocumented; marker-based timing test with synthetic repo, 8h.)*
 11. **NEW — P06**: Shell wrapper-log validation. In-repo wrapper, redaction fixture, and `/usr/local/bin/hcs-shell-logger` host install exist; next step is an approved live-routing operation for selected surfaces. Confirms Codex CLI = `bash -lc`, Claude fresh = `bash -c`, apiKeyHelper = `/bin/sh -c`. 4h.
-12. **NEW — P13**: Codex app sandbox boundary characterization (new `ExecutionContext` class). Inspect app bundle Info.plist + embedded sandbox profile + `codesign -d --entitlements -`; probe Keychain access, FS scope, network scope, env injection; cross-reference issue #10695. 4h.
+12. **NEW — P13**: Codex app sandbox boundary characterization (new `ExecutionContext` class). Static bundle/signing plus live helper process flags are captured; app-internal Keychain/filesystem/network status-code probes remain open. 4h.
 13. **NEW — P08**: Provenance snapshot — capture each surface's PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME value + provenance tags; commit as `packages/fixtures/provenance-snapshot-YYYY-MM-DD.json` golden data. 6h.
 14. **NEW — P09**: direnv + mise cross-surface visibility. Synthetic repo with `.envrc` `HCS_DIRENV_MARKER` + `.mise.toml [env] HCS_MISE_MARKER`. Test terminal-launched vs GUI-launched for each surface. 6h.
 
