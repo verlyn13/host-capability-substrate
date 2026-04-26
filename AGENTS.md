@@ -3,16 +3,16 @@
 
 ## Tool baseline (binding during early phases)
 
-- **Claude Code:** `1.3883.0 (93ff6c)` minimum; Opus 4.7 (`opus` in settings)
-- **Codex:** `26.417.41555 (1858)` minimum; GPT-5.4 (`gpt-5.4` in profiles)
+- **Claude Code CLI:** `2.1.120` minimum; Opus 4.7 (`opus` in settings). Claude macOS app build tracked separately.
+- **Codex CLI:** `0.125.0` minimum; GPT-5.5/GPT-5.4-compatible HCS profiles. Codex macOS app build tracked separately.
 
-Subsequent minor updates acceptable without re-baselining. Re-evaluate at end of Phase 0b.
+Subsequent minor updates acceptable without re-baselining. Re-baseline after material version changes; see `DECISIONS.md` D-029.
 
 ## Source of truth
 
 Read these before editing:
 
-1. `docs/host-capability-substrate/implementation-charter.md` — binding rules, four rings, non-negotiable invariants (v1.1.0+)
+1. `docs/host-capability-substrate/implementation-charter.md` — binding rules, four rings, non-negotiable invariants (v1.2.0+)
 2. `docs/host-capability-substrate/ontology.md` — entity schemas
 3. `docs/host-capability-substrate/tooling-surface-matrix.md` — where each config file belongs and what it can enforce
 4. `docs/host-capability-substrate/adr/` — architecture decisions
@@ -65,6 +65,10 @@ scripts/
 - No `WARP.md` in Phase 0a; Warp consumes `AGENTS.md`.
 - No runtime state in the repo — it lives under `~/Library/Application Support/host-capability-substrate/` and `~/Library/Logs/host-capability-substrate/`.
 - Live policy is canonical in `system-config/policies/host-capability-substrate/`, not in this repo.
+- Gitignore state is not deletion authority; `.logs/`, runtime state, audit state, materialized facts, and policy caches can be load-bearing.
+- Runtime-config claims require installed-runtime/config-spec evidence; do not write boolean-like strings for strict JSON booleans.
+- GUI/app/IDE agents do not automatically inherit terminal shell env, direnv, or zsh startup state.
+- Never echo secret-shaped environment values; use existence-only, names-only, classified, or hashed inspection.
 
 ## Required workflow
 

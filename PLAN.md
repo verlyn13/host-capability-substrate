@@ -5,15 +5,15 @@ Milestone-by-milestone implementation plan. Follow in order. Each milestone has 
 
 Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`.
 
-## Current Focus — Phase 0b
+## Current Focus — Phase 0b closeout / Phase 1 prep
 
-As of 2026-04-23, this repo is running a compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold.
+As of 2026-04-26, this repo has completed the compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold. Closeout is a go-forward with known measurement debt: the capture quality is sufficient for Phase 1, but cross-source redundancy still needs semantic tool-name mapping before it can be treated as a clean green gate.
 
 - Soak window: 2026-04-23 through 2026-04-25
-- Closeout: 2026-04-26 with `just measure-brief`
+- Closeout: 2026-04-26 with `just measure-brief`, charter v1.2.0, ADR 0012-0015, D-029-D-032, and scanner/hook parity for traps #16-#18
 - Kickoff battery: `just day1`
-- Daily cadence: `just measure` and `just soak-status`
-- Extension rule: if the 3-day window does not produce a clean go/no-go, extend the soak rather than weakening the gate
+- Daily cadence during the soak: `just measure` and `just soak-status`
+- Extension rule: if a future soak window does not produce a clean go/no-go, extend the soak rather than weakening the gate
 
 ### Closeout-week sequence (2026-04-24 → post-closeout)
 
@@ -30,15 +30,15 @@ Three-wave plan approved 2026-04-23 after synthesis of two external substrate-co
 - Daily `just measure` + `just soak-status`; re-run `measure-extended-rubric` + `measure-guidance-load` over new partitions; any field incidents captured under `.logs/phase-0/interventions/`.
 - Soak-safe improvement lane: Ring 3 docs, decision-ledger entries, ADR drafts, runbook structure, and non-semantic status/reporting fixes may land during the soak when they improve closeout decision quality. Do **not** change `classify.py`, hook enforcement behavior, metric-producing collectors, Codex profiles, live policy, or charter-on-main during the soak window; if a script change can alter day-over-day metrics, hold it for W3 closeout.
 
-**W3 — closeout 2026-04-26. Ordered merge sequence.**
+**W3 — closeout 2026-04-26. Ordered merge sequence. Completed in the closeout flow.**
 
 1. `just measure-brief` — final narrative over the three partitions with v1.2.0 supplementary surfaces.
-2. Merge charter v1.2.0 PR.
-3. Merge ADR 0012, 0013, 0014, 0015 PRs in sequence (broker → forbidden-tier split → InterventionRecord → external-control-plane automation). ADR 0015 lands last because it depends on 0012's broker surface for the one-time-secret capture-at-source pattern.
-4. Scanner parity: add heuristics for traps #16 (`ignored-but-load-bearing-deletion`), #17 (`harness-config-boolean-type`), and #18 (`agent-echoes-secret-in-env-inspection`) to `measure-traps.sh`; seed is at 38 (18 prior + 7 Cloudflare Stage 3a + 5 shell/environment research v2 + 5 coordination-lessons brief + 1 Cloudflare tunnel-audience lesson + 1 process-argv secret-exposure lesson + 1 Cloudflare MCP fan-out diagnostics lesson), scanner catches up to #16/#17/#18 only at closeout. Traps #19–#36 are seed-only at closeout; traps #37 and #38 have scaffolds but no scanner heuristic yet. Scanner heuristics + expanded scaffold files are Phase 1+ work (live-provider/surface fixtures for #19–#30 and #36; coordination/knowledge substrate gated by Q-003 for #31–#35; typed process-inspection operation for #37; broker/fan-out fixture for #38). Hook literal-forbidden-list extension for trap #18's secret-echo regexes lands with this commit so day-over-day `forbidden` classification is consistent before/after closeout.
-5. **DECISIONS.md batch commit (renumbered)**: D-029 (amend D-022 to public-semver strings and separate app-build identifiers; use the 2026-04-24/25 observed set: Claude Code CLI `2.1.120`, Claude app `1.4758.0 (fb266c)` dated `2026-04-24T20:22:30.000Z`, Codex CLI `0.125.0`, Codex macOS app `26.422.30944 (2080)`, GPT-5.5 + Opus 4.7 model posture), D-030 (OAuth-preferred HTTP MCP baseline; `enabled=false` + explicit opt-in, not profile-gating), D-031 (Codex profiles are CLI-only opt-ins), **D-032 (external control-plane automation: HCS treats external APIs as typed, evidence-producing control planes, not shell-string targets; provider object IDs, public client IDs, secret material, Access app AUDs, tunnel audience allowlists, and SecretReference values are distinct schema concepts; 429 is cooldown evidence, not a retry prompt; ADR 0015 is the master decision)**. Runtime-governs conflict rule absorbed into D-026 + charter inv. 14 — no standalone row. (D-028 already landed 2026-04-24 as the `host_secret_*` credential plane; see user commit `d59a35c`.)
-6. Closeout narrative `docs/host-capability-substrate/phase-0b-closeout.md` answering the 5 runbook questions.
-7. `phase-0b-self-review.md` v1.2.0 with closeout outcomes.
+2. Charter v1.2.0 landed with invariants 13-15 and the D-029 public-semver baseline split.
+3. ADR 0012, 0013, 0014, and 0015 landed in sequence (broker → forbidden-tier split → InterventionRecord → external-control-plane automation). ADR 0015 lands last because it depends on 0012's broker surface for the one-time-secret capture-at-source pattern.
+4. Scanner parity landed for traps #16 (`ignored-but-load-bearing-deletion`), #17 (`harness-config-boolean-type`), and #18 (`agent-echoes-secret-in-env-inspection`) in `measure-traps.sh`; seed is at 38 (18 prior + 7 Cloudflare Stage 3a + 5 shell/environment research v2 + 5 coordination-lessons brief + 1 Cloudflare tunnel-audience lesson + 1 process-argv secret-exposure lesson + 1 Cloudflare MCP fan-out diagnostics lesson). Traps #19–#36 are seed-only at closeout; traps #37 and #38 have scaffolds but no scanner heuristic yet. Expanded scaffold files remain Phase 1+ work (live-provider/surface fixtures for #19–#30 and #36; coordination/knowledge substrate gated by Q-003 for #31–#35; typed process-inspection operation for #37; broker/fan-out fixture for #38). Hook literal-forbidden-list extension for trap #18's secret-echo regexes landed with this flow.
+5. **DECISIONS.md batch commit (renumbered)** landed: D-029 (public-semver strings and separate app-build identifiers; Claude Code CLI `2.1.120`, Claude app `1.4758.0 (fb266c)` dated `2026-04-24T20:22:30.000Z`, Codex CLI `0.125.0`, Codex macOS app `26.422.30944 (2080)`, GPT-5.5/GPT-5.4-compatible HCS profiles + Opus 4.7 model posture), D-030 (OAuth-preferred HTTP MCP baseline; `enabled=false` + explicit opt-in, not profile-gating), D-031 (Codex profiles are CLI-only opt-ins), and D-032 (external control-plane automation; ADR 0015 is the master decision). Runtime-governs conflict rule is absorbed into D-026 + charter inv. 14. (D-028 already landed 2026-04-24 as the `host_secret_*` credential plane; see user commit `d59a35c`.)
+6. Closeout narrative `docs/host-capability-substrate/phase-0b-closeout.md` answers the 5 runbook questions.
+7. `phase-0b-self-review.md` v1.2.0 records closeout outcomes and Phase 1 carry-forward.
 
 **W4 — post-closeout Phase 1 prep.**
 
@@ -54,7 +54,7 @@ Direct-test queue (combined from report 1 §14 + report 2 verification + shell r
 6. Claude Code #18692 (resolved-secrets-into-`.mcp.json`) does NOT repro on 2.1.120.
 7. `shell_environment_policy.include_only` reliably exposes named var on Codex CLI 0.125.0 and Codex macOS app 26.422.30944 (2080). *(Shell research v2 **P04**: schema documented but cross-surface behavior undocumented; issue #3064 suggests divergence. Matrix test with env vectors, 10h.)*
 8. Verify `apiKeyHelper` CLI-only scope statement against live Anthropic docs. *(Shell research v2 §2.3 confirms at doc level.)*
-9. **Q-002**: our `[profiles.hcs-*]` consulted by which Codex surfaces?
+9. Confirm D-031 surface coverage: `[profiles.hcs-*]` are CLI-only opt-ins unless a future Codex app/IDE probe proves otherwise.
 10. Codex app MCP startup happens before worktree setup scripts. *(Shell research v2 **P03**: genuinely undocumented; marker-based timing test with synthetic repo, 8h.)*
 11. **NEW — P06**: Shell wrapper-log validation. Install `/usr/local/bin/hcs-shell-logger` that logs argv/flags/PPID/cwd then `exec`s `/bin/bash`; route each surface through it. Confirms Codex CLI = `bash -lc`, Claude fresh = `bash -c`, apiKeyHelper = `/bin/sh -c`. 4h.
 12. **NEW — P13**: Codex app sandbox boundary characterization (new `ExecutionContext` class). Inspect app bundle Info.plist + embedded sandbox profile + `codesign -d --entitlements -`; probe Keychain access, FS scope, network scope, env injection; cross-reference issue #10695. 4h.
@@ -70,7 +70,7 @@ Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, 
 - `just verify-baseline` recipe — operationalizes charter inv. 14's "retest on upgrade" cadence.
 - Semantic tool-name mapping (Bash ↔ exec_command) — resolves the acceptance-gate "cross-source redundancy = 0" known limitation.
 - Remaining Sparkle follow-ups F-01/F-02/F-03/F-07/F-11/F-13.
-- **Ring-0 entity additions from ADR 0015 scope** (Milestone 1 20-entity list expands; design choice of new-entity vs. Evidence-subtype deferred to ADR 0015 drafting): `RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `ProviderObjectReference`, `PathCoverage`, `McpAuthorizationSurface`, `AudienceValidationBinding` or `OriginAccessValidator` (name resolved in ADR 0015; motivated by `cloudflared` `audTag` mismatch), and `McpSessionObservation` / `ControlPlaneBackoffMarker` candidates (or Evidence subtypes) for authenticated MCP fan-out and `last_cf_mcp_429` diagnostics.
+- **Ring-0 entity additions from ADR 0015 scope** (Milestone 1 20-entity list expands; design choice of new entity vs. Evidence subtype remains a Phase 1 schema decision): `RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `ProviderObjectReference`, `PathCoverage`, `McpAuthorizationSurface`, `OriginAccessValidator` with nested/linked `AudienceValidationBinding` semantics (resolved by ADR 0015; motivated by `cloudflared` `audTag` mismatch), and `McpSessionObservation` / `ControlPlaneBackoffMarker` candidates (or Evidence subtypes) for authenticated MCP fan-out and `last_cf_mcp_429` diagnostics.
 - **Ring-0 entity additions from shell research v2 (ADRs 0016/0017)**: `ExecutionContext` (per-surface type with sub-classes `codex_cli`, `codex_app_sandboxed`, `codex_ide_ext`, `claude_code_cli`, `claude_desktop`, `claude_code_ide_ext`, `zed_external_agent`, `warp_terminal`; each with shell+invocation+startup-files+sandbox+env-inheritance facets per §II table). `EnvProvenance` (adopts devcontainer dichotomy: baked/runtime-applied/probed; carries provenance tags from the 14-source enum in §II). `CredentialSource` (10 classes listed in §II including `macos_keychain`, `long_lived_setup_token`, `api_key_helper`, `1password`, `infisical`, `devenv_secretspec`). `StartupPhase` (14-phase timeline from `boot` → `tool_call_subprocess` per §II.StartupPhase; enables temporal reasoning about env availability). These partially overlap ADR 0015's entities — reconciliation happens in the ADR 0016 drafting (shell research v2 §VIII).
 - **Trap scaffold expansion for #19–#30 and #36** (13 traps total: #19–#25 from Cloudflare brief + #26–#30 from shell research v2 + #36 `cloudflare-access-token-valid-but-tunnel-audtag-mismatch`). One file each under `packages/evals/regression/`, matching the #16/#18/#37 scaffold format. Scaffolding requires live-provider/surface fixtures available in Phase 1 test harness.
 - **Cloudflare Stage 3a eval fixture** — `cloudflare-access-stage3a-rate-limit-and-secret-capture.fixture.md` encoding the real trajectory. Seed trajectory in the Cloudflare lessons brief.
@@ -79,10 +79,24 @@ Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, 
 - **`hcs env-inspect` prototype** (shell research v2 §V.P12, 10h). Modes: `names_only | existence_check | classified | hashed`. Classifiers report "present + looks like JWT" / "present + looks like AWS key" / "present + non-secret shape" without echoing values. Includes regression trap for the `printenv | grep` anti-pattern. First-class operational surface for trap #18 defense-in-depth (text rule + hook + operation-shape).
 - **Typed process-inspection operation** — close trap #37 by separating host process reads from generic shell. Default to pid/name-only fields (`comm`), require redaction before transcript persistence for argv, and treat termination as a separate mutating operation requiring approval.
 - **Semantic ontology + resource-pressure research intake** — use `docs/host-capability-substrate/semantic-ontology-resource-research-plan.md` to collect official-source findings before Phase 1 Ring-0 schema work and ResourceBudget enforcement. Scope includes W3C-style semantic practices, Covenant/Citadel governance mapping, and test-runner/memory-pressure limits for Vitest, pytest/xdist, Node, Python, Playwright, Jest, Go, Cargo, Gradle, and macOS host signals.
+- **2026-04-26 research execution intake** — run the semantic/resource program as source-bound discovery before synthesis. Use the source-class taxonomy, worker result template, output registry, and verification gates added in `semantic-ontology-resource-research-plan.md` v1.1.0. If capacity is limited, start with Wave 1C/1D: Vitest, Jest, pytest/xdist, Node, Playwright, Go, Cargo, Gradle, package managers, containers, macOS memory pressure, and macOS process limits.
+- **Runner architecture compatibility intake** — preserve HCS/Citadel boundaries from `docs/host-capability-substrate/local-first-ci-opentofu-runner-design.md` and `docs/host-capability-substrate/research/external/2026-04-26-proposed-runner-architecture.md`: GitHub schedules and gates, Citadel/OpenTofu/PaC owns desired runner/workflow state, Proxmox/Linux x64 is the trusted self-hosted appliance class, hosted smoke remains the clean-room sentinel, MacBook runner use stays manual-only, and HCS consumes runner/check/resource/credential evidence rather than becoming a CI control plane. Q-005 gates any CI-specific entity or policy work.
 - **Provenance snapshot data** (shell research v2 §V.P08, 6h) — committed as `packages/fixtures/provenance-snapshot-YYYY-MM-DD.json` golden regression fixture; re-snapshot on tool version changes per charter inv. 14.
-- **Charter v1.3.0 candidate invariant 16** — "external-control-plane evidence-first": operations against remote control planes must produce typed evidence receipts (RateLimitObservation, RemoteMutationReceipt, CredentialIssuanceReceipt), distinguish ProviderObjectReference from SecretReference, and model audience/path/tunnel validator bindings before proposing provider-side mutations. Queue-only; v1.2.0 remains active through W3.
+- **Charter v1.3.0 candidate invariant 16** — "external-control-plane evidence-first": operations against remote control planes must produce typed evidence receipts (RateLimitObservation, RemoteMutationReceipt, CredentialIssuanceReceipt), distinguish ProviderObjectReference from SecretReference, and model audience/path/tunnel validator bindings before proposing provider-side mutations. Queue-only; v1.2.0 remains active until a deliberate Phase 1 charter amendment.
 - **Charter v1.3.0 candidate invariant 17** — "execution-context is declared, not inferred": every operation carries a resolved `ExecutionContext.surface` reference; agents must not assume a subprocess inherits credentials, env, or sandbox scope from the parent context. Motivated by shell research v2 conclusions 1, 8, 9, 10; §VI.
 - **Principal-level `ResourceBudget` rollup** — the Cloudflare 5-minute/1200-request limit is a user-level budget cumulative across dashboard/API-key/API-token/MCP surfaces. Principal-scoped `ResourceBudget` abstraction queued in ADR 0015, with broker enforcement consuming MCP fan-out diagnostics and `last_cf_mcp_429` markers before mutations.
+
+### CI runner compatibility items (gated by Q-005)
+
+The 2026-04-26 runner architecture brief is for a separate CI/runner project,
+but HCS must stay compatible with it. Treat the report as Ring 3 planning and
+do not implement runner infrastructure from this repo.
+
+- **Boundary rule:** HCS observes and gates HCS-mediated local host operations; GitHub/Citadel own CI scheduling, branch/ruleset gates, runner group desired state, workflow policy, and Proxmox runner definitions.
+- **Evidence candidates:** `RunnerHostObservation`, `RunnerIsolationObservation`, `WorkflowRunReceipt`, `CleanRoomSmokeReceipt`, `ResourceBudgetObservation`, and `PolicyPlanReceipt` should be considered as `Evidence` subtypes before adding standalone Ring-0 entities.
+- **Policy candidates:** public fork code on self-hosted runners, generic `runs-on: self-hosted`, MacBook always-on CI, runner tokens in OpenTofu state, personal credentials on CI hosts, and Docker socket exposure to untrusted jobs are forbidden/non-escalable candidates, but tier entries belong in canonical system-config policy after review.
+- **Regression-trap candidates:** `public-fork-self-hosted-runner`, `macbook-ambient-credential-runner`, `persistent-runner-workspace-authority`, `ci-cache-promoted-to-evidence`, `runner-token-in-opentofu-state`, `status-check-from-wrong-source`, `docker-socket-on-untrusted-runner`, and `workflow-yaml-as-build-system`. Do not add them to the committed corpus until a concrete observed failure or human-approved trap expansion exists.
+- **Phase 1 synthesis dependency:** fold runner observations into ResourceBudget/external-control-plane synthesis after Wave 1C/1D verification, not before.
 
 ### Coordination / shared-state items (gated by Q-003)
 
@@ -137,7 +151,7 @@ Discipline for W2–W3: no changes to `classify.py`, `.claude/hooks/`, `just mea
 - Package layout exists (`packages/schemas`, `packages/kernel`, `packages/adapters`, `packages/dashboard`, `packages/evals`, `packages/fixtures`)
 - `just verify` runs (even if it only runs lint + boundary-check + forbidden-string-scan + no-runtime-state-in-repo)
 - Schema package compiles (empty but typed)
-- `docs/host-capability-substrate/` exists with charter (v1.1.0+), tooling-surface-matrix, ADR stubs (0000 template + 0001-0011)
+- `docs/host-capability-substrate/` exists with charter (v1.2.0+), tooling-surface-matrix, ADR template, and accepted ADRs 0001-0015 through closeout
 - `AGENTS.md`, `CLAUDE.md`, `PLAN.md`, `IMPLEMENT.md`, `DECISIONS.md` in place
 - `.agents/skills/` has the six canonical workflow skills (hcs-adr-review, hcs-draft-adr, hcs-regression-trap, hcs-operation-proof, hcs-policy-tier-entry, hcs-schema-change)
 - `.claude/agents/` has six subagents (architect, ontology-reviewer, policy-reviewer, security-reviewer, hook-integrator, eval-reviewer)

@@ -241,6 +241,24 @@ SAFE_RULES = [
 ]
 
 
+SECRET_NAME_RE = r"(?:GITHUB_PAT|ANTHROPIC_API_KEY|OPENAI_API_KEY|RUNPOD_API_KEY|HF_TOKEN|[A-Z0-9_]*(?:TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT)|[A-Z0-9_]*_KEY)"
+
+SECRET_DISCLOSURE_RULES = [
+    (
+        rf"(?:^|[;&])\s*(?:printenv|env)\s*\|\s*grep\s+(?!-[A-Za-z]*v[A-Za-z]*\s).*(?:TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT|RUNPOD|HF_|GITHUB_PAT|ANTHROPIC_API_KEY|OPENAI_API_KEY)",
+        "secret-shaped environment enumeration",
+    ),
+    (
+        rf"(?:^|[;&])\s*printenv\s+{SECRET_NAME_RE}\s*(?:$|[;&|])",
+        "direct printenv of secret-shaped variable",
+    ),
+    (
+        rf"(?:^|[;&])\s*(?:echo|printf)\b[^|;&]*\$(?:\{{{SECRET_NAME_RE}\}}|{SECRET_NAME_RE}\b)",
+        "direct echo/printf of secret-shaped variable",
+    ),
+]
+
+
 def _tokenize(segment: str) -> list[str]:
     try:
         return shlex.split(segment, posix=True)
@@ -264,6 +282,13 @@ def _first_command(tokens: list[str]) -> str:
 def _match_first(rules, text: str):
     for pat, reason in rules:
         if re.search(pat, text):
+            return reason
+    return None
+
+
+def _match_secret_disclosure(command: str) -> str | None:
+    for pat, reason in SECRET_DISCLOSURE_RULES:
+        if re.search(pat, command):
             return reason
     return None
 
@@ -337,6 +362,19 @@ def classify(command: str) -> dict:
         return {"class": "parser-error", "reason": "empty", "first_token": "", "segments": []}
 
     s = command.strip()
+
+    # Trap #18 parity: secret-shaped env inspection is not a harmless read. This
+    # check runs before pipeline splitting because the unsafe shape is often
+    # `printenv | grep TOKEN`, whose individual pipeline segments look benign.
+    secret_reason = _match_secret_disclosure(s)
+    if secret_reason:
+        return {
+            "class": "forbidden",
+            "reason": secret_reason,
+            "first_token": _first_command(_tokenize(s)),
+            "segments": [s],
+            "subshells": [],
+        }
 
     # Split on pipeline operators AND command-substitution boundaries.
     # Extract $(...) and `...` subshells and classify them separately.

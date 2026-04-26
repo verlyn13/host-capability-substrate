@@ -6,7 +6,7 @@ You are helping build a host operations substrate. Favor boundary clarity over s
 
 ## Tool baseline
 
-Early-phase HCS work assumes Claude Code `1.3883.0 (93ff6c)` minimum with Opus 4.7 (`opus` in `.claude/settings.json`). Subsequent minor updates acceptable. Baseline re-evaluated at end of Phase 0b per boundary decision §2.5.
+Early-phase HCS work assumes Claude Code CLI `2.1.120` minimum with Opus 4.7 (`opus` in `.claude/settings.json`). Claude app build identifiers are tracked separately from CLI semver. Subsequent minor updates acceptable; see `DECISIONS.md` D-029.
 
 ## When asked to implement
 
@@ -16,7 +16,7 @@ Early-phase HCS work assumes Claude Code `1.3883.0 (93ff6c)` minimum with Opus 4
 - Never add convenience shell execution.
 - Never move policy into hooks or adapters.
 - When uncertain about a CLI behavior, add a fixture/evidence path rather than guessing.
-- Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md` (v1.1.0+).
+- Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md` (v1.2.0+).
 
 ## When reviewing
 
@@ -32,6 +32,10 @@ Look for:
 - forbidden-tier operations made approvable
 - approval grants with overly broad scope
 - skills content drifted into `.claude/skills/` without a canonical at `.agents/skills/`
+- cleanup claims that use `.gitignore` as deletion authority
+- host config values written from stale docs rather than installed-runtime parser evidence
+- GUI/app/IDE credential plans that assume terminal shell env inheritance
+- env/process inspection that prints secret-shaped values into transcripts
 
 Return objections before fixes. Blocking issues first, non-blocking second.
 
@@ -70,6 +74,6 @@ Six project-scoped subagents in `.claude/agents/`, all Opus 4.7, no Bash in any 
 
 Parent research plan (in system-config): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+).
 
-Charter: `docs/host-capability-substrate/implementation-charter.md` (v1.1.0+).
+Charter: `docs/host-capability-substrate/implementation-charter.md` (v1.2.0+).
 Tooling surface matrix: `docs/host-capability-substrate/tooling-surface-matrix.md`.
-Boundary decision: see `docs/host-capability-substrate/adr/0001-repo-boundary.md` in this repo (master document lives in system-config, v1.1.0+).
+Boundary decision: see `docs/host-capability-substrate/adr/0001-repo-boundary.md` in this repo (master document lives in system-config).

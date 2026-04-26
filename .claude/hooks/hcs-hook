@@ -54,11 +54,32 @@ forbidden_patterns=(
   "launchctl unload "
 )
 
+# Minimal closeout regexes for trap #18. These are guardrail literals only;
+# canonical classification moves to Ring 1 policy/gateway after Phase 0.
+forbidden_regexes=(
+  '(^|[;&]) *(echo|printf) +[^|;&]*\$(\{)?([A-Z0-9_]*(TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT)|[A-Z0-9_]*_KEY)'
+)
+
 # Scan the input for literal forbidden patterns.
 for pattern in "${forbidden_patterns[@]}"; do
   if printf '%s' "$input" | grep -qF "$pattern"; then
     printf 'hcs-hook: BLOCKED literal forbidden pattern matched: %q\n' "$pattern" >&2
     printf 'hcs-hook: See docs/host-capability-substrate/implementation-charter.md §Forbidden patterns\n' >&2
+    exit 2
+  fi
+done
+
+if printf '%s' "$input" | grep -Eq '(^|[;&]) *(printenv|env) *\| *grep +[^|;&]*(TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT|RUNPOD|HF_|GITHUB_PAT|ANTHROPIC_API_KEY|OPENAI_API_KEY)' \
+  && ! printf '%s' "$input" | grep -Eq '(^|[;&]) *(printenv|env) *\| *grep +-[A-Za-z]*v'; then
+  printf 'hcs-hook: BLOCKED secret-shaped environment enumeration\n' >&2
+  printf 'hcs-hook: use existence-only, names-only, classified, or hashed env inspection\n' >&2
+  exit 2
+fi
+
+for pattern in "${forbidden_regexes[@]}"; do
+  if printf '%s' "$input" | grep -Eq "$pattern"; then
+    printf 'hcs-hook: BLOCKED literal forbidden regex matched: %s\n' "$pattern" >&2
+    printf 'hcs-hook: use existence-only, names-only, classified, or hashed env inspection\n' >&2
     exit 2
   fi
 done

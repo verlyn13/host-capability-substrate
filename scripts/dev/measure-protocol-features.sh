@@ -20,7 +20,7 @@ data = {
     "ts": ts,
     "hosts": {
         "claude-code": {
-            "version_baseline": "1.3883.0 (93ff6c)",
+            "version_baseline": "2.1.120",
             "supports": {
                 "mcp_stdio": True,
                 "mcp_streamable_http": True,
@@ -38,7 +38,7 @@ data = {
             "notes": "Richest hook model. MCP tools appear as mcp__server__tool. HTTP hook failures non-blocking; command hooks enforce per D-005/006.",
         },
         "codex": {
-            "version_baseline": "26.417.41555 (1858)",
+            "version_baseline": "0.125.0",
             "supports": {
                 "mcp_stdio": True,
                 "mcp_streamable_http": "probe-required",

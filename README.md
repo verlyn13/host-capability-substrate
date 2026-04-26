@@ -6,14 +6,14 @@ HCS is infrastructure. It is the substrate on which every agent's actions compos
 
 ## Status
 
-Phase 0b — 3-day measurement soak underway for April 23, 2026 through April 25, 2026. The governance scaffold is in place; kernel, adapters, and dashboard code are still intentionally unimplemented.
+Phase 0b closeout — the April 23-25, 2026 measurement soak is captured and the April 26, 2026 closeout flow has landed. The governance scaffold is in place; kernel, adapters, and dashboard code are still intentionally unimplemented.
 
 ## Canonical governance
 
 Authoritative documents live in [`system-config`](https://github.com/verlyn13/system-config) (`~/Organizations/jefahnierocks/system-config/`):
 
 - Research plan — `docs/host-capability-substrate-research-plan.md` (v0.3.0+)
-- Implementation charter — `docs/host-capability-substrate/implementation-charter.md` (v1.1.0+) — copy vendored here at `docs/host-capability-substrate/implementation-charter.md`
+- Implementation charter — `docs/host-capability-substrate/implementation-charter.md` (v1.2.0+) — copy vendored here at `docs/host-capability-substrate/implementation-charter.md`
 - Boundary decision — in-repo pointer: `docs/host-capability-substrate/adr/0001-repo-boundary.md` (v1.1.0+; master lives in `system-config`)
 - Tooling surface matrix — `docs/host-capability-substrate/tooling-surface-matrix.md` (v1.0.0+) — copy vendored here
 - Live runtime policy — `policies/host-capability-substrate/` (**canonical; not in this repo**)
@@ -31,10 +31,10 @@ No lower ring may import from a higher ring. Enforced by CI from commit 1.
 
 ## Tool baseline (early phases)
 
-- **Claude Code** ≥ `1.3883.0 (93ff6c)` with Opus 4.7
-- **Codex** ≥ `26.417.41555 (1858)` with GPT-5.4
+- **Claude Code CLI** ≥ `2.1.120` with Opus 4.7; Claude macOS app build tracked separately
+- **Codex CLI** ≥ `0.125.0` with GPT-5.5/GPT-5.4-compatible HCS profiles; Codex macOS app build tracked separately
 
-Subsequent minor updates acceptable. Re-evaluate at end of Phase 0b.
+Subsequent minor updates acceptable. See `DECISIONS.md` D-029 for the public-semver/app-build split.
 
 ## Quick start
 

@@ -3,8 +3,8 @@ title: Host Capability Substrate — Implementation Charter
 category: charter
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-23
+version: 1.2.0
+last_updated: 2026-04-26
 tags: [substrate, kernel, adapters, ontology, policy, four-rings, non-import, skills, deployment-boundary]
 priority: critical
 ---
@@ -61,7 +61,13 @@ Ring 3: Agent/human workflows
 
 11. **Operations never use deprecated syntax when a modern replacement exists.** *(added in v1.1.0)* `launchctl load`/`unload` are deprecated; use `bootstrap`/`bootout`. The capability registry refuses to render deprecated verbs. Rule generalizes to any tool whose docs mark a syntax as deprecated.
 
-12. **Tool version baseline is explicit.** *(added in v1.1.0)* Early-phase HCS work is pinned to Claude Code ≥ `1.3883.0` with Claude Opus 4.7 and Codex ≥ `26.417.41555` with GPT-5.4. Baseline re-evaluation is a gated end-of-Phase-0b task. Subsequent minor updates are acceptable.
+12. **Tool version baseline is explicit.** *(added in v1.1.0; amended in v1.2.0)* Early-phase HCS work is pinned to public CLI semver strings: Claude Code CLI ≥ `2.1.120` with Claude Opus 4.7 and Codex CLI ≥ `0.125.0` with GPT-5.5/GPT-5.4-compatible HCS profiles. App build identifiers are tracked separately because app build numbers and CLI semver are different authority surfaces. Subsequent minor updates are acceptable; re-baseline after material version changes.
+
+13. **Deletion authority is not gitignore state.** *(added in v1.2.0)* Cleanup operations must distinguish derivable-from-source, ephemeral cache, user scratch, and load-bearing state before proposing deletion. `.gitignore` only says whether Git tracks a path; it never proves that the path is safe to remove. Load-bearing measurement, audit, runtime, broker, policy-cache, or materialized-facts paths are non-escalable until a typed authority source says otherwise.
+
+14. **Config-spec claims require authority provenance.** *(added in v1.2.0)* Runtime config assertions must carry `{source, observed_at, installed_version, authority_order}` provenance. Authority order is: observed runtime + matching changelog > static vendor docs > published schema > model memory. Agents must not write host-harness config from stale docs or model memory when a strict runtime parser can be checked first.
+
+15. **GUI shell-env inheritance must not be assumed.** *(added in v1.2.0)* GUI apps, app-bundled agents, IDE extensions, and background workers have their own `ExecutionContext`. They do not automatically inherit terminal shell exports, direnv state, zsh rc files, or agent-session env hooks. Credential and env availability must be modeled through launchd/session env, Keychain/OAuth, explicit MCP auth, brokered secret references, or probed execution-context evidence.
 
 ## Package boundary enforcement
 
@@ -77,6 +83,8 @@ CI checks at merge time:
 - *(added in v1.1.0)* No skill content exists only in `.claude/skills/`; every skill has a canonical file at `.agents/skills/<name>/SKILL.md`. `.claude/skills/<name>/SKILL.md` is permitted only when it adds Claude-specific frontmatter on top of the canonical body.
 - *(added in v1.1.0)* No file in the repo matches the `$HCS_STATE_DIR` or `$HCS_LOG_DIR` layout — runtime state must never enter the repo.
 - *(added in v1.1.0)* No committed file contains a resolved `op://` value or any string matching known secret patterns (gitleaks/forbidden-string scan).
+- *(added in v1.2.0)* Cleanup capabilities must include a deletion-authority source before any renderer can produce recursive delete or `find -delete` command shapes.
+- *(added in v1.2.0)* Config validators must prefer observed installed-runtime parsing where available before accepting schema/doc-only claims for host harness files.
 
 ## Authoring rules
 
@@ -109,6 +117,10 @@ When opening a PR:
 - *(v1.1.0)* Adding `.windsurf/skills/` or `.windsurf/` project-scope config — Windsurf has no project scope; cross-tool skills live in `.agents/skills/`
 - *(v1.1.0)* Committing resolved `op://` values or any secret-pattern match
 - *(v1.1.0)* Writing any runtime state, loaded policy copy, or audit archive into the repo
+- *(v1.2.0)* Treating `.gitignore` membership as deletion approval for `.logs/`, runtime state, materialized facts, audit partitions, or policy caches
+- *(v1.2.0)* Writing boolean-like config as strings (for example `"verbose": "true"`) when the installed parser expects JSON booleans
+- *(v1.2.0)* Assuming Codex app, Claude Desktop, IDE agents, or other GUI-launched surfaces inherit `GITHUB_PAT`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or shell-exported setup variables from a terminal session
+- *(v1.2.0)* Echoing or enumerating secret-shaped environment values with `printenv | grep`, `env | grep`, `echo "$API_KEY"`, or argv-equivalent diagnostics
 
 ## How to cite this charter
 
@@ -138,7 +150,7 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 ## References
 
 - Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+)
-- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+)
+- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md)
 - Tooling surface matrix: [`tooling-surface-matrix.md`](./tooling-surface-matrix.md) (v1.0.0+)
 - Target-repo templates: [`./templates/`](./templates/)
 - Existing governance precedents: `~/Organizations/jefahnierocks/system-config/policies/version-policy.md`, `~/Organizations/jefahnierocks/system-config/policies/opa/policy.rego`
@@ -147,5 +159,6 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.0 | 2026-04-26 | Added invariants 13-15 from Phase 0b closeout: deletion authority is not gitignore state, config-spec claims require authority provenance, and GUI shell-env inheritance must not be assumed. Amended invariant 12 to use public CLI semver with app-build identifiers tracked separately. Extended boundary enforcement and forbidden patterns for cleanup authority, config booleans, GUI env assumptions, and secret-value env inspection. |
 | 1.1.0 | 2026-04-22 | Added invariants 9–12 (skills canonical location, public/private deployment boundary, deprecated-syntax refusal, tool version baseline). Extended boundary enforcement with skills-location, runtime-state-not-in-repo, and no-secrets checks. Added forbidden patterns covering skill duplication, WARP.md, cross-surface policy duplication, `.windsurf/` creation, secret commits, and runtime-state commits. Added authoring requirements for `hcs-ontology-reviewer` on schema changes and `.agents/skills/` for skill changes. |
 | 1.0.0 | 2026-04-22 | Initial charter. Four rings, eight non-negotiable invariants, CI boundary enforcement, authoring rules, forbidden patterns. |

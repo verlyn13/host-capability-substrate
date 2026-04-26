@@ -14,8 +14,8 @@ priority: high
 Quantifies the economic and governance baseline before any substrate code ships. The current repo execution window is a **3-day soak from 2026-04-23 through 2026-04-25**, with closeout on 2026-04-26. It produces the numeric evidence the Phase 3 acceptance criteria will be measured against (≥50% reduction in redundant `--help` probes across agents, top-10 probed tools).
 
 Parent: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+) §6 Phase 0b, §22.11.
-Charter: [`implementation-charter.md`](./implementation-charter.md) v1.1.0+.
-Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) v1.1.0+.
+Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+.
+Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md).
 
 ## v1.2.0 revision note
 

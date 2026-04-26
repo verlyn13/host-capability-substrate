@@ -22,3 +22,7 @@ printf '%s\n' 'I noticed csrutil disable in the diff'
 jq '.notes' /tmp/audit.json
 awk '/sudo/ { print }' /var/log/system.log
 sed -n '1,20p' docs/incidents/2025-gatekeeper-toggle.md
+printenv RUNPOD_API_KEY >/dev/null && echo set
+printenv | awk -F= '{print $1}' | sort
+printenv | grep -vE '(_TOKEN|_KEY|_SECRET|_API_KEY)='
+rg 'printenv | grep TOKEN' docs/

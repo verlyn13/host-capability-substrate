@@ -3,8 +3,8 @@ title: HCS Phase 0b Self-Review
 category: review
 component: host_capability_substrate
 status: active
-version: 1.1.1
-last_updated: 2026-04-23
+version: 1.2.0
+last_updated: 2026-04-26
 tags: [phase-0b, review, producer-critic, critique-response]
 priority: medium
 ---
@@ -12,6 +12,37 @@ priority: medium
 # HCS Phase 0b Self-Review
 
 Record of producer/critic discipline on the Phase 0b measurement surface, per research plan §22.5 / §22.11.
+
+## v1.2.0 — closeout assessment
+
+The April 23-25, 2026 soak produced the required daily data and surfaced enough
+high-value failure classes to justify entering Phase 1, but the closeout is not
+an all-green gate. The cross-source redundancy metric still reports zero
+because it is name-based and does not yet know that Claude Code `Bash` and Codex
+`exec_command` are equivalent capability surfaces. This is measurement debt,
+not grounds to reinterpret the metric as a pass.
+
+Closeout work landed the following corrections:
+
+- Charter v1.2.0 invariants 13-15: deletion authority is not gitignore state,
+  config-spec claims require authority provenance, and GUI shell-env inheritance
+  must not be assumed.
+- ADR 0012-0015: credential broker scope, forbidden-tier split,
+  `InterventionRecord`, and external-control-plane automation.
+- DECISIONS.md D-029 through D-032: public-semver baseline, OAuth-preferred HTTP
+  MCP opt-in posture, Codex profiles as CLI-only opt-ins, and external
+  control-plane evidence discipline.
+- Scanner parity for traps #16, #17, and #18 in `measure-traps.sh`.
+- Classifier/hook parity for trap #18's secret-value env inspection patterns.
+- Closeout narrative at `docs/host-capability-substrate/phase-0b-closeout.md`.
+
+The remaining open work is deliberately Phase 1 work: semantic tool-name
+mapping, Thread B protocol probes, shell/environment P01-P13 direct tests, trap
+fixture expansion #19-#38, typed process inspection, and `hcs env-inspect`.
+
+Validation: `just verify` passes in the Phase 0 scaffold. Biome and `tsc` remain
+soft-skipped because dependencies are intentionally not installed yet; boundary,
+policy, secrets, runtime-state, and shellcheck gates pass.
 
 ## v1.1.1 — soak-window alignment
 
@@ -152,14 +183,15 @@ From `.logs/phase-0/brief.json` after one smoke run:
 ## References
 
 - Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.1.1
-- Charter: [`implementation-charter.md`](./implementation-charter.md) v1.1.0+
+- Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+
 - Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §6 Phase 0b, §22.11
-- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) v1.1.0+
+- Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md)
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.0 | 2026-04-26 | Added closeout assessment, recorded the honest redundancy-gate miss, and summarized charter/ADR/decision/scanner parity work plus Phase 1 carry-forward. |
 | 1.1.1 | 2026-04-23 | Aligned the self-review with the active 3-day soak window and corrected the trap-corpus gate to count the committed 15-entry seed corpus rather than only observed hits. |
 | 1.1.0 | 2026-04-22 | Critique response. Each of 6 findings (F-1 through F-6) recorded with status, root cause, fix, verification. Fresh critic pass post-fix logged. Acceptance-gate status honestly assessed. Design-decision notes added for downstream Phase 1 work. |
 | 1.0.0 | 2026-04-22 | Initial self-review during Phase 0b producer phase. Superseded by v1.1.0 after external critique. |

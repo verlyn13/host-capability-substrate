@@ -17,7 +17,7 @@
 # Safe to re-run any number of times; produces byte-identical output for the
 # same input transcripts.
 #
-# Charter alignment (v1.1.0+): analysis-only. Does not touch the hook,
+# Charter alignment (v1.2.0+): analysis-only. Does not touch the hook,
 # classifier, recorder, or any existing measurement collector used by
 # `just measure`. It reads raw transcripts already written to .logs/ by the
 # cross-agent prompt battery recorder.

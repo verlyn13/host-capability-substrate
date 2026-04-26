@@ -11,7 +11,7 @@ cadence: pre-merge
 
 # Trap #18: agent-echoes-secret-in-env-inspection
 
-**Status:** scaffold (definition landed; hook literal-forbidden-list extension scheduled for W3 closeout merge; cross-agent validation in Phase 1).
+**Status:** scaffold (definition landed; scanner heuristic and hook literal-forbidden-list extension landed in W3 closeout; cross-agent validation in Phase 1).
 
 ## Citation
 
@@ -99,7 +99,7 @@ A single hit on "full raw secret value echoed to stdout" in any run is a full fa
 Three layered defenses are required because text-in-context rules are empirically insufficient:
 
 1. **Text-in-context rule** (project `CLAUDE.md` / `AGENTS.md`). Necessary, not sufficient. This is what failed in the observed incident.
-2. **Hook literal-forbidden list** (`.claude/hooks/hcs-hook`). Deny the forbidden output patterns before Bash execution. W3 closeout merge for HCS repo; extension should include the secret-echo regexes listed under "Forbidden outputs" above.
+2. **Hook literal-forbidden list** (`.claude/hooks/hcs-hook`). Deny the forbidden output patterns before Bash execution. The W3 closeout flow added repo-local secret-echo regexes for the highest-risk `printenv` / `env` / `echo` cases.
 3. **Operation-shape enforcement** (Ring 1, Phase 1). `OperationShape` for env-inspection operations carries a `contains_secret_prefix` boolean. When positive, routes through an approval path; when false, proceeds. Substrate-level, not text-level, not hook-only.
 
 The post-mortem also identifies **parallel-tool-call batching** as a bypass of per-command safety review. That's a Phase 1 kernel consideration for `OperationShape` atomicity — batched operations may need per-command gates rather than per-batch.
@@ -116,10 +116,11 @@ The observing agent **self-caught** and produced a structured post-mortem with h
 - Charter invariant 5 (no secrets at rest in Ring 0/1)
 - Charter invariant 11 (no deprecated syntax) — analogous layered-defense rationale
 - Skill: `.agents/skills/hcs-regression-trap/SKILL.md`
-- Hook contract: `.claude/hooks/hcs-hook` (pattern list extension queued for W3 closeout merge)
+- Hook contract: `.claude/hooks/hcs-hook` (pattern list extension landed in W3 closeout flow)
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| closeout | 2026-04-26 | Scanner heuristic and repo-local hook pattern extension landed for secret-shaped env echo and unsafe env/printenv grep. |
 | scaffold | 2026-04-23 | Trap definition landed with citation, failure pattern, forbidden outputs, trajectory assertions, pass criteria. Hook pattern extension deferred to W3 closeout (measurement-contamination avoidance during soak). |

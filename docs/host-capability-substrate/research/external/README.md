@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.4.0
-last_updated: 2026-04-25
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag]
+version: 1.6.0
+last_updated: 2026-04-26
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners]
 priority: medium
 ---
 
@@ -30,9 +30,11 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-23-substrate-config-research-v1.md` | 2026-04-23 | Tactical playbook: macOS Tahoe 26.4.1 / Codex CLI + app / Claude Code + Desktop / GitHub MCP / OAuth / 1Password. ~580 lines, ~70 URL citations. |
 | `2026-04-23-substrate-config-research-v2.md` | 2026-04-23 | Architectural advisory: same topic scope, tighter evidence discipline, Anthropic-first-party citation that `apiKeyHelper` is CLI-only. ~130 lines, ~40 citations. |
 | `2026-04-24-cloudflare-lessons.md` | 2026-04-24 | External-control-plane automation lessons from the Cloudflare Access Stage 3a service-token workflow. Produced by the Stage 3a executing agent after the incident; hand-delivered to HCS. Proposes 8 design rules, 7 regression-trap candidates, and 4 new Ring-0 entity classes (`RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `PathCoverage`) plus `ProviderObjectReference`/`McpAuthorizationSurface`. Synthesis memory: `project_cloudflare_stage3a_lessons.md`. |
-| `2026-04-24-cloudflare-tunnel-audience-addendum.md` | 2026-04-24 | Field addendum from the later Codex/Hetzner coordination thread. Corrects the follow-on 403 root cause to `cloudflared` tunnel-side JWT audience validation (`audTag` missing the child Access app AUD), not Access policy evaluation. Queues Q-004, trap seed #36, and ADR 0015 entity/taxonomy work for `AudienceValidationBinding` vs `OriginAccessValidator`. |
+| `2026-04-24-cloudflare-tunnel-audience-addendum.md` | 2026-04-24 | Field addendum from the later Codex/Hetzner coordination thread. Corrects the follow-on 403 root cause to `cloudflared` tunnel-side JWT audience validation (`audTag` missing the child Access app AUD), not Access policy evaluation. Q-004 is resolved by ADR 0015 as `OriginAccessValidator` with nested/linked `AudienceValidationBinding` semantics; trap seed #36 remains Phase 1 fixture work. |
 | `2026-04-25-cloudflare-mcp-diagnostics-addendum.md` | 2026-04-25 | Field addendum from the temporary MCP usage collector and Cloudflare diagnostics. Confirms authenticated Cloudflare MCP fan-out across Claude/Codex hosts, 9 -> 0 authenticated-session drop after quarantine, docs-MCP degraded mode, and queues trap #38 plus ADR 0015/0012 broker requirements for principal-scoped rate-limit budgets. |
 | `2026-04-24-coordination-lessons.md` | 2026-04-24 | Shared-state / coordination-store lessons from a separate "three-repo incident" (release coordination across producer/consumer/shared-worktree repos where prose, local checkouts, live infra, GHCR, 1Password, and docs drifted as competing partial sources of truth). Frames HCS shared state as **typed evidence + coordination + retrieval index — not agent memory**. Proposes ADR 0019 (knowledge-and-coordination store), 4 new Ring-0 entity classes (`KnowledgeSource`, `KnowledgeChunk`, `CoordinationFact`, `DerivedSummary`), 5 regression-trap candidates #31–#35, charter v1.3.0 invariant 18 candidate ("RAG may discover; only typed evidence may decide"), D-033 candidate, and a promotion workflow (agent proposes → verifier promotes). Five sub-decisions bundled as **Q-003 pending** rather than silently adopted — scope/sequencing/taxonomy is a major design commitment. Synthesis memory: `project_coordination_lessons_shared_state.md`. |
+| `2026-04-26-research-execution-results.md` | 2026-04-26 | Research execution brief for the semantic ontology and resource-pressure plan. Recommends source-bound discovery before synthesis, a source-class taxonomy, worker result templates, verification gates, and Wave 1C/1D resource-pressure research as the first concrete batch. |
+| `2026-04-26-proposed-runner-architecture.md` | 2026-04-26 | Proposed runner architecture for a separate CI project that must remain compatible with HCS and organizational principles. Recommends Proxmox-first/Linux-first/GitHub-orchestrated runners, hosted smoke sentinels, Citadel-owned OpenTofu/PaC, manual-only MacBook runner use, and HCS consuming runner/check/resource evidence rather than owning CI execution. |
 
 ## Reconciled conclusions
 
@@ -41,22 +43,22 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 See session memory `project_substrate_config_research_report1.md` (which despite the name covers the synthesis of **both** reports). The memory file locks the approved decision matrix dated 2026-04-23, including:
 
 - Charter v1.2.0 scope (invariants 13 + 14 + 15)
-- D-028 (OAuth-preferred HTTP MCP)
+- D-028 (`host_secret_*` caller-facing credential plane)
 - D-029 (amend D-022 to public-semver matching `--version`)
-- D-030 (absorbed into D-026 + charter inv. 14 body)
+- D-030 (OAuth-preferred HTTP MCP baseline)
 - D-031 (Codex profiles CLI-only opt-in)
-- ADR 0012 conditional-broker scope
+- ADR 0012 committed, phased credential-broker scope
 
 Metal-verified claims (live on this host 2026-04-23) also in the synthesis memory.
 
 ### 2026-04-24 Cloudflare lessons (Stage 3a)
 
-See session memory `project_cloudflare_stage3a_lessons.md`. The memory captures the queued integration:
+See session memory `project_cloudflare_stage3a_lessons.md`. The memory captured the queued integration; the closeout state is:
 
-- ADR 0015 draft (**external control-plane automation**) — scope: Cloudflare, GitHub, 1Password-CLI, MCP-OAuth, DNS providers, Hetzner as one provider class with typed evidence discipline. Queued for W3 merge sequence after ADR 0014; drafting window is W2 + early W4.
+- ADR 0015 accepted (**external control-plane automation**) — scope: Cloudflare, GitHub, 1Password-CLI, MCP-OAuth, DNS providers, Hetzner as one provider class with typed evidence discipline.
 - Ring-0 entity additions to the Milestone 1 20-entity list: `RateLimitObservation`, `RemoteMutationReceipt`, `CredentialIssuanceReceipt`, `ProviderObjectReference` distinct from `SecretReference`, `PathCoverage`, `McpAuthorizationSurface`.
 - 7 trap seeds added to `packages/evals/regression/seed.md` as #19–#25 (seeds only; scaffold expansion deferred to Phase 1).
-- D-032 candidate for the W3 DECISIONS.md batch: "HCS treats external APIs as typed, evidence-producing control planes, not shell-string targets."
+- D-032 landed in the W3 DECISIONS.md batch: "HCS treats external APIs as typed, evidence-producing control planes, not shell-string targets."
 - v1.3.0 charter candidate "inv. 16: external-control-plane evidence-first" — queue-only; v1.2.0 remains the active amendment draft.
 - ADR 0012 broker scope expands to cover one-time-secret capture-at-source pattern (not just daemon-at-socket).
 
@@ -64,12 +66,12 @@ See session memory `project_cloudflare_stage3a_lessons.md`. The memory captures 
 
 The later Codex/Hetzner coordination thread adds a separate root-cause lesson: Cloudflare Access can accept a child-app JWT while `cloudflared` rejects the same JWT before origin because the tunnel `audTag` allowlist contains only the parent Access app AUD. This strengthens ADR 0015 rather than creating a separate architecture track.
 
-Queued integration:
+Closeout integration:
 
-- **Q-004 pending** in `DECISIONS.md`: decide whether this is modeled as `AudienceValidationBinding`, `OriginAccessValidator`, or a specialization of `PathCoverage` / `McpAuthorizationSurface`.
+- **Q-004 resolved** by ADR 0015: model the tunnel/origin rejection surface as `OriginAccessValidator`, with nested/linked `AudienceValidationBinding` semantics rather than as plain `PathCoverage` or `McpAuthorizationSurface`.
 - **Trap seed #36**: `cloudflare-access-token-valid-but-tunnel-audtag-mismatch`.
 - **Fixture candidate**: `cloudflare-access-tunnel-audience-mismatch.fixture.md`.
-- **D-032 wording**: distinguish Access app AUDs, tunnel validator allowlists, and origin reachability receipts from provider object ids, public client ids, secret material, and `SecretReference` values.
+- **D-032 landed wording**: distinguish Access app AUDs, tunnel validator allowlists, and origin reachability receipts from provider object ids, public client ids, secret material, and `SecretReference` values.
 - **ADR 0015 requirement**: before proposing another Access policy mutation, collect evidence for "Access accepted/denied", "tunnel validator accepted/denied", and "origin reached/not reached" as separate facts.
 
 ### 2026-04-25 Cloudflare MCP diagnostics addendum
@@ -122,6 +124,33 @@ See session memory `project_coordination_lessons_shared_state.md`. The brief's c
 4. **Promotion workflow formalization**: is "agent proposes / verifier promotes" a parallel track to the existing approval-grant pattern (M2), or does it reuse approval-grant semantics with a different target?
 5. **Charter v1.3.0 invariant 18**: formalize "RAG/derived retrieval may discover; only typed evidence/receipts/leases/decisions/live-probes may decide" as a non-negotiable invariant, or keep as a strong guideline under existing inv. 8?
 
+### 2026-04-26 research execution brief
+
+This brief refines `docs/host-capability-substrate/semantic-ontology-resource-research-plan.md` rather than adding a standalone architecture decision.
+
+Reconciled integration:
+
+- The research remains Ring 3 planning until official-source findings pass a verification gate.
+- Discovery workers should receive narrow source-bound prompts, not the full local HCS hypothesis set.
+- Source classes (`official`, `primary`, `secondary`, `discovery`) must be recorded on every claim.
+- Wave 1C/1D resource-pressure work should run first when capacity is limited because it is version-sensitive and directly affects `ResourceBudget`, `ResourceObservation`, `WorkloadShape`, and `ExecutionLease` design.
+- Synthesis outputs queue ADRs for semantic foundation, governance authority semantics, ResourceBudget/host pressure, and rollout posture; no schema/entity changes land from the report alone.
+
+Planning changes landed in `docs/host-capability-substrate/semantic-ontology-resource-research-plan.md` v1.1.0 and `PLAN.md`.
+
+### 2026-04-26 proposed runner architecture
+
+The runner report concerns a separate CI/runner project. HCS compatibility is strong if the boundary is kept explicit:
+
+- GitHub remains the workflow scheduler, check/status source, and branch/ruleset gate.
+- Citadel/OpenTofu/PaC owns desired infrastructure, runner group access, workflow policy, and Proxmox runner definitions if those become managed IaC.
+- Proxmox/Linux x64 is the canonical self-hosted CI appliance class for trusted/private workloads.
+- GitHub-hosted smoke/sentinel checks remain the clean-room proof, especially for public-source repos.
+- MacBook M3 Max/macOS runner usage remains manual-only for macOS/ARM compatibility, not ordinary CI.
+- HCS records typed runner, workflow, resource, cache, and credential-reference evidence. It does not become a parallel CI control plane.
+
+Pending design question Q-005 records the HCS-side boundary and entity-shape work. The existing draft report `docs/host-capability-substrate/local-first-ci-opentofu-runner-design.md` remains the HCS compatibility synthesis; the external report staged here is preserved as input evidence.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -150,6 +179,8 @@ Reports should be staged here verbatim from the source; do not edit the content 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.6.0 | 2026-04-26 | Staged the 2026-04-26 research execution and proposed runner architecture reports. Reconciled resource-pressure research sequencing into the semantic/resource plan and queued HCS runner-compatibility boundary work as Q-005. |
+| 1.5.0 | 2026-04-26 | Reconciled Phase 0b closeout: ADR 0015 accepted, Q-004 resolved as `OriginAccessValidator` with `AudienceValidationBinding` semantics, D-032 landed, and ADR 0012 credential broker scope committed. |
 | 1.4.0 | 2026-04-25 | Staged `2026-04-25-cloudflare-mcp-diagnostics-addendum.md`. Added trap #38 and ADR 0015/0012 integration notes for authenticated Cloudflare MCP fan-out, quarantine, principal-scoped `ResourceBudget`, and docs-MCP degraded mode. |
 | 1.3.0 | 2026-04-24 | Staged `2026-04-24-cloudflare-tunnel-audience-addendum.md`, preserving the original Cloudflare lessons brief as first received. Added Q-004 / trap #36 / ADR 0015 integration notes for `cloudflared` tunnel-side audience validation (`audTag` missing child Access app AUD). |
 | 1.2.0 | 2026-04-24 | Staged `2026-04-24-coordination-lessons.md` (shared-state / coordination-store brief from "three-repo incident"). Added Reconciled-conclusions subsection with four-category mapping (already-covered / strengthens-existing / genuinely-new / five-major-decisions-deferred). ADR 0019 candidate scoped for post-Phase-1, four Ring-0 entity additions queued, five trap seeds #31–#35 seeded, D-033 candidate queued (NOT in W3 batch), charter v1.3.0 invariant 18 candidate queued, **Q-003 pending added to DECISIONS.md** bundling five sub-decisions. Explicit discipline: the brief is highly aligned with existing HCS posture but committing to the three-layer architecture is a whole-system design commitment requiring deliberate consideration, not closeout-week silent adoption. |

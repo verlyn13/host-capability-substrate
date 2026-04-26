@@ -33,3 +33,7 @@ sudo pmset -a disablesleep 1
 brew install --cask something
 sudo pip install -U pip
 defaults delete com.apple.dock
+printenv | grep -E '^(HCS_|RUNPOD_|HF_)'
+env | grep TOKEN
+echo "$RUNPOD_API_KEY"
+printenv GITHUB_PAT

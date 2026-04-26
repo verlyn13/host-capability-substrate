@@ -3,8 +3,8 @@ title: HCS Hook Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.2.0
-last_updated: 2026-04-23
+version: 0.3.0
+last_updated: 2026-04-26
 tags: [hooks, claude-code, codex, policy, contracts]
 priority: medium
 ---
@@ -39,6 +39,13 @@ The Phase 0b measurement hook:
 - Writes decision records to `.logs/phase-0/<YYYY-MM-DD>/hook-decisions.jsonl`
 - Always returns `allow` in Phase 0b; it is measurement-only, never the enforcement boundary
 - Exists to collect evidence for the April 23-25, 2026 soak, not to replace substrate policy
+
+Closeout parity on 2026-04-26 added trap #18 coverage to the interim
+classifier and repo-local literal hook: direct secret-shaped env echo and
+`printenv|env | grep` value enumeration are treated as forbidden measurement
+events. Safe alternatives are existence-only, names-only, classified, or hashed
+inspection. This remains a thin guardrail; canonical enforcement moves to Ring 1
+when `system.policy.classify_operation.v1` exists.
 
 ## Phase 3+ (RPC to substrate)
 
@@ -81,5 +88,6 @@ Advisory only. Bash-only coverage per D-007. Codex hook logs + warns; substrate 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.0 | 2026-04-26 | Added Phase 0b closeout note for trap #18 secret-safe env-inspection parity in the interim classifier and repo-local hook. |
 | 0.2.0 | 2026-04-23 | Added the Phase 0b measurement-hook contract and clarified the distinction between the repo-local guardrail hook and the opt-in soak hook. |
 | 0.1.0 | 2026-04-22 | Initial stub. |

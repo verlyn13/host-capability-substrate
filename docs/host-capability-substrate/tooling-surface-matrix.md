@@ -3,8 +3,8 @@ title: HCS Tooling Surface Matrix
 category: reference
 component: host_capability_substrate
 status: active
-version: 1.0.0
-last_updated: 2026-04-23
+version: 1.1.0
+last_updated: 2026-04-26
 tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration]
 priority: high
 ---
@@ -13,12 +13,12 @@ priority: high
 
 Authoritative reference for which config file belongs to which tool, what each tool can enforce vs observe, where skills and policy actually live, and what posture each surface must hold at Phase 0a / Phase 3 / Phase 4. Intended to prevent "where should this go?" drift.
 
-Parent decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+). Charter: [`implementation-charter.md`](./implementation-charter.md).
+Parent decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md). Charter: [`implementation-charter.md`](./implementation-charter.md).
 
 ## Tool baseline (binding during early phases)
 
-- **Claude Code:** `1.3883.0 (93ff6c)` dated `2026-04-21T17:24:01.000Z` minimum; Opus 4.7 model (`opus` short name in settings)
-- **Codex:** `26.417.41555 (1858)` minimum; GPT-5.4 (`gpt-5.4` short name in profiles)
+- **Claude Code CLI:** `2.1.120` minimum; Opus 4.7 model (`opus` short name in settings). Claude macOS app build identifiers are tracked separately.
+- **Codex CLI:** `0.125.0` minimum; GPT-5.5/GPT-5.4-compatible HCS profiles. Codex macOS app build identifiers are tracked separately.
 - **Subsequent minor updates:** acceptable without re-baselining
 
 Re-evaluate at end of Phase 0b.
@@ -190,15 +190,15 @@ When adding X to the repo, route by type:
 - **Putting policy tier data in Cursor rules or AGENTS.md** — these are pointers; the live tier file is in system-config.
 - **Adding `.copilot/` stubs speculatively** — only add when Copilot is actually part of HCS workflow.
 - **Scoping HCS subagents to `~/.claude/agents/`** — project-scope keeps them invisible outside HCS work.
-- **Using `sonnet` or `haiku` models during early-phase HCS work** — early-phase baseline is Opus 4.7 for Claude, GPT-5.4 for Codex.
+- **Using `sonnet` or `haiku` models during early-phase HCS work** — early-phase baseline is Opus 4.7 for Claude, GPT-5.5/GPT-5.4-compatible HCS profiles for Codex.
 - **Using WARP.md or .cursor/rules/ for policy enforcement** — those surfaces can't enforce; Claude Code settings + HCS gateway enforce.
 
 ## References
 
 ### Internal
 
-- [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md) (v1.1.0+)
-- [`implementation-charter.md`](./implementation-charter.md) (v1.1.0+)
+- [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md)
+- [`implementation-charter.md`](./implementation-charter.md) (v1.2.0+)
 - `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`
 - `~/Organizations/jefahnierocks/system-config/docs/mcp-config.md`
 - `~/Organizations/jefahnierocks/system-config/docs/project-conventions.md`
@@ -216,4 +216,5 @@ When adding X to the repo, route by type:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.1.0 | 2026-04-26 | Updated early-phase tool baselines to public CLI semver per D-029 and charter v1.2.0; app build identifiers are now tracked separately. |
 | 1.0.0 | 2026-04-22 | Initial matrix. Created alongside boundary decision v1.1.0 to prevent "where should this go?" drift. |

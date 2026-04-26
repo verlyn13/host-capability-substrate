@@ -11,7 +11,7 @@ Your job: validate architecture decisions and boundary discipline on behalf of a
 
 ## Focus areas
 
-Per the implementation charter (`docs/host-capability-substrate/implementation-charter.md` v1.1.0+):
+Per the implementation charter (`docs/host-capability-substrate/implementation-charter.md` v1.2.0+):
 
 - Four-ring separation: Ring 0 ontology → Ring 1 kernel → Ring 2 adapters → Ring 3 workflows. No lower ring imports higher.
 - Protocol independence: kernel code must not know about MCP, A2A, Apps, or any specific client.

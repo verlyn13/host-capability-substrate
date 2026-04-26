@@ -45,8 +45,8 @@ file_count=$(wc -l < "$file_list_tmp" | tr -d ' ')
 echo "  scoping: $file_count file(s) within 7d window"
 
 # Trap patterns currently instrumented for the Phase 0b scanner.
-# This is narrower than the 15-entry seed corpus in
-# packages/evals/regression/seed.md; scanner expansion is follow-up work.
+# This remains narrower than the full seed corpus, but closeout scanner parity
+# catches up through traps #16, #17, and #18.
 # key => pattern
 declare -A trap_patterns=(
   [launchctl-deprecated-verbs]='launchctl[[:space:]]+(load|unload)[[:space:]]'
@@ -61,6 +61,9 @@ declare -A trap_patterns=(
   [brew-cask-escalation-missed]='brew[[:space:]]+install[[:space:]]+--cask[[:space:]]'
   [shell-mode-confusion-login]='bash[[:space:]]+-lc[[:space:]]'
   [venv-vs-system-python]='/usr/bin/python3?[[:space:]]+(-m[[:space:]]+pip|pip|install)'
+  [ignored-but-load-bearing-deletion]='(rm[[:space:]]+-[rfRF]+[[:space:]]+(\./)?\.logs|find[[:space:]]+(\./)?\.logs[^|;&]*-[[:space:]]*delete|rsync[^|;&]*--delete[^|;&]*(\./)?\.logs)'
+  [harness-config-boolean-type]='"(verbose|enabled|required|disabled|strict|debug)"[[:space:]]*:[[:space:]]*"(true|false)"'
+  [agent-echoes-secret-in-env-inspection]='((printenv|env)[[:space:]]*\|[[:space:]]*grep[^|;&]*(TOKEN|SECRET|API_KEY|RUNPOD|HF_|GITHUB_PAT|ANTHROPIC_API_KEY|OPENAI_API_KEY)|echo[^|;&]*\$({)?([A-Z0-9_]*(TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT)|[A-Z0-9_]*_KEY))'
 )
 
 total_hits=0

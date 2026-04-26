@@ -3,8 +3,8 @@ title: HCS semantic ontology and resource pressure research plan
 category: research-plan
 component: host_capability_substrate
 status: draft
-version: 1.0.0
-last_updated: 2026-04-25
+version: 1.1.0
+last_updated: 2026-04-26
 tags: [ontology, semantics, resource-budget, memory-pressure, test-concurrency, covenant, citadel]
 priority: high
 ---
@@ -31,13 +31,113 @@ Matching existing ADR context:
 - ADR 0001: repo boundary
 - ADR 0009: ontology versioning
 - ADR 0011: public/private boundary
-- Future ADR 0012: credential broker
-- Future ADR 0015: external control-plane automation
+- ADR 0012: credential broker
+- ADR 0015: external control-plane automation
 - Future ADR 0016/0017/0018: shell/environment and execution-context work
 - Future ADR 0019 candidate: knowledge and coordination store
 
 If the research changes entity semantics, source authority, or rollout safety
 rules, draft a new ADR or amend the relevant future ADR before schema work.
+
+## 2026-04-26 Research Execution Intake
+
+The external research execution brief staged at
+`docs/host-capability-substrate/research/external/2026-04-26-research-execution-results.md`
+turns this plan into an agentic research workflow. Its core instruction is
+binding for Phase 1 planning: discovery workers collect source-bound facts
+first; synthesis happens only after a verification pass. Workers should not see
+the full local hypothesis set, Covenant/Citadel conclusions, or sibling worker
+outputs because those would bias discovery toward confirming the current HCS
+design.
+
+### Source Classes
+
+Research outputs must classify every source:
+
+| Class | Gate eligibility | Definition |
+|---|---:|---|
+| `official` | yes | Spec publisher, tool/project official docs, official repo docs, or official release notes. |
+| `primary` | usually | Maintainer-authored RFC, design note, standards-track draft, or official project proposal. |
+| `secondary` | no | Blog, book, tutorial, vendor article, or independent analysis. |
+| `discovery` | no | Forums, Stack Overflow, Reddit, AI summaries, and issue comments unless maintainer-owned and explicitly promoted. |
+
+Only `official` and promoted `primary` claims may influence ADR, schema, or
+policy decisions. `secondary` and `discovery` sources can identify questions but
+cannot become gate inputs.
+
+### Result Template
+
+Every worker claim should use this shape:
+
+```markdown
+### Source: <title>
+
+- claim_id:
+- workstream:
+- source_class: official | primary | secondary | discovery
+- verification_status: unverified | self-attested | re-fetched | conflicting | quarantined
+- URL/citation:
+- Publisher:
+- Version/date:
+- Retrieved/observed at:
+- Official status:
+- Relevant claim:
+- Exact excerpt or tight paraphrase:
+- HCS implication candidate:
+- Affected entity/ADR/trap:
+- Confidence:
+- Open follow-up:
+```
+
+Workers may fill `HCS implication candidate`, but the coordinator treats it as
+advisory until synthesis.
+
+### Output Registry
+
+Initial attachment targets:
+
+- Entities: `Evidence`, `Decision`, `OperationShape`, `Run`, `Artifact`,
+  `ResourceBudget`, `ResourceObservation`, `WorkloadShape`, `ExecutionLease`,
+  `SecretReference`, `Principal`, `Capability`, `ApprovalGrant`, `Session`
+- ADRs: ADR 0009 amendment candidate, semantic foundation ADR, governance
+  authority semantics ADR, ResourceBudget/host-pressure ADR, rollout posture ADR
+- Traps: `stale-ontology-term`, `summary-as-fact`,
+  `retrieved-summary-as-authority`, `agent-overclaim`,
+  `test-runner-unbounded-workers`, `watch-mode-left-running`,
+  `browser-tests-without-resource-lease`,
+  `memory-pressure-ignored-before-full-suite`, `secret-value-persisted`,
+  `external-mutation-without-broker`
+
+### Discovery Waves
+
+Run Wave 1C and 1D first if capacity is limited; they are the most
+version-sensitive and have the clearest operational payoff.
+
+| Wave | Scope | First batch |
+|---|---|---|
+| 1A | Semantic foundation | RDF, OWL, SHACL, SKOS, PROV, JSON-LD, JSON Schema, versioning |
+| 1B | Governance semantics | OPA/Rego, audit guidance, RBAC/ABAC, SLSA/Sigstore, secrets management |
+| 1C | Tool concurrency and resource pressure | Vitest, Jest, pytest/xdist, Node, Playwright, Go, Cargo, Gradle, package managers, containers |
+| 1D | macOS host signals | memory pressure, `setrlimit`, launchd/shell limits |
+
+Wave 1C has extra version discipline: each concurrency default must carry the
+latest stable version or current doc version as of the observed date, plus
+release-note review for changes in the last 24 months where available.
+
+### Verification Gate
+
+No discovery bundle moves to synthesis until these checks are clean:
+
+| Gate | Check | Failure action |
+|---|---|---|
+| Citation re-fetch | Re-fetch at least 30%, minimum 3 cited sources per worker. | Mark claim `conflicting` or `quarantined`. |
+| Source-class audit | Confirm every `official` source is actually controlled by the publisher/project. | Downgrade to `secondary` or `discovery`. |
+| Version-pin audit | Require version/date for every 1C concurrency claim. | Return to worker. |
+| Excerpt fidelity | Confirm excerpt/paraphrase is faithful. | Correct or quarantine. |
+| Conflict log | Flag contradictions across workers. | Coordinator resolves in synthesis, not verifier. |
+
+Exit criteria: zero fabricated citations, zero unpinned 1C defaults, zero
+official-source misclassifications, and all conflicts logged.
 
 ## Local Principles To Preserve
 
@@ -490,4 +590,5 @@ The research is ready for ADR drafting when:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.1.0 | 2026-04-26 | Ingested the research execution brief. Added source-class taxonomy, worker result template, output registry, discovery wave sequencing, and verification gates; prioritized Wave 1C/1D resource-pressure work before synthesis. |
 | 1.0.0 | 2026-04-25 | Initial research plan for semantic/ontology foundation, Covenant/Citadel alignment, and host resource-pressure/test-concurrency controls. |

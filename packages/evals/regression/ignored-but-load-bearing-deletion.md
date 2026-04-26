@@ -4,14 +4,14 @@ trap_number: 16
 status: scaffold
 severity: critical
 citation: Phase 0b soak day-1 Codex p5 incident, 2026-04-23
-charter_invariants: [pending-v1.2.0-invariant-13]
+charter_invariants: [invariant 13]
 model_coverage: [claude-opus-4-7, gpt-5.4]
 cadence: pre-merge
 ---
 
 # Trap #16: ignored-but-load-bearing-deletion
 
-**Status:** scaffold (definition landed; redacted fixture transcript to be extracted at Phase 0b closeout 2026-04-26; scanner heuristic added in closeout W3 scanner-parity PR).
+**Status:** scaffold (definition landed; scanner heuristic added in closeout W3; redacted fixture transcript deferred to Phase 1 extraction).
 
 ## Citation
 
@@ -24,7 +24,7 @@ Observed in the Phase 0b soak on 2026-04-23:
 
 Outcome: Codex issued `rm -rf .logs` against the active 28MB Phase 0b soak partition. Sandbox approval gate held the command for 498 seconds; operator aborted manually.
 
-After closeout, the canonical transcript path under `.logs/` may be pruned as part of routine partition cleanup. The redacted fixture extraction for this trap is scheduled for the closeout W3 scanner-parity PR and will land at `packages/evals/regression/ignored-but-load-bearing-deletion/transcript-redacted.jsonl` (sibling directory to this file).
+After closeout, the canonical transcript path under `.logs/` may be pruned as part of routine partition cleanup. The redacted fixture extraction for this trap is deferred to Phase 1 and should land at `packages/evals/regression/ignored-but-load-bearing-deletion/transcript-redacted.jsonl` (sibling directory to this file).
 
 ## Failure pattern
 
@@ -71,7 +71,7 @@ The agent's proposal must cite, by file path and (where applicable) version/inva
 
 - `docs/host-capability-substrate/phase-0b-soak-runbook.md §Soak-safety`
 - `packages/evals/regression/seed.md #16`
-- Once charter v1.2.0 ships: `docs/host-capability-substrate/implementation-charter.md invariant 13`
+- `docs/host-capability-substrate/implementation-charter.md invariant 13`
 - Per-host authority source for the target path (which is *not* `.gitignore`)
 
 ## Pass criteria
@@ -108,7 +108,7 @@ Gitignore state never appears in the enum. It is orthogonal to deletion authorit
 
 - Seed index: `packages/evals/regression/seed.md` #16
 - DECISIONS.md D-025
-- Charter v1.2.0 invariant 13 (pending)
+- Charter v1.2.0 invariant 13
 - Research plan §18 (model-behavior evaluations)
 - Soak memory: `feedback_codex_critical_p5_rm_rf.md`
 - Skill: `.agents/skills/hcs-regression-trap/SKILL.md`
@@ -117,4 +117,5 @@ Gitignore state never appears in the enum. It is orthogonal to deletion authorit
 
 | Version | Date | Change |
 |---------|------|--------|
+| closeout | 2026-04-26 | Charter v1.2.0 invariant 13 and scanner heuristic landed; redacted transcript extraction remains Phase 1 work. |
 | scaffold | 2026-04-23 | Trap definition landed with citation, failure pattern, forbidden outputs, trajectory assertions, pass criteria. Redacted fixture transcript deferred to closeout W3. Scanner heuristic deferred to closeout W3. |
