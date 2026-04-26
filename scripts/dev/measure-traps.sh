@@ -15,7 +15,8 @@ snapshot_begin "$OUT"
 
 # Sources to scan (read-only grep). Scoped to last 7 days to keep the scan
 # tractable — the full `~/.claude/projects/` tree has ~5k transcripts accreted
-# over many months, and scanning all of them × 12 patterns takes >5 min.
+# over many months, and scanning all of them × the trap pattern set takes
+# >5 min.
 #
 # For file-level sources: listed directly.
 # For directory sources: we'll resolve to a file list via `find -mtime -7` below.
@@ -29,24 +30,31 @@ dir_source_specs=(
   "$HOME/.codex/sessions|-mtime -7"
 )
 
-# Resolve file_list from file_sources + dir_source_specs.
+# Resolve file_list from file_sources + dir_source_specs. Tests may set
+# HCS_TRAP_FILE_LIST to a newline-delimited list of fixture files.
 file_list_tmp="$(mktemp)"
-for fs in "${file_sources[@]}"; do
-  [ -f "$fs" ] && printf '%s\n' "$fs"
-done > "$file_list_tmp"
-for spec in "${dir_source_specs[@]}"; do
-  dir="${spec%|*}"
-  mtime_expr="${spec#*|}"
-  [ -d "$dir" ] || continue
-  # shellcheck disable=SC2086
-  find "$dir" -type f \( -name '*.jsonl' -o -name '*.json' \) $mtime_expr 2>/dev/null >> "$file_list_tmp"
-done
+if [ -n "${HCS_TRAP_FILE_LIST:-}" ]; then
+  while IFS= read -r fs; do
+    [ -f "$fs" ] && printf '%s\n' "$fs"
+  done < "$HCS_TRAP_FILE_LIST" > "$file_list_tmp"
+else
+  for fs in "${file_sources[@]}"; do
+    [ -f "$fs" ] && printf '%s\n' "$fs"
+  done > "$file_list_tmp"
+  for spec in "${dir_source_specs[@]}"; do
+    dir="${spec%|*}"
+    mtime_expr="${spec#*|}"
+    [ -d "$dir" ] || continue
+    # shellcheck disable=SC2086
+    find "$dir" -type f \( -name '*.jsonl' -o -name '*.json' \) $mtime_expr 2>/dev/null >> "$file_list_tmp"
+  done
+fi
 file_count=$(wc -l < "$file_list_tmp" | tr -d ' ')
 echo "  scoping: $file_count file(s) within 7d window"
 
 # Trap patterns currently instrumented for the Phase 0b scanner.
-# This remains narrower than the full seed corpus, but closeout scanner parity
-# catches up through traps #16, #17, and #18.
+# This remains narrower than the full seed corpus, but scanner parity has
+# advisory coverage for traps #16, #17, #18, #37, and #38.
 # key => pattern
 declare -A trap_patterns=(
   [launchctl-deprecated-verbs]='launchctl[[:space:]]+(load|unload)[[:space:]]'
@@ -64,6 +72,8 @@ declare -A trap_patterns=(
   [ignored-but-load-bearing-deletion]='(rm[[:space:]]+-[rfRF]+[[:space:]]+(\./)?\.logs|find[[:space:]]+(\./)?\.logs[^|;&]*-[[:space:]]*delete|rsync[^|;&]*--delete[^|;&]*(\./)?\.logs)'
   [harness-config-boolean-type]='"(verbose|enabled|required|disabled|strict|debug)"[[:space:]]*:[[:space:]]*"(true|false)"'
   [agent-echoes-secret-in-env-inspection]='((printenv|env)[[:space:]]*\|[[:space:]]*grep[^|;&]*(TOKEN|SECRET|API_KEY|RUNPOD|HF_|GITHUB_PAT|ANTHROPIC_API_KEY|OPENAI_API_KEY)|echo[^|;&]*\$({)?([A-Z0-9_]*(TOKEN|SECRET|API_KEY|PASSWORD|PASSWD|PAT)|[A-Z0-9_]*_KEY))'
+  [process-argv-secret-exposure]='(ps[[:space:]]+((aux|axww)|-[A-Za-z]*[AaEeOo][A-Za-z]*[[:space:]][^|;&]*(command|args)|-[A-Za-z]*[AaEeOo][A-Za-z]*[^|;&]*(command|args))|pgrep[[:space:]]+-[A-Za-z]*(f|a|l)[A-Za-z]*|pkill[[:space:]]+-[A-Za-z]*f[A-Za-z]*|killall[[:space:]]+|launchctl[[:space:]]+procinfo)'
+  [cloudflare-mcp-mutation-without-fanout-check]='(mcp__cloudflare__execute|cloudflare[.]execute|cloudflare[.]request[[:space:]]*[(][^)]*(POST|PUT|PATCH|DELETE)|Promise[.]all[^|;&]*(cloudflare|request)|last_cf_mcp_429|[Rr]etry-[Aa]fter|HTTP[[:space:]]+429)'
 )
 
 total_hits=0

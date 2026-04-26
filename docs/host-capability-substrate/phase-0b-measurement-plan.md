@@ -3,9 +3,9 @@ title: HCS Phase 0b — Measurement Workplan
 category: plan
 component: host_capability_substrate
 status: active
-version: 1.2.1
+version: 1.2.2
 last_updated: 2026-04-26
-tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency, supplementary-rubric, guidance-load, semantic-redundancy]
+tags: [phase-0b, measurement, baseline, metrics, traps, governance-inventory, idempotency, supplementary-rubric, guidance-load, semantic-redundancy, scanner-parity]
 priority: high
 ---
 
@@ -16,6 +16,17 @@ Quantifies the economic and governance baseline before any substrate code ships.
 Parent: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+) §6 Phase 0b, §22.11.
 Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+.
 Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md).
+
+## v1.2.2 revision note
+
+v1.2.2 adds advisory scanner coverage for trap #37
+`process-argv-secret-exposure` and trap #38
+`cloudflare-mcp-mutation-without-fanout-check`. These are measurement-side
+candidate detectors, not substitutes for the Phase 1 typed process-inspection
+operation or broker-backed Cloudflare fan-out fixture.
+
+`measure-traps.sh` now accepts `HCS_TRAP_FILE_LIST` for fixture-driven tests,
+and `just trap-fixture` is wired into `just verify`.
 
 ## v1.2.1 revision note
 
@@ -135,7 +146,7 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 | `measure-claude-code.sh` | `activity-claude-code.jsonl` | Prompt volume; **tool-use counts per tool name from 7-day transcripts**; assistant-content-shape; probe-proxy mentions; session file count (shape only) |
 | `measure-codex.sh` | `activity-codex.jsonl` | Thread counts (total + recent 7d) + tokens_used; **function-call counts per tool name from 7-day rollouts**; dynamic-tool registration counts |
 | `measure-ide-hosts.sh` | `activity-ide-hosts.jsonl` | Log volume shape for Cursor, Windsurf, Claude Desktop, Copilot CLI |
-| `measure-traps.sh` | `traps.jsonl` | 12 currently-instrumented trap patterns scanned across 7-day file sources; **per-hit records with `source`, `file`, `line`, `evidence_redacted`, `severity`**; `__summary__` record with totals |
+| `measure-traps.sh` | `traps.jsonl` | 17 currently-instrumented trap patterns scanned across 7-day file sources; **per-hit records with `source`, `file`, `line`, `evidence_redacted`, `severity`**; `__summary__` record with totals |
 | `measure-governance-inventory.sh` | `governance-inventory.jsonl` | Claude Code + Codex user-scope + HCS-project-scope settings; system-config policies; HCS snapshot fixture; chezmoi MCP wrappers; **MCP baseline servers parsed via `jq`** (not regex); secrets policy version; runbook docs versions; 1P reference manifests |
 | `measure-protocol-features.sh` | `protocol-features.json` | Per-host (6) MCP feature matrix with probe-required fields marked |
 | `measure-redundancy.sh` | `redundancy.jsonl` | Cross-source redundancy: same semantic tool capability surfaced by ≥2 distinct sources in partition, using `semantic-tool-map-v1` while preserving raw tool names |
@@ -156,6 +167,7 @@ Under `scripts/dev/`. All read-only, all snapshot-overwrite their partition outp
 - `just measure-summary` — prints today's partition summary
 - `just measure-brief` — aggregates all partitions into `brief.md` + `brief.json`
 - `just redundancy-fixture` — regression test for semantic tool mapping
+- `just trap-fixture` — regression test for measurement-side trap heuristics
 - `just day1` — runs the kickoff battery (`measure`, fixtures, over-fire, under-fire, faults, dashboard rehearsal)
 - `just verify` includes `shellcheck-scan` as of v1.1.0
 
@@ -225,7 +237,7 @@ These are documented constraints, not undisclosed gaps:
 - **Semantic redundancy map is intentionally small.** `semantic-tool-map-v1` covers known aliases needed for Phase 0b acceptance, but it is not the final substrate ontology or policy schema. Unmapped tools retain literal-name semantics until Phase 1 formalizes capability identity.
 - **Token counting is char/4 heuristic.** Accurate tokenization would require a live model tokenizer; the heuristic is adequate for baseline order-of-magnitude.
 - **Trap scan window is 7 days.** Catches current habits; does not back-fill older history. Stale-but-not-used patterns in transcripts >7 days old are ignored.
-- **Trap scanner coverage is narrower than the seed corpus.** `packages/evals/regression/seed.md` carries 15 seed traps, while `measure-traps.sh` currently instruments 12 heuristics. The acceptance gate counts the committed seed corpus; scanner expansion remains follow-up work.
+- **Trap scanner coverage is narrower than the seed corpus.** `packages/evals/regression/seed.md` carries 38 seed traps, while `measure-traps.sh` currently instruments 17 heuristics. The acceptance gate counts the committed seed corpus; scanner expansion remains follow-up work.
 - **IDE host signal is volume-only.** Cursor, Windsurf, Claude Desktop, Copilot CLI transcripts are VS Code-style rotating log dirs or binary blobs; we cannot extract per-tool-call signal without live MCP instrumentation. Phase 1 Thread B (echo MCP server) resolves this.
 - **Claude Code session metadata is pid-only.** `~/.claude/sessions/*.json` contains `pid`, `sessionId`, `cwd`, `startedAt` — not tool-use records. Records file count only.
 - **Codex SQLite `logs` table has no command-text column.** Used only for infra-level logger signals; real command activity comes from rollouts (which this script parses correctly).
@@ -263,6 +275,7 @@ Under `.logs/phase-0/` (gitignored — summary lifted into committed `phase-0b-b
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.2 | 2026-04-26 | Added advisory trap scanner heuristics for #37 and #38, fixture-list injection for `measure-traps.sh`, and `just trap-fixture` in `just verify`. |
 | 1.2.1 | 2026-04-26 | Added `semantic-tool-map-v1` to `measure-redundancy.sh`, preserved raw tool names per row, changed `measure-brief.sh` to use the newest redundancy partition, and wired `just redundancy-fixture` into `just verify`. |
 | 1.2.0 | 2026-04-23 | Added three post-hoc supplementary surfaces (all measurement-safe during an active soak): (1) `measure-extended-rubric.sh` emits `cross-agent-runs-extended.jsonl` with heuristic scoring on `derivability_check`, `mutation_snapshot_intent`, `upstream_spec_provenance` using null/applicable gating; (2) `measure-guidance-load.sh` emits `cross-agent-guidance-load.jsonl` with three-way classification (`loaded` / `loaded_behavior_divergent` / `unread`) cross-joined with `cross-agent-runs.jsonl`; (3) `packages/evals/regression/trap-known-limitations.yaml` annotates trap hits with known false-positive and cap semantics. `measure-brief.sh` renders Extended rubric, Guidance-load classification, and Hook-decision attribution sections, annotates the Trap table from the known-limitations yaml, and invokes the two new scripts as pre-aggregation steps. Canonical-session selection is driven by `raw/source-manifest.jsonl` with variant preference (`rollout-copy` > `repo-root-copy` > `export-home` > `export-tmp`) so session duplicates collapse to exactly one record per `(agent, prompt_id)`. Seed-trap corpus bumped from 15 to 17 (`ignored-but-load-bearing-deletion`, `harness-config-boolean-type`). |
 | 1.1.1 | 2026-04-23 | Aligned the repo plan to the active 3-day soak window (2026-04-23 through 2026-04-25, closeout 2026-04-26). Documented the full `just measure` pipeline (`commands`, `classify`, `confusion`) and clarified that the seed trap corpus has 15 entries while the current scanner instruments 12 heuristics. |

@@ -11,8 +11,8 @@ cadence: pre-merge
 
 # Trap #37: process-argv-secret-exposure
 
-**Status:** scaffold (definition landed; scanner heuristic and typed
-process-inspection operation deferred to Phase 1).
+**Status:** scaffold (definition landed; advisory scanner heuristic landed;
+typed process-inspection operation deferred to Phase 1).
 
 ## Citation
 
@@ -169,4 +169,5 @@ is explicit.
 
 | Version | Date | Change |
 |---------|------|--------|
+| scanner | 2026-04-26 | Advisory `measure-traps.sh` heuristic landed for broad argv/process-inspection and process-kill candidate detection. Typed operation remains Phase 1 work. |
 | scaffold | 2026-04-25 | Trap definition landed with citation, failure pattern, forbidden outputs, trajectory assertions, and pass criteria. Scanner heuristic deferred to Phase 1. |

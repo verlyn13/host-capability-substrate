@@ -3,9 +3,9 @@ title: HCS Phase 0b Closeout
 category: closeout
 component: host_capability_substrate
 status: active
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-04-26
-tags: [phase-0b, closeout, measurement, soak, traps, phase-1, semantic-redundancy]
+tags: [phase-0b, closeout, measurement, soak, traps, phase-1, semantic-redundancy, scanner-parity]
 priority: high
 ---
 
@@ -33,7 +33,7 @@ The correct decision is:
 ```text
 Proceed to Phase 1.
 Do not reinterpret the initial name-only miss as a pass; record the follow-up fix.
-Carry formal capability ontology, scanner parity, and fixture expansion into Phase 1.
+Carry formal capability ontology, typed operation fixtures, and remaining trap expansion into Phase 1.
 ```
 
 ## Acceptance gate
@@ -122,9 +122,10 @@ Already landed or seeded:
 - #37 `process-argv-secret-exposure`
 - #38 `cloudflare-mcp-mutation-without-fanout-check`
 
-Closeout scanner parity catches up only through #18. #19-#36 require
-live-provider or coordination-substrate fixtures. #37 needs typed
-process-inspection. #38 needs broker/fan-out diagnostics fixtures.
+Closeout scanner parity catches up through #18, with same-day advisory scanner
+catch-up for #37 and #38. #19-#36 still require live-provider or
+coordination-substrate fixtures. #37 still needs typed process-inspection and
+#38 still needs broker/fan-out diagnostics fixtures.
 
 ### 5. Which repo docs need tightening before Phase 1?
 
@@ -175,5 +176,6 @@ shellcheck all pass.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-04-26 | Recorded advisory scanner catch-up for #37 and #38 while preserving Phase 1 typed-operation fixture work. |
 | 1.1.0 | 2026-04-26 | Recorded the same-day semantic redundancy measurement follow-up and refreshed all-green brief while preserving the historical initial closeout miss. |
 | 1.0.0 | 2026-04-26 | Initial Phase 0b closeout narrative. |

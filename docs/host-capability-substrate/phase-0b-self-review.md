@@ -3,15 +3,31 @@ title: HCS Phase 0b Self-Review
 category: review
 component: host_capability_substrate
 status: active
-version: 1.3.0
+version: 1.4.0
 last_updated: 2026-04-26
-tags: [phase-0b, review, producer-critic, critique-response, semantic-redundancy]
+tags: [phase-0b, review, producer-critic, critique-response, semantic-redundancy, scanner-parity]
 priority: medium
 ---
 
 # HCS Phase 0b Self-Review
 
 Record of producer/critic discipline on the Phase 0b measurement surface, per research plan §22.5 / §22.11.
+
+## v1.4.0 — trap scanner catch-up
+
+After the semantic redundancy fix, the next repo-local closeout item was
+scanner catch-up for already-scaffolded traps #37 and #38. `measure-traps.sh`
+now includes advisory candidate detectors for:
+
+- #37 `process-argv-secret-exposure`: broad argv/process-inspection and
+  process-kill forms.
+- #38 `cloudflare-mcp-mutation-without-fanout-check`: Cloudflare MCP
+  mutation/backoff/fan-out language.
+
+These are deliberately labelled as advisory heuristics with known-limitations
+metadata. They improve soak visibility, but the permanent fixes remain Phase 1
+typed operations: process-inspection evidence for #37 and broker/fan-out
+diagnostic evidence for #38.
 
 ## v1.3.0 — semantic redundancy follow-up
 
@@ -52,13 +68,14 @@ Closeout work landed the following corrections:
 - DECISIONS.md D-029 through D-032: public-semver baseline, OAuth-preferred HTTP
   MCP opt-in posture, Codex profiles as CLI-only opt-ins, and external
   control-plane evidence discipline.
-- Scanner parity for traps #16, #17, and #18 in `measure-traps.sh`.
+- Scanner parity for traps #16, #17, and #18 in `measure-traps.sh`; advisory
+  catch-up for #37 and #38 landed later in v1.4.0.
 - Classifier/hook parity for trap #18's secret-value env inspection patterns.
 - Closeout narrative at `docs/host-capability-substrate/phase-0b-closeout.md`.
 
 The remaining open work is deliberately Phase 1 work: formal capability
 ontology/policy mapping, Thread B protocol probes, shell/environment P01-P13
-direct tests, trap fixture expansion #19-#38, typed process inspection, and
+direct tests, trap fixture expansion #19-#36, typed process inspection, and
 `hcs env-inspect`.
 
 Validation: `just verify` passes in the Phase 0 scaffold. Biome and `tsc` remain
@@ -161,7 +178,7 @@ After fixing F-1 through F-6, a fresh pass for any remaining risks:
 - **Token-estimate for transcript-volume uses fixed 2KB-per-tool-use heuristic.** Reasonable for order-of-magnitude; not accurate to the token. Documented as back-of-envelope.
 - **Measurement runtime ~60s per `just measure` pass.** Dominated by the trap scan across 4900+ Claude Code transcripts (even scoped to 7-day, ~70 files × 12 patterns). Acceptable for daily manual cadence; if moved to hourly/launchd, need to reduce scope further or use xargs parallelism.
 - **Shell-mode-confusion-login trap over-fires.** Pattern `bash -lc` matches routine agent invocations. Not a true "shell-mode confusion" hit; more like a coarse `bash -lc` counter. May want to refine in the next trap-corpus iteration, or rename the trap.
-- **Trap scanner coverage is narrower than the seed corpus.** The committed seed corpus already holds 15 trap classes, but `measure-traps.sh` currently instruments 12 heuristics. This is a coverage follow-up, not a reason to mark the seed corpus gate failed.
+- **Trap scanner coverage is narrower than the seed corpus.** The committed seed corpus now holds 38 trap classes, while `measure-traps.sh` instruments 17 heuristics after v1.4.0. This is a coverage follow-up, not a reason to mark the seed corpus gate failed.
 
 ### Privacy / security audit (unchanged)
 
@@ -189,7 +206,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 **Assessment:** the remaining ✗ items reflect honest gaps:
 - Three days requires actually running the soak; day 1 is now underway.
 - Cross-source overlap was a known limitation under the old name-only metric; v1.3.0 resolves it in the measurement layer.
-- Scanner coverage of 12 heuristics is narrower than the 15-entry seed corpus. Expanding `measure-traps.sh` remains follow-up work per the regression-trap skill.
+- Scanner coverage remains narrower than the 38-entry seed corpus. Expanding `measure-traps.sh` and fixture-backed evals remains follow-up work per the regression-trap skill.
 - All other acceptance items pass.
 
 ## Recommendation
@@ -203,7 +220,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 ## References
 
-- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.2.1
+- Producer plan: [`phase-0b-measurement-plan.md`](./phase-0b-measurement-plan.md) v1.2.2
 - Charter: [`implementation-charter.md`](./implementation-charter.md) v1.2.0+
 - Research plan: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §6 Phase 0b, §22.11
 - Boundary decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md)
@@ -212,6 +229,7 @@ From `.logs/phase-0/brief.json` after one smoke run:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.4.0 | 2026-04-26 | Added advisory scanner catch-up for traps #37 and #38 and fixture-backed verification. |
 | 1.3.0 | 2026-04-26 | Recorded the post-closeout semantic redundancy measurement fix, latest-partition brief selection, and fixture-backed all-green acceptance table. |
 | 1.2.0 | 2026-04-26 | Added closeout assessment, recorded the honest redundancy-gate miss, and summarized charter/ADR/decision/scanner parity work plus Phase 1 carry-forward. |
 | 1.1.1 | 2026-04-23 | Aligned the self-review with the active 3-day soak window and corrected the trap-corpus gate to count the committed 15-entry seed corpus rather than only observed hits. |

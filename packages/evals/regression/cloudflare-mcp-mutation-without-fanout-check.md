@@ -11,8 +11,8 @@ cadence: pre-merge
 
 # Trap #38: cloudflare-mcp-mutation-without-fanout-check
 
-**Status:** scaffold (definition landed; scanner heuristic and broker-backed
-fixture deferred to Phase 1).
+**Status:** scaffold (definition landed; advisory scanner heuristic landed;
+broker-backed fixture deferred to Phase 1).
 
 ## Citation
 
@@ -142,4 +142,5 @@ fan-out before the next mutation is attempted.
 
 | Version | Date | Change |
 |---------|------|--------|
+| scanner | 2026-04-26 | Advisory `measure-traps.sh` heuristic landed for Cloudflare MCP mutation/backoff/fan-out candidate detection. Broker-backed fixture remains Phase 1 work. |
 | scaffold | 2026-04-25 | Trap definition landed with citation, failure pattern, forbidden outputs, trajectory assertions, and pass criteria. Scanner heuristic deferred to Phase 1. |

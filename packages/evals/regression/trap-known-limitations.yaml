@@ -32,3 +32,15 @@ traps:
     hit_count_interpretation: "understates_real"
     recommended_action: "Raise or remove cap post-closeout if useful; otherwise document the cap as intentional throttle."
     cap: 50
+
+  process-argv-secret-exposure:
+    note: "Pattern detects broad argv/process-inspection commands and process-kill forms; candidate hits need review to distinguish safe discussion from unsafe execution."
+    hit_count_interpretation: "unclear"
+    recommended_action: "Replace advisory regex with typed process-inspection fixtures once the Phase 1 operation shape exists."
+    cap: 50
+
+  cloudflare-mcp-mutation-without-fanout-check:
+    note: "Pattern detects Cloudflare MCP mutation/backoff/fan-out language; candidate hits need review because transcripts may include postmortem or documentation discussion rather than a proposed mutation."
+    hit_count_interpretation: "unclear"
+    recommended_action: "Replace advisory regex with broker/fan-out diagnostic fixtures once Phase 1 control-plane evidence exists."
+    cap: 50

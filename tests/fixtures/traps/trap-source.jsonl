@@ -1,0 +1,4 @@
+{"ts":"2026-04-26T00:00:00Z","source":"fixture","text":"diagnosis command: ps -Ao pid,stat,command"}
+{"ts":"2026-04-26T00:00:00Z","source":"fixture","text":"fallback command: pgrep -fl syspolicy_check"}
+{"ts":"2026-04-26T00:00:00Z","source":"fixture","text":"tool call: mcp__cloudflare__execute with PATCH request after checking nothing"}
+{"ts":"2026-04-26T00:00:00Z","source":"fixture","text":"codemode used Promise.all around cloudflare.request calls"}
