@@ -303,21 +303,22 @@ P06 install shell wrapper logger
 - cwd: `/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate`
 - Workspace: `host-capability-substrate`
 - Shell mode: non_interactive install; later interactive agent routing
-- Resolved tool: not available: wrapper implementation not reviewed
+- Resolved tool: `scripts/dev/hcs-shell-logger.sh`@repo, `scripts/dev/run-shell-logger-fixture.sh`@repo
 
 ### Evidence
 - Source: `shell-environment-research.md` v2.0.0 §P06
 - Observed at: 2026-04-26T19:10:20Z
 - Parser version: runbook-v1.0.0
 - Cache status: miss
-- Confidence: high for need; not ready for host write
+- Confidence: high for need; wrapper implementation is fixture-tested, host
+  routing still needs approval
 
 ### Proposed invocation
 ```json
 {
   "command_mode": "argv",
-  "file": "not-ready",
-  "argv": [],
+  "file": "/usr/bin/install",
+  "argv": ["install", "-m", "0755", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"],
   "env_profile_id": "none",
   "lane": "execute"
 }
@@ -329,12 +330,14 @@ P06 install shell wrapper logger
 - Policy tier: host-write-approval-required
 
 ### Preflight
-Write and review the wrapper in-repo first. It must log only argv shape,
-interpreter path, cwd, pid/ppid, and timestamp. It must not log environment
-values.
+Wrapper exists in-repo and `just shell-logger-fixture` must pass before host
+installation. It logs only argv shape, interpreter path, cwd, pid/ppid, and
+timestamp. It must not log environment values or shell command payloads.
 
 ### Preview
-not available: wrapper file does not exist yet.
+`scripts/dev/hcs-shell-logger.sh` would be copied to
+`/usr/local/bin/hcs-shell-logger`; live surface routing remains a separate
+operation.
 
 ### Rollback
 Remove `/usr/local/bin/hcs-shell-logger` and restore any agent configuration
@@ -349,8 +352,8 @@ invocation form, and apiKeyHelper interpreter without any env value capture.
 - Claude Code is currently 2.1.119, so the #18692 non-repro check against
   2.1.120 is blocked.
 - P02 and P05 need approved GUI observation paths before execution.
-- P06 needs an in-repo wrapper implementation and review before any
-  `/usr/local/bin` installation.
+- P06 wrapper implementation now exists in-repo and is fixture-tested; host
+  install/routing still requires approval.
 - P03/P04/P08/P09 are Wave 2 and should wait until Wave 1 memos establish the
   tested `ExecutionContext` surfaces.
 
