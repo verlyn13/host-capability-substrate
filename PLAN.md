@@ -49,6 +49,8 @@ Execution runbook: `docs/host-capability-substrate/phase-1-shell-env-direct-test
 
 P13 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` captures read-only Codex app bundle/signing metadata. Runtime sandbox, Keychain, and env-inheritance probes remain open.
 
+P01 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` captures metadata-only Codex auth state. Current host did not show a `Codex Auth` Keychain item with the safe lookup, while `${CODEX_HOME}/auth.json` exists; do not migrate MCP auth off env/PAT patterns until the interactive OAuth flow and restart check pass.
+
 Direct-test queue (combined from report 1 §14 + report 2 verification + shell research v2.0.0 P01–P13; blocks work that depends on each outcome):
 
 1. `codex mcp login github` → Keychain entry → restart Codex → MCP starts clean without `GITHUB_PAT`. If successful, remove `bearer_token_env_var = "GITHUB_PAT"` from the system-config managed Codex block. *(Related: shell research v2 **P01** — resolved at doc level; this is the operational migration step.)*
