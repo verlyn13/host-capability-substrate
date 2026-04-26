@@ -3,7 +3,7 @@ title: P06 Shell Wrapper Logger Preparation
 category: research
 component: host_capability_substrate
 status: partial
-version: 1.0.0
+version: 1.1.0
 last_updated: 2026-04-26
 tags: [phase-1, p06, shell-wrapper, redaction, fixture]
 priority: high
@@ -14,9 +14,9 @@ priority: high
 Partial evidence for shell/environment research prompt P06: shell binary and
 invocation-form validation per execution surface.
 
-This memo records the in-repo wrapper implementation and regression fixture. It
-does **not** install `/usr/local/bin/hcs-shell-logger`, change `$SHELL`, modify
-`PATH`, or route any live agent surface through the wrapper.
+This memo records the in-repo wrapper implementation, regression fixture, and
+approved host installation. It does **not** change `$SHELL`, modify `PATH`, or
+route any live agent surface through the wrapper.
 
 ## Host Context
 
@@ -27,6 +27,7 @@ does **not** install `/usr/local/bin/hcs-shell-logger`, change `$SHELL`, modify
 | Repo cwd | `/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate` |
 | Wrapper | `scripts/dev/hcs-shell-logger.sh` |
 | Fixture | `scripts/dev/run-shell-logger-fixture.sh` |
+| Installed wrapper | `/usr/local/bin/hcs-shell-logger` |
 | Verification recipe | `just shell-logger-fixture` |
 
 ## Implementation Summary
@@ -64,15 +65,28 @@ Observed result:
 - wrapper log did not contain the command payload marker
 - wrapper log did not contain `env` or `environment` fields
 
+## Host Install Result
+
+The reviewed wrapper was installed to `/usr/local/bin/hcs-shell-logger` after
+the direct install attempt failed with `Permission denied` and the approved
+`sudo install` path succeeded.
+
+Observed result:
+
+- installed path: `/usr/local/bin/hcs-shell-logger`
+- mode/owner: `-rwxr-xr-x`, `root:wheel`
+- repo-vs-installed comparison: `cmp` exit `0`
+- SHA-256 for both repo script and installed wrapper:
+  `5321eb6f3a22a04a4863c14826a71d558a0034c399269b4f8e80a7a247670847`
+
 ## Interpretation
 
-P06 is now ready for a separate host-routing operation proof. The in-repo
-wrapper is suitable for review because it preserves original shell argv while
-redacting command payloads from persisted logs.
+P06 is now ready for a separate live-surface routing operation proof. The
+installed wrapper matches the reviewed repo script and preserves original shell
+argv while redacting command payloads from persisted logs.
 
-Host-wide installation and live surface routing remain open and should be
-approved separately because they can affect shell invocation behavior outside
-this repo.
+Live surface routing remains open and should be approved separately because it
+can affect shell invocation behavior outside this repo.
 
 ## Commands Used
 
@@ -85,6 +99,22 @@ this repo.
   {
     "file": "/opt/homebrew/bin/shellcheck",
     "argv": ["shellcheck", "scripts/dev/hcs-shell-logger.sh", "scripts/dev/run-shell-logger-fixture.sh"]
+  },
+  {
+    "file": "/usr/bin/install",
+    "argv": ["/usr/bin/install", "-m", "0755", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"]
+  },
+  {
+    "file": "/usr/bin/sudo",
+    "argv": ["sudo", "/usr/bin/install", "-m", "0755", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"]
+  },
+  {
+    "file": "/usr/bin/cmp",
+    "argv": ["cmp", "-s", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"]
+  },
+  {
+    "file": "/usr/bin/shasum",
+    "argv": ["shasum", "-a", "256", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"]
   }
 ]
 ```
@@ -93,4 +123,5 @@ this repo.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.0 | 2026-04-26 | Added approved host-install result for `/usr/local/bin/hcs-shell-logger`. |
 | 1.0.0 | 2026-04-26 | Initial P06 wrapper implementation and fixture result. |

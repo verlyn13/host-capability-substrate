@@ -310,8 +310,8 @@ P06 install shell wrapper logger
 - Observed at: 2026-04-26T19:10:20Z
 - Parser version: runbook-v1.0.0
 - Cache status: miss
-- Confidence: high for need; wrapper implementation is fixture-tested, host
-  routing still needs approval
+- Confidence: high for need; wrapper implementation is fixture-tested and
+  installed, live surface routing still needs approval
 
 ### Proposed invocation
 ```json
@@ -330,14 +330,15 @@ P06 install shell wrapper logger
 - Policy tier: host-write-approval-required
 
 ### Preflight
-Wrapper exists in-repo and `just shell-logger-fixture` must pass before host
-installation. It logs only argv shape, interpreter path, cwd, pid/ppid, and
-timestamp. It must not log environment values or shell command payloads.
+Wrapper exists in-repo and is installed at `/usr/local/bin/hcs-shell-logger`.
+`just shell-logger-fixture` must pass before live surface routing. It logs only
+argv shape, interpreter path, cwd, pid/ppid, and timestamp. It must not log
+environment values or shell command payloads.
 
 ### Preview
-`scripts/dev/hcs-shell-logger.sh` would be copied to
-`/usr/local/bin/hcs-shell-logger`; live surface routing remains a separate
-operation.
+Live surface routing would point a selected surface at
+`/usr/local/bin/hcs-shell-logger`; the installed file already matches the
+reviewed repo script by SHA-256.
 
 ### Rollback
 Remove `/usr/local/bin/hcs-shell-logger` and restore any agent configuration
@@ -352,8 +353,8 @@ invocation form, and apiKeyHelper interpreter without any env value capture.
 - Claude Code is currently 2.1.119, so the #18692 non-repro check against
   2.1.120 is blocked.
 - P02 and P05 need approved GUI observation paths before execution.
-- P06 wrapper implementation now exists in-repo and is fixture-tested; host
-  install/routing still requires approval.
+- P06 wrapper implementation now exists in-repo, is fixture-tested, and is
+  installed; live routing still requires approval.
 - P03/P04/P08/P09 are Wave 2 and should wait until Wave 1 memos establish the
   tested `ExecutionContext` surfaces.
 

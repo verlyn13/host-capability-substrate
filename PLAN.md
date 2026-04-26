@@ -55,7 +55,7 @@ P02 validated evidence: `docs/host-capability-substrate/research/shell-env/2026-
 
 P05 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` captures read-only Claude Desktop app/config metadata. It found Claude.app 1.4758.0, no top-level `env` or `apiKeyHelper` in `claude_desktop_config.json`, and only the `MEMORY_FILE_PATH` env key name in Desktop MCP config; GUI runtime smoke remains open.
 
-P06 prep evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P06-shell-wrapper-logger-prep.md` captures the in-repo redaction-safe wrapper `scripts/dev/hcs-shell-logger.sh` and fixture `scripts/dev/run-shell-logger-fixture.sh`. The fixture proves the wrapper preserves argv for the real shell while redacting `-c` command payloads from the wrapper log; host-wide installation/routing remains a separate approval step.
+P06 prep evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P06-shell-wrapper-logger-prep.md` captures the in-repo redaction-safe wrapper `scripts/dev/hcs-shell-logger.sh`, fixture `scripts/dev/run-shell-logger-fixture.sh`, and approved host install to `/usr/local/bin/hcs-shell-logger`. The fixture proves the wrapper preserves argv for the real shell while redacting `-c` command payloads from the wrapper log; live surface routing remains a separate approval step.
 
 Direct-test queue (combined from report 1 §14 + report 2 verification + shell research v2.0.0 P01–P13; blocks work that depends on each outcome):
 
@@ -69,7 +69,7 @@ Direct-test queue (combined from report 1 §14 + report 2 verification + shell r
 8. Verify `apiKeyHelper` CLI-only scope statement against live Anthropic docs. *(Shell research v2 §2.3 confirms at doc level.)*
 9. Confirm D-031 surface coverage: `[profiles.hcs-*]` are CLI-only opt-ins unless a future Codex app/IDE probe proves otherwise.
 10. Codex app MCP startup happens before worktree setup scripts. *(Shell research v2 **P03**: genuinely undocumented; marker-based timing test with synthetic repo, 8h.)*
-11. **NEW — P06**: Shell wrapper-log validation. In-repo wrapper and redaction fixture exist; next step is an approved host-routing operation that installs or symlinks `/usr/local/bin/hcs-shell-logger`, then routes selected surfaces through it. Confirms Codex CLI = `bash -lc`, Claude fresh = `bash -c`, apiKeyHelper = `/bin/sh -c`. 4h.
+11. **NEW — P06**: Shell wrapper-log validation. In-repo wrapper, redaction fixture, and `/usr/local/bin/hcs-shell-logger` host install exist; next step is an approved live-routing operation for selected surfaces. Confirms Codex CLI = `bash -lc`, Claude fresh = `bash -c`, apiKeyHelper = `/bin/sh -c`. 4h.
 12. **NEW — P13**: Codex app sandbox boundary characterization (new `ExecutionContext` class). Inspect app bundle Info.plist + embedded sandbox profile + `codesign -d --entitlements -`; probe Keychain access, FS scope, network scope, env injection; cross-reference issue #10695. 4h.
 13. **NEW — P08**: Provenance snapshot — capture each surface's PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME value + provenance tags; commit as `packages/fixtures/provenance-snapshot-YYYY-MM-DD.json` golden data. 6h.
 14. **NEW — P09**: direnv + mise cross-surface visibility. Synthetic repo with `.envrc` `HCS_DIRENV_MARKER` + `.mise.toml [env] HCS_MISE_MARKER`. Test terminal-launched vs GUI-launched for each surface. 6h.
