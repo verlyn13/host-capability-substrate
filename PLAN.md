@@ -47,7 +47,7 @@ The shell-environment research v2.0.0 (`docs/host-capability-substrate/shell-env
 
 Execution runbook: `docs/host-capability-substrate/phase-1-shell-env-direct-test-runbook.md`. It records local preflight evidence as of 2026-04-26, the Wave 1 order, secret-safe artifact contract, and operation-proof stubs. Current blocker: local Claude Code is 2.1.119, so the `#18692 does not repro on 2.1.120` check must wait for a CLI update.
 
-P13 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` captures read-only Codex app bundle/signing metadata. Runtime sandbox, Keychain, and env-inheritance probes remain open.
+P13 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` captures read-only Codex app bundle/signing metadata plus live process sandbox flags. Helpers show Electron/Chromium sandbox markers (`--seatbelt-client`, `--enable-sandbox`, `--service-sandbox-type=network`), while entitlement extraction remains unusable and app-internal Keychain/filesystem/network probes remain open. P02 now covers GUI env inheritance for a Finder-origin cold start.
 
 P01 partial evidence: `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` captures metadata-only Codex auth state. Current host did not show a `Codex Auth` Keychain item with the safe lookup, while `${CODEX_HOME}/auth.json` exists; do not migrate MCP auth off env/PAT patterns until the interactive OAuth flow and restart check pass.
 
