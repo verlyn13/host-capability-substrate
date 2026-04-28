@@ -3,8 +3,8 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.6.0
-last_updated: 2026-04-26
+version: 1.7.0
+last_updated: 2026-04-27
 tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners]
 priority: medium
 ---
@@ -35,6 +35,7 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-24-coordination-lessons.md` | 2026-04-24 | Shared-state / coordination-store lessons from a separate "three-repo incident" (release coordination across producer/consumer/shared-worktree repos where prose, local checkouts, live infra, GHCR, 1Password, and docs drifted as competing partial sources of truth). Frames HCS shared state as **typed evidence + coordination + retrieval index — not agent memory**. Proposes ADR 0019 (knowledge-and-coordination store), 4 new Ring-0 entity classes (`KnowledgeSource`, `KnowledgeChunk`, `CoordinationFact`, `DerivedSummary`), 5 regression-trap candidates #31–#35, charter v1.3.0 invariant 18 candidate ("RAG may discover; only typed evidence may decide"), D-033 candidate, and a promotion workflow (agent proposes → verifier promotes). Five sub-decisions bundled as **Q-003 pending** rather than silently adopted — scope/sequencing/taxonomy is a major design commitment. Synthesis memory: `project_coordination_lessons_shared_state.md`. |
 | `2026-04-26-research-execution-results.md` | 2026-04-26 | Research execution brief for the semantic ontology and resource-pressure plan. Recommends source-bound discovery before synthesis, a source-class taxonomy, worker result templates, verification gates, and Wave 1C/1D resource-pressure research as the first concrete batch. |
 | `2026-04-26-proposed-runner-architecture.md` | 2026-04-26 | Proposed runner architecture for a separate CI project that must remain compatible with HCS and organizational principles. Recommends Proxmox-first/Linux-first/GitHub-orchestrated runners, hosted smoke sentinels, Citadel-owned OpenTofu/PaC, manual-only MacBook runner use, and HCS consuming runner/check/resource evidence rather than owning CI execution. |
+| `2026-04-27-p06-probe-shape.md` | 2026-04-27 | P06 provenance-experiment brief originally delivered via a volatile `/private/tmp` path; staged verbatim for durable citation. Defines three proof lanes: tool-native trace, startup-file sentinels, and host-level process telemetry. SHA-256: `72aff550a5b2a096f537e56408c88b5b89c49c7098fe82b17a648bc15e28fdad`. |
 
 ## Reconciled conclusions
 
@@ -151,6 +152,24 @@ The runner report concerns a separate CI/runner project. HCS compatibility is st
 
 Pending design question Q-005 records the HCS-side boundary and entity-shape work. The existing draft report `docs/host-capability-substrate/local-first-ci-opentofu-runner-design.md` remains the HCS compatibility synthesis; the external report staged here is preserved as input evidence.
 
+### 2026-04-27 P06 probe-shape brief
+
+The P06 probe-shape brief is preserved because the source was delivered under
+volatile `/private/tmp/`. The reconciled runbook is
+`docs/host-capability-substrate/research/shell-env/2026-04-27-P06-provenance-experiment-plan.md`.
+
+Reconciled integration:
+
+- P06 closure requires three independent lanes: tool-native trace, temporary
+  startup-file sentinels, and host-level process telemetry.
+- PATH-prefix wrapper interception is closed as unsuitable except for negative
+  controls because observed Codex/Claude surfaces use absolute `/bin/zsh`.
+- Host telemetry is the authority for `execve` truth; startup sentinels are the
+  authority for user startup-file effects; tool-native trace is the authority
+  for tool/controller intent.
+- The brief is an execution plan, not a result. It does not change schema or
+  policy by itself.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -179,6 +198,7 @@ Reports should be staged here verbatim from the source; do not edit the content 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.7.0 | 2026-04-27 | Staged `2026-04-27-p06-probe-shape.md` verbatim from volatile `/private/tmp`, recorded its SHA-256, and reconciled it into the P06 provenance experiment plan. |
 | 1.6.0 | 2026-04-26 | Staged the 2026-04-26 research execution and proposed runner architecture reports. Reconciled resource-pressure research sequencing into the semantic/resource plan and queued HCS runner-compatibility boundary work as Q-005. |
 | 1.5.0 | 2026-04-26 | Reconciled Phase 0b closeout: ADR 0015 accepted, Q-004 resolved as `OriginAccessValidator` with `AudienceValidationBinding` semantics, D-032 landed, and ADR 0012 credential broker scope committed. |
 | 1.4.0 | 2026-04-25 | Staged `2026-04-25-cloudflare-mcp-diagnostics-addendum.md`. Added trap #38 and ADR 0015/0012 integration notes for authenticated Cloudflare MCP fan-out, quarantine, principal-scoped `ResourceBudget`, and docs-MCP degraded mode. |

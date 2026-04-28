@@ -3,8 +3,8 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.5.0
+last_updated: 2026-04-27
 tags: [phase-1, shell-env, handoff, agent-context]
 priority: high
 ---
@@ -18,12 +18,12 @@ Phase 1 shell/environment prep work.
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-04-26T22:20:55Z |
-| Local time | 2026-04-26 14:20:55 AKDT |
+| Observed at | 2026-04-27T01:09:50Z |
+| Local time | 2026-04-26 17:09:50 AKDT |
 | Branch | `main` |
-| Pre-handoff tip | `c73e815 docs: record shell logger host install` |
-| Validation | `just verify` passed after the P06 host-install documentation update |
-| Worktree expectation | Clean after this handoff commit |
+| Pre-handoff tip | `a4d936c docs: add phase 1 shell env handoff` |
+| Validation | `just verify` passed after P06 provenance-plan ingestion at 2026-04-27T05:45:01Z |
+| Worktree expectation | Contains P06 wrapper, provenance-plan, and documentation updates until committed |
 
 ## Relevant Commits
 
@@ -45,11 +45,11 @@ Phase 1 shell/environment prep work.
 
 | Prompt | Status | Artifact | Next action |
 |---|---|---|---|
-| P01 Codex auth metadata | Partial | `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` | Do not migrate MCP auth off env/PAT patterns until interactive OAuth + restart check passes. |
+| P01 Codex auth metadata | Migration blocked | `docs/host-capability-substrate/research/shell-env/2026-04-26-P01-codex-auth-metadata.md` | Codex account is logged in via ChatGPT, but `codex mcp login github` failed because dynamic client registration is unsupported; GitHub MCP still uses `GITHUB_PAT`. |
 | P02 GUI env inheritance | Validated locally | `docs/host-capability-substrate/research/shell-env/2026-04-26-P02-codex-app-gui-launch-env.md` | Treat Finder-origin cold launch as not inheriting terminal-only markers. Retest on Codex app upgrade. |
-| P05 Claude Desktop auth boundary | Partial | `docs/host-capability-substrate/research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` | GUI runtime smoke remains open; use synthetic marker names only. |
-| P06 shell wrapper logging | Prep complete, host install complete | `docs/host-capability-substrate/research/shell-env/2026-04-26-P06-shell-wrapper-logger-prep.md` | Live routing of selected surfaces still needs separate approval. |
-| P13 Codex app sandbox | Partial | `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` | App-internal Keychain/filesystem/network status-code probes remain open. |
+| P05 Claude Desktop auth boundary | Runtime smoke complete | `docs/host-capability-substrate/research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` | Terminal `open -b` propagated a synthetic marker, but Finder-origin launch did not; Finder-launched process lacked common Claude credential env names by existence-only check. |
+| P06 shell provenance | Open / narrowed with plan | `docs/host-capability-substrate/research/shell-env/2026-04-26-P06-shell-wrapper-logger-prep.md`; `docs/host-capability-substrate/research/shell-env/2026-04-27-P06-provenance-experiment-plan.md` | Runtime shape is captured for Claude Bash tool (`/bin/zsh -c`, `login=true` by self-introspection) and Codex CLI (`/bin/zsh -lc` by tool JSON). Both use absolute `/bin/zsh`, so PATH interception is closed as unsuitable except for negative controls. Next proof is a three-lane provenance experiment: tool-native trace, startup-file sentinels, and host-level process telemetry. |
+| P13 Codex app sandbox | Typed status probe complete | `docs/host-capability-substrate/research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` | GUI control socket was absent, but temporary stdio app-server initialized and `command/exec` `/usr/bin/true` returned exit code 0. Filesystem/network status-code probes remain open. |
 
 ## Host State Outside Repo
 
@@ -57,19 +57,37 @@ Phase 1 shell/environment prep work.
   `root:wheel`.
 - Installed wrapper matches `scripts/dev/hcs-shell-logger.sh` by byte compare.
 - SHA-256 for both files:
-  `5321eb6f3a22a04a4863c14826a71d558a0034c399269b4f8e80a7a247670847`.
-- No live agent surface has been routed through the wrapper yet.
+  `5d3c9b324e200fb347fb520011548c8990c4b9db8e792345f09a200f15651598`.
+- `/usr/local/bin/hcs-shell-logger` now uses `#!/bin/bash`; the previous
+  `#!/usr/bin/env bash` shebang recursed when `bash` was PATH-shadowed.
+- Wrapper JSON records are assembled before append; the previous multi-`printf`
+  append interleaved under a parallel live-routing run.
+- Clean P06 PATH-routed evidence was written under
+  `.logs/phase-1/shell-env/2026-04-26/P06-live-routing-fixed.jsonl`.
+- The malformed parallel-run evidence remains under
+  `.logs/phase-1/shell-env/2026-04-26/P06-live-routing.jsonl`.
 - Raw P02 JSONL evidence was written under `.logs/phase-1/shell-env/2026-04-26/`;
   `.logs/` is intentionally ignored and not part of the committed handoff.
 
 ## Open Next Steps
 
-1. Decide whether to run live P06 routing. This is a host-affecting operation
-   and needs action-time approval. Use `/usr/local/bin/hcs-shell-logger` and
-   keep logs redaction-only.
-2. Resolve P05 GUI runtime smoke without real Anthropic credential variables.
-3. Design P13 app-internal probes that report status codes only for Keychain,
-   filesystem, and network checks.
+1. Execute P06 only through the new provenance experiment plan:
+   `docs/host-capability-substrate/research/shell-env/2026-04-27-P06-provenance-experiment-plan.md`.
+   Claude Bash runtime shape is observed as `/bin/zsh -c` with `login=true`
+   via in-tool self-introspection, and Codex CLI `/bin/zsh -lc` is reproduced
+   from a Claude-run probe. Remaining gap: host-level `execve` argv,
+   shell-startup-file effects, and parent provenance for both surfaces. Close
+   P06 through tool-native trace, startup-file sentinels, and host-level process
+   telemetry; PATH routing is closed as unsuitable except for negative
+   controls. Continue to avoid nested Codex CLI probes from the active Codex
+   session.
+2. For P13, extend the approved typed app-server approach to filesystem and
+   network status-code probes only. Avoid `thread/shellCommand` because the
+   schema says it runs unsandboxed with full access.
+3. For P01, decide whether GitHub MCP OAuth needs a static-client/manual auth
+   strategy or whether the PAT/broker pattern remains the deliberate baseline.
+   Do not remove `GITHUB_PAT` wiring from system-config based on this failed
+   migration attempt.
 4. Begin Wave 2 only after Wave 1 decisions are accepted: P04
    `shell_environment_policy.include_only`, P03 MCP startup vs setup ordering,
    P08 provenance snapshot, and P09 direnv/mise matrix.
@@ -87,6 +105,11 @@ Phase 1 shell/environment prep work.
   argv can carry secret material.
 - Do not route live shells through the P06 wrapper without an operation proof
   and explicit action-time approval.
+- Do not treat the old P06 shorthand "Codex CLI = `bash -lc`" as host-proven;
+  the approved 2026-04-26 Codex CLI probe displayed `/bin/zsh -lc`.
+- Do not use broad Codex process cleanup while operating from inside Codex CLI.
+  If a nested probe is interrupted, identify exact probe PIDs first and avoid
+  terminating the controlling session.
 - Run `just verify` before committing.
 
 ## Verification Notes
@@ -110,4 +133,9 @@ Expected fixture output includes:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5.0 | 2026-04-27 | Ingested `research/external/2026-04-27-p06-probe-shape.md` as a P06 provenance experiment plan and updated the next step to require tool-native trace, startup-file sentinels, and host-level telemetry. |
+| 1.4.0 | 2026-04-27 | Advanced P06 to open/narrowed after Claude-run Test A self-introspection (`/bin/zsh -c`, login=true) and Test B Codex-from-Claude probe reproducing `/bin/zsh -lc` (exit 0). Closed PATH-prefix interception as unsuitable and kept host-level `execve` provenance/startup effects open. |
+| 1.3.0 | 2026-04-26 | Recorded approved Wave 1 live-probe results: P01 OAuth migration blocked by unsupported dynamic registration, P05 Finder-origin runtime smoke, P13 stdio app-server status probe, and P06 nested-Codex caution. |
+| 1.2.0 | 2026-04-26 | Added P01 Codex login/MCP auth-shape status, P05 CLI auth-status context, and P13 app-server protocol schema status to remaining Wave 1 handoff. |
+| 1.1.0 | 2026-04-26 | Recorded approved P06 live-routing partial, wrapper shebang/append fixes, clean PATH-routed evidence, and Codex CLI `/bin/zsh -lc` discrepancy. |
 | 1.0.0 | 2026-04-26 | Initial next-agent handoff after P01/P02/P05/P06/P13 prep. |

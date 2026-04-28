@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.0.0
-last_updated: 2026-04-24
+version: 2.1.0
+last_updated: 2026-04-27
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.0, April 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.1, April 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -17,7 +17,7 @@ Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment 
 
 Three things are now clearly established:
 
-1. **Shell state is not a safe substrate contract — and is not even a consistent one across surfaces of the same agent.** Codex CLI uses `bash -lc` regardless of `$SHELL`, applies a hidden `KEY/SECRET/TOKEN` default filter even under `inherit = "all"`, and the Codex *app* runs in a stricter Seatbelt sandbox that cannot reach Keychain or inherit shell-exported env. Claude Code resets env between Bash calls by design. Claude Desktop is OAuth-only and does not call `apiKeyHelper` or read API-key env vars. These are confirmed via primary sources; HCS's existing posture is right and should be stated more strongly.
+1. **Shell state is not a safe substrate contract — and is not even a consistent one across surfaces of the same agent.** Codex source-level guidance and historical issue evidence pointed to `bash -lc`, but the 2026-04-26/27 local P06 probes on this host observed Codex CLI command execution as absolute `/bin/zsh -lc` and Claude Code Bash as absolute `/bin/zsh -c` with runtime `login=true`. Shell carrier, flag form, and startup-file exposure must therefore be measured per `ExecutionContext`, not inferred globally from vendor, `$SHELL`, or PATH. Codex still applies a hidden `KEY/SECRET/TOKEN` default filter even under `inherit = "all"`, and the Codex *app* runs in a stricter Seatbelt sandbox that cannot reach Keychain or inherit shell-exported env. Claude Desktop is OAuth-only and does not call `apiKeyHelper` or read API-key env vars.
 
 2. **The macOS user session (launchd) is the governing execution context — confirmed with a new TCC corner case.** `launchctl setenv` + `~/Library/LaunchAgents` `EnvironmentVariables` remains the durable GUI-env plane in 2026; no sanctioned replacement has shipped. But Apple's *responsible process* TCC attribution means a subprocess inherits the parent agent's TCC decisions, which is why Codex app subprocesses see "No Keychain access" even when the terminal user has it — this needs modeling.
 
@@ -25,13 +25,13 @@ Three things are now clearly established:
 
 These findings materially revise the original backlog. Of the twelve prompts in the extraction/planning report:
 
-- **4 prompts are now answerable at the documentation level** (P01, P05, partially P06) and need only confirmatory validation runs.
-- **5 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P08, P09).
+- **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
+- **6 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P06 provenance closure, P08, P09).
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
 - **2 prompts are design/policy work unchanged by the survey** (P11, P12).
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
 
-The revised first-wave program is approximately **55 net research hours** over two workweeks beginning Monday, April 27, 2026 — down from ~80 hours in the original planning report because documentation-level resolution removed work from P01, P05, and P06. The remaining tests focus on genuinely undocumented or disputed items: GUI inheritance (P02), startup-script ordering (P03), cross-surface `include_only` behavior (P04), and the Codex app sandbox boundary (P13).
+The revised first-wave program is approximately **55 net research hours** over two workweeks beginning Monday, April 27, 2026 — down from ~80 hours in the original planning report because documentation-level resolution removed work from P01 and P05 and narrowed P06. The remaining tests focus on genuinely undocumented or disputed items: GUI inheritance (P02), P06 process provenance, startup-script ordering (P03), cross-surface `include_only` behavior (P04), and the Codex app sandbox boundary (P13).
 
 All testing must follow the secret-safe inspection constraint: existence-only checks, variable-name capture, hashes, or redacted classifications — never raw values in transcripts. This is grounded in the regression trap captured as `agent-echoes-secret-in-env-inspection` and in NIST log-management guidance, CWE-532 (insertion of sensitive info into log files), CWE-200 (exposure of sensitive info to unauthorized actor), and OWASP logging/secrets-management guidance.
 
@@ -58,15 +58,33 @@ Fish shell is explicitly out of scope per user instruction.
 
 #### 1.1 Shell binary used for tool subprocesses
 
-**Confirmed.** On macOS/Linux, Codex's default `shell` tool tells the model: *"The arguments to `shell` will be passed to execvp(). Most terminal commands should be prefixed with ['bash', '-lc']."* This is hard-coded in `codex-rs/core/src/tools/spec.rs` and surfaced to the model as guidance. On Windows the tool prefers `powershell.exe -Command`. There is no configuration key to swap to zsh.
+**Open / measured per surface.** Source-level Codex guidance and historical
+issue evidence described `bash -lc` behavior, but local P06 probes on this host
+contradicted treating that as universal. Codex CLI `0.125.0` command execution
+displayed absolute `/bin/zsh -lc` in both the original Codex-controlled probe
+and the 2026-04-27 Claude-controlled `codex exec --json` probe. Claude Code
+Bash self-introspection observed absolute `/bin/zsh -c` with runtime
+`login=true`.
 
-An open GitHub issue from v0.39 confirms this is the operative behavior and that Codex does *not* respect the user's login shell from `/etc/passwd` — even when `SHELL=/bin/zsh`, Codex executes commands via `bash -lc` (issues #3916, #3823). A related bug (#1708) shows that even with `shell_environment_policy.experimental_use_profile = true`, commands remain wrapped in `bash -lc`, so `/etc/profile`'s `path_helper` still mutates `PATH`, and zsh-specific init is never sourced.
+The safe conclusion is not "Codex is zsh" or "Claude is zsh." The safe
+conclusion is that shell binary, argv flag form, login semantics, and
+startup-file exposure are per-surface `ExecutionContext` properties. PATH-prefix
+wrappers are unsuitable for closure because the observed agent surfaces invoked
+absolute `/bin/zsh`.
 
-**Confirmed startup files sourced** when `bash -lc` is used on macOS: `/etc/profile` (which invokes `/usr/libexec/path_helper`), then the first of `~/.bash_profile`, `~/.bash_login`, `~/.profile` — *not* `.bashrc` (non-interactive), and *not* anything zsh. The Codex *app* on Windows (WSL) has the mirror complaint: "Codex appears to run non-login / non-interactive shells that don't source .zshrc/.profile, so NVM isn't loaded" (issue #13566). **Likely** the same non-login behavior applies on macOS GUI launch except where `experimental_use_profile` is set, in which case the CLI also sources the user's bash profile files (not zsh rc).
+When a surface actually uses `bash -lc`, macOS startup files are `/etc/profile`
+(which invokes `/usr/libexec/path_helper`) and then the first of
+`~/.bash_profile`, `~/.bash_login`, or `~/.profile`. When a surface uses
+`zsh -lc`, do not assume `.zshrc`; zsh login non-interactive startup needs
+sentinel proof. The Codex *app* and IDE surfaces still need their own runtime
+probes rather than inference from CLI behavior.
 
 Additionally, there is a new optional shell backend: `@openai/codex-shell-tool-mcp` ships a **patched Bash** (and patched zsh) that honors an `EXEC_WRAPPER` hook via execve interception — this is how the `codex/sandbox-state` capability works when enabled, but it is opt-in and experimental.
 
-**Gap.** There is no documented way to redirect Codex to `/bin/zsh -lc` or `/bin/sh -c` via config; users on macOS who rely on zsh-exclusive state (aliases, `nvm` hooks, OMZ plugins) must either (a) move that state into `~/.bash_profile`/`~/.profile`, (b) use `experimental_use_profile` and accept `path_helper` divergence, or (c) front-load the environment before launching Codex. The *recommendation* in Codex's own docs is explicit: *"Make sure your environment is already set up before launching Codex so it doesn't spend tokens probing what to activate."*
+**Gap.** There is no HCS-accepted closure evidence yet for parent `execve`
+argv, startup-file effects, or exact provenance across Codex/Claude surfaces.
+P06 now requires tool-native trace, startup-file sentinels, and host-level
+process telemetry before shell carrier behavior can be modeled as authoritative.
 
 #### 1.2 `shell_environment_policy` semantics in current builds
 
@@ -303,7 +321,7 @@ Startup files (zsh): `/etc/zshenv` → `~/.zshenv` → (if login) `/etc/zprofile
 
 #### 7.2 `bash -lc` / `zsh -lc` / `/bin/sh -c`
 
-- `bash -lc "cmd"` — login+command, sources `/etc/profile` + user profile. **What Codex invokes.**
+- `bash -lc "cmd"` — login+command, sources `/etc/profile` + user profile. Source-level Codex material pointed here, but the approved 2026-04-26 local Codex CLI probe displayed `/bin/zsh -lc`; treat this as unresolved per P06.
 - `bash -c "cmd"` — command only, *no* rc files sourced. Many tools use this.
 - `zsh -lc "cmd"` — login+command. `-l` alone does *not* source `.zshrc`; you need `-ic` for interactive. Common source of bugs.
 - `/bin/sh -c "cmd"` — POSIX, no rc files, limited syntax.
@@ -311,7 +329,7 @@ Startup files (zsh): `/etc/zshenv` → `~/.zshenv` → (if login) `/etc/zprofile
 #### 7.3 Classic agent "shell wrapping" mistakes HCS should diagnose
 
 - `bash -c "source ~/.zshrc && ..."` — sources zsh file with bash syntax; often fails loudly but sometimes silently on portable-looking lines.
-- Assuming `PATH` is consistent across agent surfaces. Codex app = launchd user session PATH + `path_helper`. Codex CLI = inherited terminal PATH + `bash -lc` path_helper. These diverge.
+- Assuming `PATH` is consistent across agent surfaces. Codex app = launchd user session PATH + `path_helper`. Codex CLI shell selection is now host-observed as launch-context/config-sensitive rather than fixed; the 2026-04-26 local probe displayed `/bin/zsh -lc`.
 - Using `export VAR=val` in one Claude Code Bash call expecting it in the next (documented not to persist).
 - Agent-generated `cd foo && bar | baz` being split as literal argv tokens when the runner executes commands without a shell.
 
@@ -359,10 +377,10 @@ Anthropic is **actively removing third-party OAuth support** per 2025–2026 ven
 
 | Surface | Shell | Invocation | Startup files | Sandbox | Env inheritance |
 |---|---|---|---|---|---|
-| Codex CLI | `/bin/bash` | `-lc` | `/etc/profile`, `~/.bash_profile*` | Seatbelt (permissive) | Terminal parent + bash login |
-| Codex app | `/bin/bash` (or patched) | `-lc` | Same, but app sandbox gates | Seatbelt (strict) — **no Keychain, no terminal env** | launchd user session only |
+| Codex CLI | Open / per-surface measured; local P06 observed `/bin/zsh` | Local P06 observed `-lc`; host telemetry still pending | Open; startup sentinels required before modeling as authoritative | CLI sandbox / policy-dependent | Launch context + Codex env policy; do not infer from `$SHELL` |
+| Codex app | Open; do not infer from CLI | Open; app-server probes required | Open; app sandbox gates any shell/file behavior | Seatbelt (strict) — **no Keychain, no terminal env** | launchd user session only |
 | Codex IDE ext | Via VS Code | VS Code env | VS Code shell-integration | VS Code | Editor process env |
-| Claude Code CLI | `/bin/bash` (fresh each call) | `-c` | None per-call; SessionStart hook one-shot | None | Process env at spawn only |
+| Claude Code CLI | Open / per-surface measured; local P06 observed `/bin/zsh` | Local P06 observed `-c` with `login=true`; parent argv still pending | Open; startup sentinels required before modeling as authoritative | None observed for CLI Bash tool | Process env at spawn only; no persistence between Bash calls |
 | Claude Desktop | N/A | N/A (OAuth-only, no Bash tool) | N/A | App | N/A |
 | Claude Code IDE ext | Shares CLI config | Inherits VS Code env | VS Code shell-integration | VS Code | Editor env |
 | Zed external agents | Zed's computed env | ACP | Login-shell probe at Zed start | None | Zed env |
@@ -408,7 +426,7 @@ Adopt devcontainer's dichotomy: **baked env** (ENTRYPOINT-time) vs **runtime-app
 11. `agent_session_hook` → Claude Code SessionStart hooks; Codex app worktree setup scripts.
 12. `mcp_server_init` → MCP servers spawned with env slice; bearer tokens read here.
 13. `subagent_spawn` → subagent gets its own reset context (does **not** inherit hook-applied env).
-14. `tool_call_subprocess` → Bash tool call / shell tool invocation; may re-source rc files (Codex `bash -lc`) or not (Claude fresh bash).
+14. `tool_call_subprocess` → Bash tool call / shell tool invocation; may re-source startup files depending on the resolved `ExecutionContext` (local P06 observed Codex `/bin/zsh -lc` and Claude `/bin/zsh -c` with `login=true`, both still pending host-level provenance).
 
 **Phase 11→12 is the fragile seam** — setup scripts may run before or after MCP servers, and there is no documented contract. **This is the substance of P03.**
 
@@ -420,25 +438,29 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 
 | Prompt | Status after survey | Runtime test still needed? |
 |---|---|---|
-| P01 — Codex auth reuse via Keychain + shared CODEX_HOME | **Resolved** at doc level (Keychain service `"Codex Auth"`, account keyed by sha256(CODEX_HOME)[:16]) | Confirmatory smoke test only (1h) |
+| P01 — Codex auth reuse via Keychain + shared CODEX_HOME | **Doc-level resolved, local migration blocked**: local smoke saw ChatGPT login and `auth.json`, but `codex mcp login github` failed because dynamic client registration is unsupported and GitHub MCP remains on `GITHUB_PAT`. | Decide static-client/manual OAuth or keep PAT/broker; do not remove env/PAT wiring yet |
 | P02 — Codex app lacks shell-inherited GITHUB_PAT | **Likely resolved** via launchd semantics + issues #10695, #13566 | Yes — direct differential test (2h) |
 | P03 — MCP startup vs worktree setup ordering | **Undocumented** — genuinely open | Yes — marker-based timing test (8h) |
 | P04 — `shell_environment_policy.include_only` across CLI/app/ext | Schema confirmed; cross-surface behavior undocumented | Yes — matrix test with env vectors (10h) |
-| P05 — Claude Desktop doesn't use apiKeyHelper/shell-env for auth | **Resolved** at doc level (authentication.md explicit) | Confirmatory only (1h) |
-| P06 — Shell binary + invocation form per surface | **Largely resolved**: Codex CLI = `bash -lc`, Codex app ≈ bash in Seatbelt, Claude = fresh `/bin/bash -c`, apiKeyHelper = `/bin/sh` | Minor confirmatory wrapper-log test (4h) |
+| P05 — Claude Desktop doesn't use apiKeyHelper/shell-env for auth | **Docs-level resolved plus local Finder-origin smoke**: terminal `open -b` propagated a marker, but Finder-origin launch did not and common Claude credential env names were absent by existence-only check. | Keep Desktop as a separate GUI credential surface; do not use terminal `open` as GUI proxy |
+| P06 — Shell binary + invocation form per surface | **Open / narrowed**: local tests now show Codex CLI command execution as `/bin/zsh -lc` by tool JSON and Claude Code CLI Bash-tool runtime shape as `/bin/zsh -c` with `login=true` by self-introspection. Both use absolute `/bin/zsh`, so PATH-prefix wrapper interception is unsuitable except as a negative control. | Close through tool-native trace, startup-file sentinels, and host-level process telemetry; parent `execve` provenance and startup effects remain open |
 | P07 — Startup files consulted per surface | **Derived** from P06 findings | Optional — sentinel markers only if P06 wrapper test contradicts expectations (0–4h) |
 | P08 — Provenance of PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME | Schema designed; host-specific values need capture | Yes — but reduced scope: run once, snapshot, commit to repo (6h) |
 | P09 — direnv/mise visibility across surfaces | Known caveats: mise activate only interactive, direnv needs hook, IDE probes vary | Yes — matrix test but tightly scoped (6h) |
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
 | P11 — LaunchAgent env policy for non-secret session flags | Design/policy, unchanged by survey | Design work (6h, no runtime) |
 | P12 — Secret-safe env inspection helper spec | Design/policy, unchanged by survey; confirmed no prior art | Design work + prototype (10h) |
-| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Genuinely new**: issue #10695 shows Codex app sandbox blocks Keychain + env injection even when parent shell has them | Yes — sandbox boundary characterization (4h) |
+| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Genuinely new**: issue #10695 shows Codex app sandbox blocks Keychain + env injection even when parent shell has them. Local stdio app-server status probe now works, but filesystem/network status codes remain open. | Yes — sandbox boundary characterization (4h) |
 
 ### Why the reduction
 
 - **P01, P05**: `.auth.json`/Keychain details and Claude Desktop OAuth-only behavior are documented in primary sources at sufficient depth that the planning report's proposed 24 combined hours can be cut to ~2 hours of smoke tests.
-- **P06**: Codex source code (`spec.rs`), config source, and Claude docs already answer which shell binary and what invocation form. The direct-test for this is now a 4-hour wrapper-log validation instead of an 18-hour instrumentation build.
-- **P07**: Derivable from P06 in most cases; only needed if wrapper-log surprises appear.
+- **P06**: Source-level expectations and local runtime evidence now diverge.
+  PATH-wrapper interception is closed as unsuitable, and the next step is the
+  three-lane provenance experiment in
+  `research/shell-env/2026-04-27-P06-provenance-experiment-plan.md`.
+- **P07**: Startup-file behavior is no longer optional if P06 is closed
+  rigorously; it is the sentinel lane inside the P06 provenance experiment.
 - **P10**: Dropped entirely.
 
 ### Why items remain
@@ -462,7 +484,7 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 2 | **P01** | 3 | 5 | 1 | Confirmatory only — docs already answered |
 | 3 | **P05** | 3 | 5 | 1 | Confirmatory only — docs already answered |
 | 4 | **P13** | 5 | 4 | 4 | New: Codex app sandbox boundary characterization |
-| 5 | **P06** | 4 | 4 | 4 | Wrapper-log validation only |
+| 5 | **P06** | 4 | 3 | 4 | Provenance closure: tool trace + startup sentinels + host telemetry |
 | 6 | **P04** | 4 | 3 | 10 | Cross-surface env-policy matrix; documented gap vs observed |
 | 7 | **P03** | 5 | 3 | 8 | Setup-script/MCP timing — genuinely undocumented |
 | 8 | **P08** | 3 | 4 | 6 | Host-specific provenance snapshot |
@@ -496,7 +518,7 @@ gantt
     P05 Claude Desktop auth boundary (1h)   :a2, 2026-04-27, 1d
     P02 Terminal vs Spotlight inheritance (2h) :a3, 2026-04-28, 1d
     P13 Codex app sandbox boundary (4h)     :a4, 2026-04-28, 1d
-    P06 Shell wrapper-log validation (4h)   :a5, 2026-04-29, 1d
+    P06 Provenance experiment (4h)          :a5, 2026-04-29, 1d
 
     section Wave 2 (genuinely open)
     P04 include_only cross-surface matrix (10h) :b1, 2026-04-30, 2d
@@ -518,7 +540,7 @@ gantt
 | Milestone | Target | Exit criterion |
 |---|---|---|
 | Foundation ready | 2026-04-27 | Harness, synthetic repo, evidence template, redaction rules committed |
-| Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 wrapper logs captured; P13 sandbox profile characterized |
+| Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 provenance plan accepted or executed; P13 sandbox profile characterized |
 | Open-prompt runtime data captured | 2026-05-06 | P03, P04, P08, P09 matrices complete |
 | Design work complete | 2026-05-07 | P11 policy decision table + P12 spec/prototype delivered |
 | Synthesis complete | 2026-05-08 | ADR drafts, updated `ExecutionContext`/`EnvProvenance`/`CredentialSource`/`ToolResolution`/`StartupPhase` schemas, regression traps written |
@@ -557,13 +579,40 @@ All execution plans share a **secret-safe testing constraint**: no real secrets 
 
 **Deliverables:** Confirmation table per surface: shell path, argv[0], invocation flags, parent PID, cwd, shell mode; comparison to documented behavior.
 
-**Methods:** Install a wrapper script at a controlled PATH location (e.g., `/usr/local/bin/hcs-shell-logger`) that logs its invocation args to a local file then `exec`s the real `/bin/bash` with identical args. Temporarily point the user's `SHELL` env or modify `PATH` to route shell invocations through the wrapper. Trigger a tool call from each surface (Codex CLI, Codex app, Codex IDE ext, Claude Code CLI, apiKeyHelper execution via a test API call) and inspect the log.
+**Methods:** PATH-wrapper controls are complete and now serve only as negative controls. Close P06 through the three-lane provenance plan: tool-native trace, temporary startup-file sentinels, and host-level process telemetry. Trigger one sterile probe per target surface (Codex CLI, Claude Code CLI Bash, and later app/IDE surfaces) and reconcile tool intent, startup effects, and OS `execve` truth without environment-value capture.
 
 **Data:** `argv[0]` (reveals if `bash` was invoked as `-bash` for login mode), flags (`-l`, `-c`, `-i`, combinations), PPID, cwd, `$_` (invocation path), `$BASH_VERSION`/`$ZSH_VERSION`.
 
 **Risks:** Modifying `$SHELL` may affect other processes; prefer wrapper-via-PATH. Some agents may cache resolved shell path and bypass PATH; document this if observed.
 
-**Expected outcome:** Validates `bash -lc` for Codex, `bash -c` (non-login) for Claude fresh subprocess, `/bin/sh -c` for apiKeyHelper. Any deviation is interesting.
+**Expected outcome:** Produces one reconciled `ExecutionContext` record per surface. Local P06 evidence already shows Codex CLI as `/bin/zsh -lc` by tool JSON and Claude Code Bash as `/bin/zsh -c` with `login=true` by self-introspection; remaining closure requires startup-file effects, parent provenance, and host-level argv confirmation. Any mismatch between lanes is preserved, not normalized away.
+
+**Local direct-test addendum (2026-04-26 / 2026-04-27):** The first approved
+P06 live route found a deviation. PATH-routed shell probes captured `bash -lc`,
+`sh -c`, and `zsh -lc` after wrapper fixes, but a true Codex CLI `0.125.0`
+probe displayed `/bin/zsh -lc` and bypassed PATH routing. Treat the earlier
+`bash -lc` claim as source-level expectation, not host-proven behavior, until
+the discrepancy is reconciled against configuration and launch context.
+
+A 2026-04-27 follow-up captured Claude Code CLI Bash-tool runtime shape via
+in-tool self-introspection: `/bin/zsh -c` with `login=true` (no explicit `-l`
+in `ps args`). The same session re-ran Codex CLI as `codex exec --ephemeral
+--full-auto --json` and Codex's `command_execution.command` again reported
+`/bin/zsh -lc`, exit 0 — reproducing the absolute-path observation from a
+non-Codex controlling session. Both surfaces use absolute `/bin/zsh` and
+bypass PATH interception, but with different flag forms (`-c` for Claude vs.
+`-lc` for Codex). Earlier Claude app runtime produced user-observed Bash and
+Touch ID approval prompts; treat that as approval-surface evidence, separate
+from the in-tool shape. Avoid nested Codex CLI probes from inside the active
+Codex session unless process cleanup is isolated from the controller.
+
+P06 remains open / narrowed. The remaining proof requires tool-native trace,
+startup-file sentinels, and host-level process telemetry to confirm parent
+`execve` argv, startup-file effects, and provenance without collecting
+environment values or raw command payloads.
+
+The concrete run plan is
+`docs/host-capability-substrate/research/shell-env/2026-04-27-P06-provenance-experiment-plan.md`.
 
 ### P04 — `shell_environment_policy.include_only` cross-surface matrix
 
@@ -704,3 +753,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 |---|---|---|
 | 1.0.0 | 2026-04-23 | Initial HCS shell/environment research report. |
 | 2.0.0 | 2026-04-24 | Major reconciliation: landscape-survey findings (Codex/Claude/macOS/adjacent tooling, April 2026) merged with prompt-extraction and planning report. Prompts P01–P12 re-classified against documentation-level resolution; P10 (fish) dropped per user guidance; P13 (Codex app sandbox as distinct ExecutionContext) added. First-wave research hours reduced from ~80 to ~55 via documentation-level resolution of P01, P05, and majority of P06. Incorporates secret-safe testing constraint grounded in NIST/CWE-532/CWE-200/OWASP. Adds Codex `shell_environment_policy` vocabulary adoption and devcontainer `containerEnv`/`remoteEnv` typing borrow as HCS design recommendations. |
+| 2.1.0 | 2026-04-27 | Ingested the P06 provenance experiment plan, corrected stale Codex `bash -lc` universal-language after local `/bin/zsh` findings, and reframed P06/P07 around tool-native trace, startup sentinels, and host telemetry. |

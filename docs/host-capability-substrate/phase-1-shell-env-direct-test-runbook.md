@@ -3,8 +3,8 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.0.0
-last_updated: 2026-04-26
+version: 1.1.0
+last_updated: 2026-04-27
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
 ---
@@ -12,7 +12,7 @@ priority: high
 # HCS Phase 1 Shell/Env Direct-Test Runbook
 
 Executable plan for the W4 shell/environment direct tests from
-[`shell-environment-research.md`](./shell-environment-research.md) v2.0.0.
+[`shell-environment-research.md`](./shell-environment-research.md) v2.1.0.
 
 Target ring: **Ring 3 measurement/eval harness + docs**. This runbook does not
 change Ring 0 schemas, policy, hooks, Codex profiles, or system-config managed
@@ -65,8 +65,11 @@ to 2.1.120 or later. Do not record a pass/fail result for that item against
 4. **P13 — Codex app sandbox characterization.** Continue from the app bundle
    evidence above; characterize entitlements, Keychain access, file scope, and
    env injection behavior.
-5. **P06 — Shell wrapper-log validation.** Prepare the wrapper and routing
-   plan, but do not install a host-wide wrapper until the proof is approved.
+5. **P06 — Shell provenance validation.** Wrapper validation is complete for
+   PATH-routed controls, and both Codex/Claude observed surfaces used absolute
+   `/bin/zsh`. Execute
+   `research/shell-env/2026-04-27-P06-provenance-experiment-plan.md` for the
+   remaining tool-native, startup-sentinel, and host-telemetry proof lanes.
 
 ## Output Contract
 
@@ -156,10 +159,10 @@ P01 inspect Codex Keychain metadata for shared CODEX_HOME auth
 - Resolved tool: `/usr/bin/security`@system
 
 ### Evidence
-- Source: `shell-environment-research.md` v2.0.0 §1.3; local Codex CLI
+- Source: `shell-environment-research.md` v2.1.0 §1.3; local Codex CLI
   `0.125.0`
 - Observed at: 2026-04-26T19:10:20Z
-- Parser version: runbook-v1.0.0
+- Parser version: runbook-v1.1.0
 - Cache status: miss
 - Confidence: high for expected service/account shape; best-effort for local
   Keychain state until the operation runs
@@ -205,9 +208,9 @@ P02 validate Codex app GUI env marker inheritance
 - Resolved tool: not available: GUI observation path not selected yet
 
 ### Evidence
-- Source: `shell-environment-research.md` v2.0.0 §1.4 and §3.4
+- Source: `shell-environment-research.md` v2.1.0 §1.4 and §3.4
 - Observed at: 2026-04-26T19:10:20Z
-- Parser version: runbook-v1.0.0
+- Parser version: runbook-v1.1.0
 - Cache status: miss
 - Confidence: likely expected outcome; local host behavior not yet measured
 
@@ -257,9 +260,9 @@ P05 confirm Claude Desktop ignores apiKeyHelper/API-key env
   runbook pass
 
 ### Evidence
-- Source: `shell-environment-research.md` v2.0.0 §2.3
+- Source: `shell-environment-research.md` v2.1.0 §2.3
 - Observed at: 2026-04-26T19:10:20Z
-- Parser version: runbook-v1.0.0
+- Parser version: runbook-v1.1.0
 - Cache status: miss
 - Confidence: authoritative for docs-level boundary; local smoke not captured
 
@@ -296,65 +299,72 @@ Curated P05 memo records app version, launch method, and absence of helper/API
 key usage evidence.
 
 ### Operation
-P06 install shell wrapper logger
+P06 provenance experiment
 
 ### Host context
 - OS: macOS 26.4.1 25E253
 - cwd: `/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate`
 - Workspace: `host-capability-substrate`
-- Shell mode: non_interactive install; later interactive agent routing
-- Resolved tool: `scripts/dev/hcs-shell-logger.sh`@repo, `scripts/dev/run-shell-logger-fixture.sh`@repo
+- Shell mode: non_interactive controls; host telemetry run pending
+- Resolved tool: not available: host telemetry tool and action-time runner are
+  not selected yet
 
 ### Evidence
-- Source: `shell-environment-research.md` v2.0.0 §P06
-- Observed at: 2026-04-26T19:10:20Z
-- Parser version: runbook-v1.0.0
+- Source: `shell-environment-research.md` v2.1.0 §P06 and
+  `research/shell-env/2026-04-27-P06-provenance-experiment-plan.md`
+- Observed at: 2026-04-27T05:45:01Z
+- Parser version: runbook-v1.1.0
 - Cache status: miss
-- Confidence: high for need; wrapper implementation is fixture-tested and
-  installed, live surface routing still needs approval
+- Confidence: high for need; runtime shape is observed, but host-level
+  `execve` argv, startup-file effects, and parent provenance remain open
 
 ### Proposed invocation
-```json
-{
-  "command_mode": "argv",
-  "file": "/usr/bin/install",
-  "argv": ["install", "-m", "0755", "scripts/dev/hcs-shell-logger.sh", "/usr/local/bin/hcs-shell-logger"],
-  "env_profile_id": "none",
-  "lane": "execute"
-}
-```
+not available: the provenance experiment needs a fresh action-time operation
+proof once the host telemetry mechanism is selected.
 
 ### Risk
-- Mutation scope: write-host
-- Target resources: `/usr/local/bin/hcs-shell-logger`, wrapper log directory
-- Policy tier: host-write-approval-required
+- Mutation scope: inspect-host for process telemetry; write-local for ignored
+  `.logs/` artifacts
+- Target resources: `.logs/phase-1/shell-env/**`, temporary `ZDOTDIR`,
+  process telemetry stream
+- Policy tier: not available: substrate classifier is not implemented yet
 
 ### Preflight
-Wrapper exists in-repo and is installed at `/usr/local/bin/hcs-shell-logger`.
-`just shell-logger-fixture` must pass before live surface routing. It logs only
-argv shape, interpreter path, cwd, pid/ppid, and timestamp. It must not log
-environment values or shell command payloads.
+`just shell-logger-fixture` must pass, local zsh sentinel controls must pass,
+and the selected host telemetry command must have an action-time approval proof.
+The run must not collect environment values, raw command payloads, or real
+startup-file contents.
 
 ### Preview
-Live surface routing would point a selected surface at
-`/usr/local/bin/hcs-shell-logger`; the installed file already matches the
-reviewed repo script by SHA-256.
+Expected artifacts are lane-separated tool-native, sentinel, host-telemetry,
+parsed, and report files under ignored `.logs/phase-1/shell-env/**`. Published
+docs should contain only redacted summaries and payload hashes.
 
 ### Rollback
-Remove `/usr/local/bin/hcs-shell-logger` and restore any agent configuration
-that routed through it. Destructive removal needs its own explicit approval.
+Remove the temporary run directory under `.logs/phase-1/shell-env/**` only after
+confirming it is not load-bearing evidence. Stop any telemetry process started
+for the run. Do not remove `/usr/local/bin/hcs-shell-logger` without a separate
+operation proof because the wrapper is already installed host state.
 
 ### Verification
-Wrapper-log fixture shows Codex CLI invocation form, Claude Code Bash
-invocation form, and apiKeyHelper interpreter without any env value capture.
+Wrapper-log fixture proves redaction and argv preservation for controlled
+wrapper routes. Live PATH-routed probes captured `bash`, `sh`, and `zsh` by
+name, but Codex CLI used an absolute `/bin/zsh -lc` path and bypassed the
+wrapper. P06 closure now depends on the provenance experiment plan, not on
+additional PATH wrapper runs.
 
 ## Blockers
 
 - Claude Code is currently 2.1.119, so the #18692 non-repro check against
   2.1.120 is blocked.
-- P02 and P05 need approved GUI observation paths before execution.
+- P05 approved GUI observation is complete for the Finder-origin synthetic
+  marker path; terminal `open -b` propagated the marker and is not a clean GUI
+  proxy.
 - P06 wrapper implementation now exists in-repo, is fixture-tested, and is
-  installed; live routing still requires approval.
+  installed; PATH-prefix interception is closed as unsuitable for the observed
+  Codex/Claude surfaces because both used absolute `/bin/zsh`. The next P06
+  action is the three-lane provenance experiment: tool-native trace,
+  startup-file sentinels, and host-level process telemetry.
 - P03/P04/P08/P09 are Wave 2 and should wait until Wave 1 memos establish the
   tested `ExecutionContext` surfaces.
 
@@ -362,4 +372,5 @@ invocation form, and apiKeyHelper interpreter without any env value capture.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.1.0 | 2026-04-27 | Updated P06 from wrapper-log validation to provenance closure and linked the three-lane provenance experiment plan. |
 | 1.0.0 | 2026-04-26 | Initial W4 shell/env direct-test runbook with local host evidence, artifact contract, Wave 1 order, and operation-proof stubs. |

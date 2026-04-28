@@ -19,7 +19,7 @@ printf 'argc=%s\n' "$#" >"$HCS_SHELL_LOGGER_EXEC_RECORD"
 for arg in "$@"; do
   printf 'arg=%s\n' "$arg" >>"$HCS_SHELL_LOGGER_EXEC_RECORD"
 done
-exit 23
+exit "${HCS_SHELL_LOGGER_FAKE_STATUS:-23}"
 SHEOF
 chmod +x "$fake_shell"
 
@@ -72,6 +72,46 @@ with open(exec_record) as f:
 
 if "SHOULD_NOT_APPEAR_IN_WRAPPER_LOG" not in exec_text:
     raise SystemExit("fake shell did not receive the original command payload")
+PYEOF
+
+parallel_log="$tmp_dir/parallel-wrapper.jsonl"
+parallel_count=12
+for _ in $(seq 1 "$parallel_count"); do
+  HCS_SHELL_LOGGER_LOG="$parallel_log" \
+    HCS_SHELL_LOGGER_REAL_SHELL="$fake_shell" \
+    HCS_SHELL_LOGGER_EXEC_RECORD="$exec_record" \
+    HCS_SHELL_LOGGER_FAKE_STATUS=0 \
+    "$repo_root/scripts/dev/hcs-shell-logger.sh" -lc "$payload" &
+done
+wait
+
+python3 - "$parallel_log" "$parallel_count" <<'PYEOF'
+import json
+import sys
+
+log_path, expected_count = sys.argv[1], int(sys.argv[2])
+
+with open(log_path) as f:
+    records = [json.loads(line) for line in f if line.strip()]
+
+if len(records) != expected_count:
+    raise SystemExit(f"expected {expected_count} parallel records, got {len(records)}")
+
+expected_shape = ["shell_flag:-lc", "command_string_redacted"]
+for index, record in enumerate(records, start=1):
+    if record.get("arg_shape") != expected_shape:
+        raise SystemExit(
+            f"parallel record {index}: expected arg_shape {expected_shape!r}, "
+            f"got {record.get('arg_shape')!r}"
+        )
+    if record.get("shell_flags") != ["-lc"]:
+        raise SystemExit(
+            f"parallel record {index}: expected shell_flags ['-lc'], "
+            f"got {record.get('shell_flags')!r}"
+        )
+    serialized = json.dumps(record, sort_keys=True)
+    if "SHOULD_NOT_APPEAR_IN_WRAPPER_LOG" in serialized:
+        raise SystemExit(f"parallel record {index} leaked shell command payload")
 
 print("  ✓ shell logger fixture passed")
 PYEOF

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # hcs-shell-logger.sh — redaction-safe shell invocation logger for P06.
 #
 # This script is intended to be symlinked or copied to a controlled wrapper path
@@ -101,13 +101,13 @@ shell_flags_json() {
 }
 
 write_log() {
-  local cwd log_dir ts
+  local cwd line log_dir ts
   cwd="$(pwd -P)"
   log_dir="$(dirname "$log_path")"
   mkdir -p "$log_dir"
   ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-  {
+  line="$(
     printf '{"schema_version":"1.0.0"'
     printf ',"tool":"hcs-shell-logger"'
     printf ',"ts":'
@@ -125,8 +125,9 @@ write_log() {
     shell_flags_json "$@"
     printf ',"arg_shape":'
     arg_shape_json "$@"
-    printf '}\n'
-  } >>"$log_path"
+    printf '}'
+  )"
+  printf '%s\n' "$line" >>"$log_path"
 }
 
 if [ "${HCS_SHELL_LOGGER_DISABLE:-0}" != "1" ]; then

@@ -3,7 +3,7 @@ title: P13 Codex App Bundle, Signing, and Process Sandbox Inspection
 category: research
 component: host_capability_substrate
 status: partial
-version: 1.1.0
+version: 1.3.0
 last_updated: 2026-04-26
 tags: [phase-1, p13, codex-app, execution-context, sandbox, signing]
 priority: high
@@ -22,7 +22,7 @@ Keychain, filesystem, or network capability probe was run.
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-04-26T19:10:20Z to 2026-04-26T21:45Z |
+| Observed at | 2026-04-26T19:10:20Z to 2026-04-27T01:09Z |
 | macOS | 26.4.1, build 25E253 |
 | Repo cwd | `/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate` |
 | Codex CLI | `/Users/verlyn13/.npm-global/bin/codex`, `codex-cli 0.125.0` |
@@ -53,6 +53,12 @@ Keychain, filesystem, or network capability probe was run.
 | Process sandbox flags | GPU and network helpers include `--seatbelt-client`; network helper includes `--service-sandbox-type=network`; renderer includes `--enable-sandbox` and `--seatbelt-client`; `codex app-server` showed no visible `--seatbelt-client` flag. |
 | App-server children | The app-server launched `node_repl` and MCP child processes. Full argv values were not persisted in this memo because process argv can carry sensitive material. |
 | GUI env inheritance cross-reference | P02 Finder-origin cold start found `p02_gui_marker_present=false`; GUI launch does not inherit the synthetic terminal-only marker. |
+| App-server protocol schema | `codex app-server generate-json-schema --out /tmp/hcs-p13-app-server-schema` succeeded. Generated schema includes `command/exec`, `thread/shellCommand`, filesystem RPCs (`fs/readFile`, `fs/readDirectory`, `fs/writeFile`, `fs/remove`, `fs/watch`, etc.), permission profiles with filesystem and network controls, account status shapes, and MCP status/OAuth notifications. |
+| App-server GUI control socket | `codex app-server proxy` failed because `/Users/verlyn13/.codex/app-server-control/app-server-control.sock` did not exist. No GUI app-server control connection was available through that path. |
+| Temporary stdio app-server initialize | `codex app-server --listen stdio://` initialized successfully and returned user-agent, `codexHome`, and platform fields. Account/status requests were not used. |
+| MCP status typed request | `mcpServerStatus/list` returned status and tool/resource inventory, including auth-status classifications. The full response is intentionally not pasted because it includes large tool schemas and connector metadata. |
+| `command/exec` status probe | A typed `command/exec` request for `/usr/bin/true` in the repo cwd returned `exitCode: 0`, empty stdout, and empty stderr. |
+| Temporary server cleanup | The stdio app-server exited cleanly on EOF after the probe. |
 
 ## Interpretation
 
@@ -72,6 +78,16 @@ The app-bundle evidence supports modeling Codex app separately from Codex CLI:
   (`--seatbelt-client`, `--enable-sandbox`, and
   `--service-sandbox-type=network`) on helpers, but not enough to infer the
   effective macOS Seatbelt profile for app-server child processes.
+- The generated app-server protocol schema is a better P13 probe candidate than
+  raw process argv. It exposes typed command, filesystem, network-permission,
+  account, and MCP-status surfaces. It does not expose a Keychain-specific probe
+  in the generated schema inspected here.
+- The typed stdio app-server path is usable for status-code probes even when
+  the GUI control socket is absent. The first live `command/exec` status probe
+  proved the protocol can return exit status without command output.
+- `mcpServerStatus/list` is useful but noisy: it can emit large tool schemas and
+  connector metadata. Future evidence should summarize status fields and avoid
+  pasting full response bodies.
 
 Do not infer Keychain access, file-system scope, or network scope from this
 memo alone. Those still require app-internal runtime probes or a reliable
@@ -82,15 +98,19 @@ signing/profile source.
 1. Re-run signing verification after any Codex app update or reinstall.
 2. Locate a reliable source for the active Seatbelt/sandbox profile, if one is
    embedded or derivable. The narrow bundle search did not find one.
-3. Run a P13 Keychain-access probe using metadata/existence-only checks. Do not
-   request or print credential values.
-4. Design app-internal filesystem and network capability probes that report
-   status codes only, not paths or payloads beyond the fixed synthetic target.
+3. Extend the app-server protocol probe to filesystem and network status-code
+   checks only. Avoid `thread/shellCommand` for HCS probes because the schema
+   says it runs unsandboxed with full access; prefer `command/exec` with an
+   explicit permission profile where possible.
+4. Run a P13 Keychain-access probe only if a metadata/existence-only method is
+   available. The generated schema did not expose a Keychain-specific request.
+   Do not request or print credential values.
 5. Feed P13 findings into ADR 0017 once runtime probes are complete.
 
 ## Commands Used
 
-All commands were read-only:
+Key commands were metadata-only or status-code probes. The app-server probe
+used `/usr/bin/true` and returned only exit status plus empty output:
 
 ```json
 [
@@ -133,6 +153,26 @@ All commands were read-only:
   {
     "file": "/usr/bin/pgrep",
     "argv": ["pgrep", "-P", "53495", "-fl", "."]
+  },
+  {
+    "file": "/Users/verlyn13/.npm-global/bin/codex",
+    "argv": ["codex", "app-server", "generate-json-schema", "--out", "/tmp/hcs-p13-app-server-schema"]
+  },
+  {
+    "file": "/usr/bin/rg",
+    "argv": ["rg", "-n", "keychain|network|file|sandbox|fs|filesystem|path|read|write|exec|shell|auth|mcp|status|capab|capability", "/tmp/hcs-p13-app-server-schema"]
+  },
+  {
+    "file": "/Users/verlyn13/.npm-global/bin/codex",
+    "argv": ["codex", "app-server", "proxy"]
+  },
+  {
+    "file": "/Users/verlyn13/.npm-global/bin/codex",
+    "argv": ["codex", "app-server", "--listen", "stdio://"]
+  },
+  {
+    "file": "app-server JSON-RPC",
+    "argv": ["command/exec", "command=/usr/bin/true", "outputBytesCap=1024"]
   }
 ]
 ```
@@ -141,5 +181,7 @@ All commands were read-only:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3.0 | 2026-04-26 | Added approved app-server live probe: GUI control socket absent, temporary stdio server initialized, MCP status inventory returned, and typed `command/exec` `/usr/bin/true` returned exit code 0 with empty output. |
+| 1.2.0 | 2026-04-26 | Added generated app-server protocol schema evidence and narrowed the next P13 live-probe design toward typed protocol requests rather than process-argv inspection. |
 | 1.1.0 | 2026-04-26 | Added helper/resource signing checks and live process sandbox flag evidence. |
 | 1.0.0 | 2026-04-26 | Initial partial P13 app-bundle and signing memo. |
