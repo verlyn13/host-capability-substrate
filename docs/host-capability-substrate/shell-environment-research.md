@@ -3,7 +3,7 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.3.0
+version: 2.3.1
 last_updated: 2026-04-28
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
@@ -17,9 +17,9 @@ Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment 
 
 Three things are now clearly established:
 
-1. **Shell state is not a safe substrate contract — and is not even a consistent one across surfaces of the same agent.** Codex source-level guidance and historical issue evidence pointed to `bash -lc`; 2026-04-26/27 local P06 probes displayed Codex `/bin/zsh -lc`; and the 2026-04-28/29 host-telemetry rerun split Codex into internal `/bin/zsh -lc` startup shells plus actual tool-call subprocesses execed as `sandbox-exec -- /bin/zsh -c <redacted>`. The focused closure run then captured Claude Code CLI Bash-tool host telemetry as `/bin/zsh -c <redacted>` with `.zshenv` only for the actual tool shell. Shell carrier, flag form, startup-file exposure, and phase must therefore be measured per `ExecutionContext`, not inferred globally from vendor, `$SHELL`, or PATH. Codex still applies a hidden `KEY/SECRET/TOKEN` default filter even under `inherit = "all"`, and the Codex *app* runs in a stricter Seatbelt sandbox that cannot reach Keychain or inherit shell-exported env. Claude Desktop is OAuth-only and does not call `apiKeyHelper` or read API-key env vars.
+1. **Shell state is not a safe substrate contract — and is not even a consistent one across surfaces of the same agent.** Codex source-level guidance and historical issue evidence pointed to `bash -lc`; 2026-04-26/27 local P06 probes displayed Codex `/bin/zsh -lc`; and the 2026-04-28/29 host-telemetry rerun split Codex into internal `/bin/zsh -lc` startup shells plus actual tool-call subprocesses execed as `sandbox-exec -- /bin/zsh -c <redacted>`. The focused closure run then captured Claude Code CLI Bash-tool host telemetry as `/bin/zsh -c <redacted>` with `.zshenv` only for the actual tool shell. Shell carrier, flag form, startup-file exposure, and phase must therefore be measured per `ExecutionContext`, not inferred globally from vendor, `$SHELL`, or PATH. Codex still applies a hidden `KEY/SECRET/TOKEN` default filter even under `inherit = "all"`, and the Codex *app* must be modeled separately because host-visible app process evidence and issue reports point to a stricter sandbox and GUI env boundary. Claude Desktop is OAuth-only and does not call `apiKeyHelper` or read API-key env vars.
 
-2. **The macOS user session (launchd) is the governing execution context — confirmed with a new TCC corner case.** `launchctl setenv` + `~/Library/LaunchAgents` `EnvironmentVariables` remains the durable GUI-env plane in 2026; no sanctioned replacement has shipped. But Apple's *responsible process* TCC attribution means a subprocess inherits the parent agent's TCC decisions, which is why Codex app subprocesses see "No Keychain access" even when the terminal user has it — this needs modeling.
+2. **The macOS user session (launchd) is the governing execution context — confirmed with a new TCC corner case.** `launchctl setenv` + `~/Library/LaunchAgents` `EnvironmentVariables` remains the durable GUI-env plane in 2026; no sanctioned replacement has shipped. But Apple's *responsible process* TCC attribution means a subprocess inherits the parent agent's TCC decisions, which is consistent with reported Codex app "No Keychain access" behavior even when the terminal user has access — this needs modeling and app-internal proof.
 
 3. **Codex and Claude have independently implemented partial typed-env specs HCS should absorb vocabulary from.** Codex's `shell_environment_policy.{inherit, exclude, include_only, set, overrides, ignore_default_excludes}` is the operator-level layer HCS needs. Claude's `settings.json env` + `CLAUDE_ENV_FILE` + SessionStart hook is a three-tier runtime model. Devcontainers' `containerEnv` vs `remoteEnv` vs `userEnvProbe` is the cleanest prior art for typed env-class separation. HCS should borrow these directly.
 
@@ -385,7 +385,7 @@ Anthropic is **actively removing third-party OAuth support** per 2025–2026 ven
 | Surface | Shell | Invocation | Startup files | Sandbox | Env inheritance |
 |---|---|---|---|---|---|
 | Codex CLI | Measured per phase; local P06 observed `/bin/zsh` | Internal startup shells observed `-lc`; 2026-04-28/29 host telemetry observed tool-call subprocess as `sandbox-exec -- /bin/zsh -c <redacted>` | Baseline tool-call shell read `.zshenv` only; internal startup shells read more startup files; `allow_login_shell=false` preserved argv but marker env was absent | CLI sandbox / policy-dependent | Launch context + Codex env policy; do not infer from `$SHELL` |
-| Codex app | Open; do not infer from CLI | Open; app-server probes required | Open; app sandbox gates any shell/file behavior | Seatbelt (strict) — **no Keychain, no terminal env** | launchd user session only |
+| Codex app | Open; do not infer from CLI | Open; GUI app-server or UI probes required | Open; app sandbox gates any shell/file behavior | Host-visible Electron/Chromium sandbox markers observed; effective app-internal capability matrix still open | P02 Finder-origin marker absent; model as launchd user session only unless app-internal evidence says otherwise |
 | Codex IDE ext | Via VS Code | VS Code env | VS Code shell-integration | VS Code | Editor process env |
 | Claude Code CLI | Measured for Bash-tool subprocess; local P06 observed `/bin/zsh` | Host telemetry observed Bash-tool subprocess as `/bin/zsh -c <redacted>` | Actual tool shell read `.zshenv` only; internal shell read `.zshenv`, `.zprofile`, `.zlogin` | None observed for CLI Bash tool | Process env at spawn only; no persistence between Bash calls |
 | Claude Desktop | N/A | N/A (OAuth-only, no Bash tool) | N/A | App | N/A |
@@ -469,7 +469,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
 | P11 — LaunchAgent env policy for non-secret session flags | Design/policy, unchanged by survey | Design work (6h, no runtime) |
 | P12 — Secret-safe env inspection helper spec | Design/policy, unchanged by survey; confirmed no prior art | Design work + prototype (10h) |
-| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Genuinely new**: issue #10695 shows Codex app sandbox blocks Keychain + env injection even when parent shell has them. Local stdio app-server status probe now works, but filesystem/network status codes remain open. | Yes — sandbox boundary characterization (4h) |
+| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Open / narrowed**: host-visible app bundle/process/schema evidence is captured for Codex app `26.422.71525` build `2210`. GUI app-server control is not reachable from this session, Computer Use cannot operate `com.openai.codex`, and the local Keychain/filesystem/network status probe correlated to the active Codex CLI session rather than the GUI app. | Yes — app-internal sandbox boundary characterization now requires a reachable GUI app-server control path or a human-run sterile Codex app UI probe |
 
 ### Why the reduction
 
@@ -490,7 +490,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 - **P04**: `shell_environment_policy.include_only` is documented but not validated across app/CLI/IDE. Known issue #3064 suggests behavior diverges from docs — needs a matrix.
 - **P08, P09**: capture host-specific values once, snapshot, use as golden data for regression testing.
 - **P11, P12**: design work, not empirical.
-- **P13**: Codex app sandbox boundary needs explicit characterization — is it `sandbox-exec` with a seatbelt profile? What syscalls/resources are gated? This determines how HCS must model `ExecutionContext` for the app vs CLI.
+- **P13**: Codex app sandbox boundary needs explicit characterization — is it `sandbox-exec` with a seatbelt profile, a bundled app sandbox, or a helper-specific combination? What syscalls/resources are gated? Static bundle/process/schema evidence is insufficient because the macOS apps are full signed applications and may hide relevant behavior behind UI/runtime control paths. This determines how HCS must model `ExecutionContext` for the app vs CLI.
 
 ---
 
@@ -503,7 +503,7 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 1 | **P02** | 5 | 5 | 2 | Fastest validation of core GUI-vs-shell claim |
 | 2 | **P01** | 3 | 5 | 1 | Confirmatory only — docs already answered |
 | 3 | **P05** | 3 | 5 | 1 | Confirmatory only — docs already answered |
-| 4 | **P13** | 5 | 4 | 4 | New: Codex app sandbox boundary characterization |
+| 4 | **P13** | 5 | 3 | open | New: Codex app sandbox boundary characterization; narrowed but blocked on app-internal UI/control evidence |
 | 5 | **P06** | 4 | 3 | complete | Closed for Codex CLI and Claude Code CLI through tool trace + startup sentinels + host telemetry |
 | 6 | **P04** | 4 | 3 | 10 | Cross-surface env-policy matrix; documented gap vs observed |
 | 7 | **P03** | 5 | 3 | 8 | Setup-script/MCP timing — genuinely undocumented |
@@ -537,7 +537,7 @@ gantt
     P01 Codex auth reuse smoke test (1h)    :a1, 2026-04-27, 1d
     P05 Claude Desktop auth boundary (1h)   :a2, 2026-04-27, 1d
     P02 Terminal vs Spotlight inheritance (2h) :a3, 2026-04-28, 1d
-    P13 Codex app sandbox boundary (4h)     :a4, 2026-04-28, 1d
+    P13 narrowed; UI proof gap             :a4, 2026-04-28, 1d
     P06 Provenance experiment (4h)          :a5, 2026-04-29, 1d
 
     section Wave 2 (genuinely open)
@@ -560,7 +560,7 @@ gantt
 | Milestone | Target | Exit criterion |
 |---|---|---|
 | Foundation ready | 2026-04-27 | Harness, synthetic repo, evidence template, redaction rules committed |
-| Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 provenance plan accepted or executed; P13 sandbox profile characterized |
+| Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 closed for CLI surfaces; P13 narrowed with UI/control proof gap explicit |
 | Open-prompt runtime data captured | 2026-05-06 | P03, P04, P08, P09 matrices complete |
 | Design work complete | 2026-05-07 | P11 policy decision table + P12 spec/prototype delivered |
 | Synthesis complete | 2026-05-08 | ADR drafts, updated `ExecutionContext`/`EnvProvenance`/`CredentialSource`/`ToolResolution`/`StartupPhase` schemas, regression traps written |
@@ -587,13 +587,13 @@ All execution plans share a **secret-safe testing constraint**: no real secrets 
 
 **Deliverables:** Sandbox profile characterization note; capability matrix (Keychain access, file system scope, network scope, env injection capability); recommendation for how HCS should model Codex app as a separate `ExecutionContext` class.
 
-**Methods:** Inspect the Codex app bundle's `Info.plist` and embedded sandbox profile (if readable). Run a probe inside a Codex app shell-tool call that attempts (a) `security find-generic-password -s "Codex Auth"`, (b) `ls ~/Library/Keychains`, (c) checking `sandbox-exec` attribution via `sysctl`-visible state. Cross-reference with issue #10695 behavior. Document which macOS sandbox directives are active.
+**Methods:** Inspect the Codex app bundle's `Info.plist` and embedded sandbox profile (if readable). Run a probe inside a Codex app shell-tool call that attempts (a) `security find-generic-password -s "Codex Auth"`, (b) `ls ~/Library/Keychains`, (c) checking sandbox attribution via host-visible process telemetry where available. Prefer the GUI app-server `command/exec` protocol if a control endpoint is reachable. If not, request a human-run sterile Codex app UI turn that emits status codes/classes only. Cross-reference with issue #10695 behavior. Document which macOS sandbox directives are active or explicitly undiscoverable.
 
 **Data:** Sandbox profile identity (if discoverable), Keychain access result codes, filesystem read/write scope, network scope, app entitlements (`codesign -d --entitlements -`).
 
-**Risks:** Sandbox profile may be embedded in a signed/notarized binary and not directly readable; may need to infer from behavior rather than read the profile. No secret extraction attempts; stick to observable capability probes.
+**Risks:** Sandbox profile may be embedded in a signed/notarized binary and not directly readable; may need to infer from behavior rather than read the profile. The Codex and Claude macOS apps are full applications, not package-manager-installed CLI tools, so obfuscated or runtime-only behavior is plausible. No secret extraction attempts; stick to observable capability probes.
 
-**Expected outcome:** A distinct sandbox class with stricter entitlements than the CLI, meriting a separate `ExecutionContext.surface = "codex_app_sandboxed"` value with its own capability matrix.
+**Expected outcome:** A distinct app `ExecutionContext.surface = "codex_app_sandboxed"` value with its own capability matrix. Capability entries such as Keychain, filesystem, and network remain pending until an app-internal probe supplies status-code evidence.
 
 ### P06 — Shell wrapper-log validation
 
@@ -707,7 +707,7 @@ Strongest conclusions after survey + reconciliation:
 
 7. **Adopt devcontainer's env classification for HCS's typing layer.** `containerEnv` (baked) vs `remoteEnv` (runtime) vs `userEnvProbe` (probed) maps cleanly to HCS's `EnvProvenance` primitive.
 
-8. **Model the Codex app as a distinct `ExecutionContext` class**, not as a variant of Codex CLI. The Seatbelt sandbox boundary is material and invisible to `shell_environment_policy`.
+8. **Model the Codex app as a distinct `ExecutionContext` class**, not as a variant of Codex CLI. Host-visible app/process evidence is already enough to reject "Codex is Codex" inheritance, but the exact Keychain/filesystem/network capability matrix remains pending app-internal P13 proof.
 
 9. **Treat `CLAUDE_ENV_FILE` as best-effort, not durable.** Documented fragility across plugins and subagents disqualifies it from being a substrate contract.
 
@@ -727,7 +727,7 @@ Suitable for later direct tests or upstream questions:
 - Whether `CLAUDE_ENV_FILE` path uniqueness across parallel Claude Code sessions is guaranteed (community debugging reports suggest yes via per-session UUID, but not officially documented).
 - Whether `shell_snapshot` in Codex includes credential-shaped env vars given the default exclude filter — documentation silent.
 - Whether `mise activate` in a non-TTY ACP session (Zed calling Claude Agent) actually runs — likely no, but untested.
-- Whether Codex app's embedded Seatbelt profile is the same as the CLI's or strictly tighter (part of P13).
+- Whether Codex app's embedded or runtime Seatbelt profile is the same as the CLI's or strictly tighter, and what Keychain/filesystem/network capabilities the GUI app actually exposes to its subprocesses (P13 remains open/narrowed).
 - Whether Claude Desktop's OAuth token Keychain service name is distinct from Claude Code CLI's (not publicly documented).
 - Cross-version stability: Codex and Claude Code are both under rapid development. Findings should be re-validated after major releases.
 
@@ -782,3 +782,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.1.0 | 2026-04-27 | Ingested the P06 provenance experiment plan, corrected stale Codex `bash -lc` universal-language after local `/bin/zsh` findings, and reframed P06/P07 around tool-native trace, startup sentinels, and host telemetry. |
 | 2.2.0 | 2026-04-28 | Integrated P06 post-Full-Disk-Access host telemetry, splitting Codex internal `/bin/zsh -lc` startup shells from actual tool-call `sandbox-exec -- /bin/zsh -c` subprocesses and narrowing remaining work to Claude host telemetry plus Codex marker-env propagation. |
 | 2.3.0 | 2026-04-28 | Integrated the focused P06 closure run: Codex `allow_login_shell=false` marker propagation resolved for CLI 0.125.0, Claude Code CLI Bash-tool subprocess host-observed, and P06 closed for Codex CLI plus Claude Code CLI. |
+| 2.3.1 | 2026-04-28 | Integrated P13 refresh: current Codex app `26.422.71525`/`2210`, GUI app-server control unavailable from this session, local boundary probe classified as CLI-side control evidence only, and app-internal proof gap moved to UI/control evidence. |
