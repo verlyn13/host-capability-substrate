@@ -3,8 +3,8 @@ title: P06 Shell Wrapper Logger Preparation
 category: research
 component: host_capability_substrate
 status: partial
-version: 1.5.0
-last_updated: 2026-04-27
+version: 1.7.0
+last_updated: 2026-04-28
 tags: [phase-1, p06, shell-wrapper, redaction, fixture]
 priority: high
 ---
@@ -245,8 +245,9 @@ introducing new wrapper-state risk:
    stays retired and the `/bin/zsh -lc` finding does not depend on the
    sandbox/auth context of the original Codex-from-terminal probe.
 
-P06 remains open, but narrowed. Close it only when tool-native trace,
-startup-file sentinels, and host-level process provenance agree or any
+At the 2026-04-27 checkpoint, P06 remained open but narrowed. Close it only
+when tool-native trace, startup-file sentinels, and host-level process
+provenance agree or any
 discrepancy is documented. Self-introspection scripts inside the agent are
 sufficient for runtime shape capture but cannot observe parent argv,
 shell-startup-file effects, or full pre-`-c` flag history without additional
@@ -254,6 +255,38 @@ tooling. Do not rerun nested Codex CLI probes from the active Codex session
 unless the probe is isolated well enough that cleanup cannot terminate the
 controlling session; the 2026-04-27 Codex probe was launched from Claude
 specifically to avoid that hazard.
+
+## Host Telemetry Rerun Addendum
+
+`docs/host-capability-substrate/research/shell-env/2026-04-28-P06-host-telemetry-rerun.md`
+records the first post-Full-Disk-Access host-telemetry rerun.
+
+The rerun changes how the earlier `/bin/zsh -lc` Codex evidence should be used:
+
+- Codex internal startup shells can use `/bin/zsh -lc` and read more temporary
+  zsh startup sentinels.
+- The corrected Codex CLI tool-call subprocesses in the host-telemetry rerun
+  execed through `sandbox-exec -- /bin/zsh -c <redacted>`.
+- Baseline X1 propagated the synthetic marker and recorded `.zshenv` only in
+  the actual tool shell.
+- X2 with `allow_login_shell=false` preserved `/bin/zsh -c` but did not
+  propagate the synthetic marker into the actual tool shell.
+
+The focused 2026-04-28/29 closure run in the same memo resolved the remaining
+CLI-surface P06 gaps:
+
+- Codex baseline repeats propagated the marker into the actual tool shell and
+  recorded `.zshenv` only for the tool pid.
+- Codex `allow_login_shell=false` repeats preserved
+  `sandbox-exec -- /bin/zsh -c <redacted>` but did not propagate the marker into
+  the actual tool shell for Codex CLI `0.125.0` in this config.
+- Claude Code CLI `2.1.122` Bash-tool subprocess is now host-observed as
+  `/bin/zsh -c <redacted>` with marker propagation and `.zshenv` only for the
+  actual tool shell.
+
+Do not model the internal `/bin/zsh -lc` process as the Codex tool-call
+subprocess. P06 is closed for Codex CLI and Claude Code CLI; app/IDE surfaces
+remain separate `ExecutionContext` work.
 
 ## Closure Criteria
 
@@ -343,6 +376,8 @@ intent. Do not infer one lane from another.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7.0 | 2026-04-28 | Linked the focused P06 closure run, resolving Codex CLI marker propagation and Claude Code CLI host telemetry for P06 CLI-surface closure. |
+| 1.6.0 | 2026-04-28 | Linked the post-Full-Disk-Access host-telemetry rerun and clarified the Codex split between internal `/bin/zsh -lc` startup shells and tool-call `sandbox-exec -- /bin/zsh -c` subprocesses. |
 | 1.5.0 | 2026-04-27 | Linked the P06 provenance experiment plan ingested from `research/external/2026-04-27-p06-probe-shape.md`, defining tool-native, startup-sentinel, and host-telemetry lanes as the next proof step. |
 | 1.4.0 | 2026-04-27 | Added Claude-run evidence: Test A self-introspection (`/bin/zsh -c`, login=true) and Test B Codex-from-Claude probe reproducing `/bin/zsh -lc` (exit 0). Added cross-surface flag-form contrast table and clarified P06 as open/narrowed rather than closed. |
 | 1.3.0 | 2026-04-26 | Added user-observed Claude app Bash/Touch ID approval sequence and noted that a nested Codex JSON retry was intentionally interrupted with no lingering nested process. |
