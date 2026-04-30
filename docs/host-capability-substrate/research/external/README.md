@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.7.0
-last_updated: 2026-04-27
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners]
+version: 1.8.0
+last_updated: 2026-04-29
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos]
 priority: medium
 ---
 
@@ -36,6 +36,8 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-26-research-execution-results.md` | 2026-04-26 | Research execution brief for the semantic ontology and resource-pressure plan. Recommends source-bound discovery before synthesis, a source-class taxonomy, worker result templates, verification gates, and Wave 1C/1D resource-pressure research as the first concrete batch. |
 | `2026-04-26-proposed-runner-architecture.md` | 2026-04-26 | Proposed runner architecture for a separate CI project that must remain compatible with HCS and organizational principles. Recommends Proxmox-first/Linux-first/GitHub-orchestrated runners, hosted smoke sentinels, Citadel-owned OpenTofu/PaC, manual-only MacBook runner use, and HCS consuming runner/check/resource evidence rather than owning CI execution. |
 | `2026-04-27-p06-probe-shape.md` | 2026-04-27 | P06 provenance-experiment brief originally delivered via a volatile `/private/tmp` path; staged verbatim for durable citation. Defines three proof lanes: tool-native trace, startup-file sentinels, and host-level process telemetry. SHA-256: `72aff550a5b2a096f537e56408c88b5b89c49c7098fe82b17a648bc15e28fdad`. |
+| `2026-04-29-github-boundaries-research.md` | 2026-04-29 | Research-method blueprint plus short HCS worked example. Useful for future HCS research intake discipline: source ladders, extraction templates, credibility scoring, contradiction handling, and claim-to-source traceability. SHA-256: `9a9f6ec45ad39f7be78f9f711ed30eb65f85860d3389d397b5ea50bee4727193`. |
+| `2026-04-29-hcp-quality-management.md` | 2026-04-29 | Document/source-code research report on HCS quality-management needs across macOS Tahoe app/filesystem boundaries, Git/GitHub, package-manager-installed tools, multiple GitHub identities, quality gates, candidate entities, dashboard views, and regression traps. SHA-256: `b5efcc662d9174896ba4f1ec421a00b3ea529ac9e2228adf13f16decd732edef`. |
 
 ## Reconciled conclusions
 
@@ -170,6 +172,29 @@ Reconciled integration:
 - The brief is an execution plan, not a result. It does not change schema or
   policy by itself.
 
+### 2026-04-29 quality-management reports
+
+The two 2026-04-29 reports strengthen Phase 1 planning but do not make schema
+or policy decisions by themselves.
+
+Reconciled integration:
+
+- `2026-04-29-github-boundaries-research.md` is primarily a research-method
+  blueprint. It reinforces source ladders, extraction templates, credibility
+  scoring, contradiction tracking, and claim-to-source traceability for future
+  HCS research intakes.
+- `2026-04-29-hcp-quality-management.md` is the substantive source-bound report.
+  It argues that macOS Tahoe app/TCC/filesystem boundaries, Git/GitHub identity
+  routing, package-manager provenance, and multiple GitHub identities are too
+  loose to treat as one stable authority surface.
+- The HCS synthesis lives at
+  `docs/host-capability-substrate/research/local/2026-04-29-quality-management-synthesis.md`.
+- Q-007 records the pending design decision for quality-management and boundary
+  accommodation. Q-006 remains focused on GitHub/version-control authority;
+  Q-005 remains focused on CI runner/check evidence.
+- No candidate entity, policy tier, dashboard view, or regression trap from the
+  reports is accepted until Phase 1 synthesis or a concrete observed failure.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -198,6 +223,7 @@ Reports should be staged here verbatim from the source; do not edit the content 
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.8.0 | 2026-04-29 | Staged the 2026-04-29 research-method blueprint and HCS quality-management report from `/private/tmp`, recorded SHA-256 hashes, and linked the local synthesis plus Q-007 planning path. |
 | 1.7.0 | 2026-04-27 | Staged `2026-04-27-p06-probe-shape.md` verbatim from volatile `/private/tmp`, recorded its SHA-256, and reconciled it into the P06 provenance experiment plan. |
 | 1.6.0 | 2026-04-26 | Staged the 2026-04-26 research execution and proposed runner architecture reports. Reconciled resource-pressure research sequencing into the semantic/resource plan and queued HCS runner-compatibility boundary work as Q-005. |
 | 1.5.0 | 2026-04-26 | Reconciled Phase 0b closeout: ADR 0015 accepted, Q-004 resolved as `OriginAccessValidator` with `AudienceValidationBinding` semantics, D-032 landed, and ADR 0012 credential broker scope committed. |
