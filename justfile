@@ -10,8 +10,8 @@ default:
 	@just --list
 
 # Run ALL quality gates. CI runs this. Required before merge.
-verify: format-check lint typecheck test generate-schemas-check boundary-check policy-lint forbidden-string-scan no-live-secrets no-runtime-state-in-repo redundancy-fixture trap-fixture shell-logger-fixture shellcheck-scan
-	@echo "✓ all quality gates passed"
+verify:
+	@bash scripts/ci/verify.sh
 
 # Shellcheck — covers all .sh scripts + shebang-detected files
 shellcheck-scan:
@@ -32,22 +32,22 @@ shell-logger-fixture:
 # Format check (no writes)
 format-check:
 	@echo "→ format check"
-	@npx --no-install biome format . 2>/dev/null || echo "  (biome not installed yet — run 'npm install')"
+	@if [ -x node_modules/.bin/biome ]; then node_modules/.bin/biome format .; else echo "  (biome not installed yet — run 'npm install')"; fi
 
 # Lint check
 lint:
 	@echo "→ lint check"
-	@npx --no-install biome check . 2>/dev/null || echo "  (biome not installed yet — run 'npm install')"
+	@if [ -x node_modules/.bin/biome ]; then node_modules/.bin/biome check .; else echo "  (biome not installed yet — run 'npm install')"; fi
 
 # Typecheck
 typecheck:
 	@echo "→ typecheck"
-	@npx --no-install tsc --noEmit 2>/dev/null || echo "  (tsc not installed yet — run 'npm install')"
+	@if [ -x node_modules/.bin/tsc ]; then node_modules/.bin/tsc --noEmit; else echo "  (tsc not installed yet — run 'npm install')"; fi
 
 # Unit tests
 test:
 	@echo "→ unit tests"
-	@npx --no-install vitest run 2>/dev/null || echo "  (no tests yet — Phase 0a scaffold)"
+	@if [ -x node_modules/.bin/vitest ]; then node_modules/.bin/vitest run --passWithNoTests; else echo "  (vitest not installed yet — run 'npm install')"; fi
 
 # Schema drift check
 generate-schemas-check:

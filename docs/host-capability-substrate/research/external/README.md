@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.9.0
+version: 1.10.0
 last_updated: 2026-04-30
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos, codex, worktree, branch-cleanup]
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos, codex, worktree, branch-cleanup, workspace-context]
 priority: medium
 ---
 
@@ -39,6 +39,7 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-29-github-boundaries-research.md` | 2026-04-29 | Research-method blueprint plus short HCS worked example. Useful for future HCS research intake discipline: source ladders, extraction templates, credibility scoring, contradiction handling, and claim-to-source traceability. SHA-256: `9a9f6ec45ad39f7be78f9f711ed30eb65f85860d3389d397b5ea50bee4727193`. |
 | `2026-04-29-hcp-quality-management.md` | 2026-04-29 | Document/source-code research report on HCS quality-management needs across macOS Tahoe app/filesystem boundaries, Git/GitHub, package-manager-installed tools, multiple GitHub identities, quality gates, candidate entities, dashboard views, and regression traps. SHA-256: `b5efcc662d9174896ba4f1ec421a00b3ea529ac9e2228adf13f16decd732edef`. |
 | `2026-04-30-codex-scopecam-exchange-lessons.md` | 2026-04-30 | User-submitted evidence report from a separate Codex/ScopeCam exchange. Central lesson: the agent converted tool symptoms into environment explanations before proving execution state, then mixed normal/escalated shell observations, weak SSH/auth probes, worktree topology, branch-flow drift, destructive branch cleanup, and process argv secret exposure. SHA-256: `91c7c9e1ac6abd5cbc11596520bd2bf7e36995030e8808508620016ae3d571a5`. |
+| `2026-04-30-hcs-evidence-planning-report-1.md` | 2026-04-30 | User-submitted HCS evidence/planning report based on Claude macOS / Opus 4.7 work. Normalized to HCS terminology during intake. Reinforces D-025/D-026/D-027/D-028 and proposes candidate HCS diagnostic surfaces, workspace manifest inputs, safe process inspection, docs cleanup classification, and claim reconciliation. SHA-256: `677b108e605580ae931f57f15f61ba1d4ddab3768a481c040f80adc5165686ae`. |
 
 ## Reconciled conclusions
 
@@ -222,6 +223,30 @@ Reconciled integration:
 - No scripts, policy tiers, hooks, branch rules, or runtime behavior are accepted
   from this report by default. The scaffolding ideas are design inputs.
 
+### 2026-04-30 HCS evidence/planning report
+
+The HCS evidence/planning report is a user-submitted synthesis based on Claude
+macOS / Opus 4.7 work. It arrived with some non-HCS labels; the staged report
+and local synthesis normalize those labels to the binding HCS vocabulary.
+
+Reconciled integration:
+
+- The HCS synthesis lives at
+  `docs/host-capability-substrate/research/local/2026-04-30-hcs-evidence-planning-synthesis.md`.
+- Q-009 records the pending design decision for the HCS diagnostic surface and
+  workspace manifest model.
+- The report strengthens D-025, D-026, D-027, D-028, Q-006, Q-007, Q-008, and
+  Q-003, but it does not accept new rings, new project-adapter terminology, or
+  unversioned shell command names.
+- Candidate surfaces are normalized as `system.runtime.diagnose.v1`,
+  `system.git.diagnose.v1`, `system.workspace.diagnose.v1`,
+  `system.process.inspect_safe.v1`, `system.docs.diagnose.v1`,
+  `system.cleanup.plan.v1`, and `system.claims.reconcile.v1`; only
+  `host_secret_*` is already accepted through D-028.
+- Candidate trap families for nested-worktree search contamination, duplicate
+  MCP config canonicality, and docs/planning-index projection drift remain
+  unseeded until a redacted primary audit or human-approved fixture exists.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -250,6 +275,7 @@ Reports should be staged here verbatim from durable source files; do not edit th
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.10.0 | 2026-04-30 | Staged the HCS evidence/planning report, normalized non-HCS labels during intake, recorded its SHA-256, added a synthesis link, and queued Q-009 for diagnostic surfaces and workspace manifest modeling. |
 | 1.9.0 | 2026-04-30 | Staged the Codex/ScopeCam exchange lessons report, recorded its SHA-256, added a synthesis link, queued Q-008, and reconciled six seed-level trap additions (#39-#44). |
 | 1.8.0 | 2026-04-29 | Staged the 2026-04-29 research-method blueprint and HCS quality-management report from `/private/tmp`, recorded SHA-256 hashes, and linked the local synthesis plus Q-007 planning path. |
 | 1.7.0 | 2026-04-27 | Staged `2026-04-27-p06-probe-shape.md` verbatim from volatile `/private/tmp`, recorded its SHA-256, and reconciled it into the P06 provenance experiment plan. |
