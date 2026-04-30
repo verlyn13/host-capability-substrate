@@ -3,9 +3,9 @@ title: HCS local research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-29
-tags: [research, local, host-evidence, github, version-control, quality-management]
+version: 1.2.0
+last_updated: 2026-04-30
+tags: [research, local, host-evidence, github, version-control, quality-management, codex, worktree, branch-cleanup]
 priority: medium
 ---
 
@@ -33,10 +33,12 @@ summaries.
 |---|---:|---|
 | `2026-04-29-github-version-control-agentic-surface.md` | 2026-04-29 | Deeper local and GitHub API investigation of GitHub, Git, SSH, MCP, repo settings, Actions, and local remote identity surfaces. Queues Q-006 for the GitHub/version-control authority model. |
 | `2026-04-29-quality-management-synthesis.md` | 2026-04-29 | Synthesis of two `/private/tmp` reports on research method and HCS quality-management needs across macOS filesystem/app boundaries, Git/GitHub, package managers, multiple identities, and boundary uncertainty. Queues Q-007. |
+| `2026-04-30-codex-scopecam-exchange-synthesis.md` | 2026-04-30 | Synthesis of a user-submitted Codex/ScopeCam exchange report covering tool-symptom diagnosis, execution-mode conflation, destructive branch cleanup, worktree ownership, branch-flow drift, auth probes, PR body quoting, and secret-safe diagnostics. Queues Q-008. |
 
 ## Change Log
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.2.0 | 2026-04-30 | Added Codex/ScopeCam exchange synthesis and linked Q-008. |
 | 1.1.0 | 2026-04-29 | Added quality-management synthesis from the two `/private/tmp` reports and linked Q-007. |
 | 1.0.0 | 2026-04-29 | Initial local research index. |

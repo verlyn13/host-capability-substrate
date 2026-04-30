@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.8.0
-last_updated: 2026-04-29
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos]
+version: 1.9.0
+last_updated: 2026-04-30
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos, codex, worktree, branch-cleanup]
 priority: medium
 ---
 
@@ -38,6 +38,7 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-27-p06-probe-shape.md` | 2026-04-27 | P06 provenance-experiment brief originally delivered via a volatile `/private/tmp` path; staged verbatim for durable citation. Defines three proof lanes: tool-native trace, startup-file sentinels, and host-level process telemetry. SHA-256: `72aff550a5b2a096f537e56408c88b5b89c49c7098fe82b17a648bc15e28fdad`. |
 | `2026-04-29-github-boundaries-research.md` | 2026-04-29 | Research-method blueprint plus short HCS worked example. Useful for future HCS research intake discipline: source ladders, extraction templates, credibility scoring, contradiction handling, and claim-to-source traceability. SHA-256: `9a9f6ec45ad39f7be78f9f711ed30eb65f85860d3389d397b5ea50bee4727193`. |
 | `2026-04-29-hcp-quality-management.md` | 2026-04-29 | Document/source-code research report on HCS quality-management needs across macOS Tahoe app/filesystem boundaries, Git/GitHub, package-manager-installed tools, multiple GitHub identities, quality gates, candidate entities, dashboard views, and regression traps. SHA-256: `b5efcc662d9174896ba4f1ec421a00b3ea529ac9e2228adf13f16decd732edef`. |
+| `2026-04-30-codex-scopecam-exchange-lessons.md` | 2026-04-30 | User-submitted evidence report from a separate Codex/ScopeCam exchange. Central lesson: the agent converted tool symptoms into environment explanations before proving execution state, then mixed normal/escalated shell observations, weak SSH/auth probes, worktree topology, branch-flow drift, destructive branch cleanup, and process argv secret exposure. SHA-256: `91c7c9e1ac6abd5cbc11596520bd2bf7e36995030e8808508620016ae3d571a5`. |
 
 ## Reconciled conclusions
 
@@ -195,6 +196,32 @@ Reconciled integration:
 - No candidate entity, policy tier, dashboard view, or regression trap from the
   reports is accepted until Phase 1 synthesis or a concrete observed failure.
 
+### 2026-04-30 Codex / ScopeCam exchange lessons
+
+The ScopeCam exchange report is a user-submitted evidence report, not a primary
+transcript in this repository. It is still strong planning evidence because the
+failure classes match HCS field observations: process argv secret exposure,
+auth-surface conflation, Git cleanup risk, and execution-context ambiguity.
+
+Reconciled integration:
+
+- The HCS synthesis lives at
+  `docs/host-capability-substrate/research/local/2026-04-30-codex-scopecam-exchange-synthesis.md`.
+- Q-008 records the pending design decision for agent execution reality and
+  destructive Git hygiene. Q-006 remains the broader GitHub/version-control
+  authority model; Q-007 remains boundary/quality management.
+- Six seed-level traps are added as #39-#44: tool symptom as environment
+  diagnosis, execution-mode conflation, remote-gone branch deletion without
+  proof, worktree ownership ignored, branch-flow ancestry ignored, and inline PR
+  body shell expansion.
+- Trap #37 already covers process argv secret exposure, and trap #35 already
+  covers auth-surface conflation. This report strengthens both without adding
+  duplicate trap rows.
+- Full trap scaffold files should wait for a redacted primary transcript or
+  human-approved fixture. Until then the entries remain seed-level.
+- No scripts, policy tiers, hooks, branch rules, or runtime behavior are accepted
+  from this report by default. The scaffolding ideas are design inputs.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -217,12 +244,13 @@ When future external research reports land on similar topics:
 4. Synthesize into a project memory entry (not into this README).
 5. If the synthesis changes the approved decision matrix, land DECISIONS.md / PLAN.md / charter amendments per the established W2→W3 closeout cadence.
 
-Reports should be staged here verbatim from the source; do not edit the content of stored reports. If a report has internal citation artifacts (e.g., `citeturn*` tags), leave them — they preserve provenance.
+Reports should be staged here verbatim from durable source files; do not edit the content of stored reports. If a report has internal citation artifacts (e.g., `citeturn*` tags), leave them — they preserve provenance. When a report is delivered inline rather than as a durable file, preserve a normalized source note, avoid expanding or adding secret-shaped content, and mark it as secondary evidence unless the primary transcript/log is also staged.
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.9.0 | 2026-04-30 | Staged the Codex/ScopeCam exchange lessons report, recorded its SHA-256, added a synthesis link, queued Q-008, and reconciled six seed-level trap additions (#39-#44). |
 | 1.8.0 | 2026-04-29 | Staged the 2026-04-29 research-method blueprint and HCS quality-management report from `/private/tmp`, recorded SHA-256 hashes, and linked the local synthesis plus Q-007 planning path. |
 | 1.7.0 | 2026-04-27 | Staged `2026-04-27-p06-probe-shape.md` verbatim from volatile `/private/tmp`, recorded its SHA-256, and reconciled it into the P06 provenance experiment plan. |
 | 1.6.0 | 2026-04-26 | Staged the 2026-04-26 research execution and proposed runner architecture reports. Reconciled resource-pressure research sequencing into the semantic/resource plan and queued HCS runner-compatibility boundary work as Q-005. |
