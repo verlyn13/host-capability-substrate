@@ -3,8 +3,8 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-27
+version: 1.2.0
+last_updated: 2026-04-30
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
 ---
@@ -32,10 +32,23 @@ Observed locally on 2026-04-26T19:10:20Z:
 | Claude Code CLI | `/Users/verlyn13/.local/bin/claude`, `2.1.119 (Claude Code)` |
 | Local tool paths | `codesign=/usr/bin/codesign`, `security=/usr/bin/security`, `launchctl=/bin/launchctl`, `plutil=/usr/bin/plutil`, `osascript=/usr/bin/osascript` |
 
-Preflight consequence: direct-test item "Claude Code #18692 does NOT repro on
-2.1.120" is **blocked on this host** until Claude Code is updated from 2.1.119
-to 2.1.120 or later. Do not record a pass/fail result for that item against
-2.1.119.
+Historical preflight consequence at that time: direct-test item "Claude Code
+#18692 does NOT repro on 2.1.120" was blocked because local Claude Code was
+2.1.119. That version blocker is superseded by the current overlay below.
+
+Current overlay as of 2026-04-30:
+
+| Surface | Evidence |
+|---|---|
+| macOS | `ProductVersion 26.4.1`, `BuildVersion 25E253` |
+| Git | `main` at `5184222`, one local commit ahead of `origin/main` before the P08/P12 worktree edits |
+| Codex CLI | `codex-cli 0.128.0`; above baseline `0.125.0`; emitted sandbox PATH warning during `--version` but returned successfully |
+| Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
+| Managed tools | `node 24.15.0`, `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
+
+The old Claude Code #18692 version blocker is cleared by the installed
+`2.1.123` CLI. Any actual #18692 non-repro check still needs its own
+secret-safe operation proof because it touches MCP auth/config behavior.
 
 ## Evidence Rules
 
@@ -70,6 +83,18 @@ to 2.1.120 or later. Do not record a pass/fail result for that item against
    `/bin/zsh`. Execute
    `research/shell-env/2026-04-27-P06-provenance-experiment-plan.md` for the
    remaining tool-native, startup-sentinel, and host-telemetry proof lanes.
+
+## Current Prompt Status
+
+| Prompt | Status on 2026-04-30 | Current artifact |
+|---|---|---|
+| P01 | Migration blocked; GitHub MCP OAuth dynamic registration failed, so PAT/broker decision remains open. | `research/shell-env/2026-04-26-P01-codex-auth-metadata.md` |
+| P02 | Validated locally for Finder-origin Codex app launch: terminal-only marker absent. | `research/shell-env/2026-04-26-P02-codex-app-gui-launch-env.md` |
+| P05 | Runtime smoke complete for Claude Desktop auth boundary. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
+| P06 | Closed for Codex CLI and Claude Code CLI through host telemetry; app/IDE surfaces remain separate prompts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md` |
+| P08 | Initial Codex CLI tool-call subprocess snapshot committed as a fixture. | `research/shell-env/2026-04-30-P08-provenance-snapshot.md` |
+| P12 | Repo-local secret-safe env-inspect prototype and fixture landed. | `research/shell-env/2026-04-30-P12-env-inspect-prototype.md` |
+| P13 | Open/narrowed; needs reachable GUI app-server control path or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 
 ## Output Contract
 
@@ -355,22 +380,22 @@ additional PATH wrapper runs.
 
 ## Blockers
 
-- Claude Code is currently 2.1.119, so the #18692 non-repro check against
-  2.1.120 is blocked.
+- Claude Code version is no longer the #18692 blocker; local CLI is now
+  `2.1.123`. The check remains unrun and still needs a separate operation proof.
 - P05 approved GUI observation is complete for the Finder-origin synthetic
   marker path; terminal `open -b` propagated the marker and is not a clean GUI
   proxy.
-- P06 wrapper implementation now exists in-repo, is fixture-tested, and is
-  installed; PATH-prefix interception is closed as unsuitable for the observed
-  Codex/Claude surfaces because both used absolute `/bin/zsh`. The next P06
-  action is the three-lane provenance experiment: tool-native trace,
-  startup-file sentinels, and host-level process telemetry.
-- P03/P04/P08/P09 are Wave 2 and should wait until Wave 1 memos establish the
-  tested `ExecutionContext` surfaces.
+- P06 CLI evidence is closed for Codex CLI and Claude Code CLI; do not reopen
+  the old PATH-wrapper route except as a negative control.
+- P03/P04/P09 remain Wave 2 work. P08 has an initial Codex CLI tool-call
+  fixture, but app/IDE snapshots should wait for direct execution-context probes.
+- P12 is a repo-local prototype only; the final Ring 1 operation surface waits
+  for ontology/policy schema work.
 
 ## Change Log
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-04-30 | Added current toolchain overlay, prompt status table, P08/P12 fixture status, and cleared the stale Claude Code version blocker while keeping #18692 unrun. |
 | 1.1.0 | 2026-04-27 | Updated P06 from wrapper-log validation to provenance closure and linked the three-lane provenance experiment plan. |
 | 1.0.0 | 2026-04-26 | Initial W4 shell/env direct-test runbook with local host evidence, artifact contract, Wave 1 order, and operation-proof stubs. |

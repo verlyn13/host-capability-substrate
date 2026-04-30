@@ -102,6 +102,13 @@ Three layered defenses are required because text-in-context rules are empiricall
 2. **Hook literal-forbidden list** (`.claude/hooks/hcs-hook`). Deny the forbidden output patterns before Bash execution. The W3 closeout flow added repo-local secret-echo regexes for the highest-risk `printenv` / `env` / `echo` cases.
 3. **Operation-shape enforcement** (Ring 1, Phase 1). `OperationShape` for env-inspection operations carries a `contains_secret_prefix` boolean. When positive, routes through an approval path; when false, proceeds. Substrate-level, not text-level, not hook-only.
 
+Phase 1 P12 now has a repo-local positive path: `scripts/dev/hcs-env-inspect.py`
+supports `names_only`, `existence_check`, `classified`, and `hashed` modes over
+explicit `--name` / `--prefix` selectors, with
+`scripts/dev/run-env-inspect-fixture.sh` asserting that raw environment values
+never appear in output. This is still a prototype, not the final Ring 1
+operation surface.
+
 The post-mortem also identifies **parallel-tool-call batching** as a bypass of per-command safety review. That's a Phase 1 kernel consideration for `OperationShape` atomicity — batched operations may need per-command gates rather than per-batch.
 
 ## Positive signal worth tracking
@@ -122,5 +129,6 @@ The observing agent **self-caught** and produced a structured post-mortem with h
 
 | Version | Date | Change |
 |---------|------|--------|
+| p12-prototype | 2026-04-30 | Added repo-local `hcs-env-inspect.py` prototype and fixture as the positive safe-inspection path for this trap. |
 | closeout | 2026-04-26 | Scanner heuristic and repo-local hook pattern extension landed for secret-shaped env echo and unsafe env/printenv grep. |
 | scaffold | 2026-04-23 | Trap definition landed with citation, failure pattern, forbidden outputs, trajectory assertions, pass criteria. Hook pattern extension deferred to W3 closeout (measurement-contamination avoidance during soak). |

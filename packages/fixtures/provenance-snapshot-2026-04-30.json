@@ -1,0 +1,150 @@
+{
+  "authority": "sandbox-observation",
+  "confidence": "best-effort",
+  "cwd": "/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate",
+  "env_pwd_matches_getcwd": true,
+  "fixture": "provenance-snapshot",
+  "observed_at": "2026-04-30T22:26:55Z",
+  "prompt_id": "P08",
+  "records": [
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "PATH",
+      "path_entries": [
+        "/Users/verlyn13/.codex/tmp/arg0/codex-arg0rBBv1w",
+        "/Users/verlyn13/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/path",
+        "/Applications/Tailscale.app/Contents/MacOS",
+        "/Users/verlyn13/.local/share/mise/installs/node/24/bin",
+        "/Users/verlyn13/.local/share/mise/installs/bun/latest/bin",
+        "/Users/verlyn13/.local/share/mise/installs/python/3.13/bin",
+        "/Users/verlyn13/.local/share/mise/installs/java/temurin-21/bin",
+        "/Users/verlyn13/.local/share/mise/installs/uv/0.11.8/uv-aarch64-apple-darwin",
+        "/Users/verlyn13/.local/share/mise/installs/npm-tsx/latest/bin",
+        "/Users/verlyn13/.local/share/mise/installs/pnpm/10.33.2",
+        "/Users/verlyn13/Library/Android/sdk/emulator",
+        "/Users/verlyn13/Library/Android/sdk/platform-tools",
+        "/Users/verlyn13/.local/share/mise/shims",
+        "/Users/verlyn13/.npm-global/bin",
+        "/Users/verlyn13/.local/bin",
+        "/opt/homebrew/bin",
+        "/opt/homebrew/sbin",
+        "/usr/local/bin",
+        "/System/Cryptexes/App/usr/bin",
+        "/usr/bin",
+        "/bin",
+        "/usr/sbin",
+        "/sbin",
+        "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin",
+        "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin",
+        "/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin",
+        "/opt/pkg/env/active/bin",
+        "/opt/pmk/env/global/bin",
+        "/Library/Apple/usr/bin",
+        "/Library/TeX/texbin",
+        "/Applications/Wireshark.app/Contents/MacOS",
+        "/Applications/iTerm.app/Contents/Resources/utilities",
+        "/Users/verlyn13/.local/share/mise/installs/shellcheck/0.11.0/shellcheck-v0.11.0",
+        "/Users/verlyn13/.local/share/mise/installs/shfmt/3.13.1",
+        "/Users/verlyn13/.local/share/mise/installs/just/1.50.0"
+      ],
+      "present": true,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment",
+        "composition:unknown_runtime_path"
+      ],
+      "redaction": "value_allowed_for_p08_target",
+      "value": "/Users/verlyn13/.codex/tmp/arg0/codex-arg0rBBv1w:/Users/verlyn13/.npm-global/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/path:/Applications/Tailscale.app/Contents/MacOS:/Users/verlyn13/.local/share/mise/installs/node/24/bin:/Users/verlyn13/.local/share/mise/installs/bun/latest/bin:/Users/verlyn13/.local/share/mise/installs/python/3.13/bin:/Users/verlyn13/.local/share/mise/installs/java/temurin-21/bin:/Users/verlyn13/.local/share/mise/installs/uv/0.11.8/uv-aarch64-apple-darwin:/Users/verlyn13/.local/share/mise/installs/npm-tsx/latest/bin:/Users/verlyn13/.local/share/mise/installs/pnpm/10.33.2:/Users/verlyn13/Library/Android/sdk/emulator:/Users/verlyn13/Library/Android/sdk/platform-tools:/Users/verlyn13/.local/share/mise/shims:/Users/verlyn13/.npm-global/bin:/Users/verlyn13/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/Library/TeX/texbin:/Applications/Wireshark.app/Contents/MacOS:/Applications/iTerm.app/Contents/Resources/utilities:/Users/verlyn13/.local/share/mise/installs/shellcheck/0.11.0/shellcheck-v0.11.0:/Users/verlyn13/.local/share/mise/installs/shfmt/3.13.1:/Users/verlyn13/.local/share/mise/installs/just/1.50.0",
+      "value_kind": "path_list",
+      "value_sha256": "0980bae66e77c63c1b439e77b6bd06c8c00c7452a35d26a8cd9ede606ec5c82b"
+    },
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "SHELL",
+      "present": true,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment"
+      ],
+      "redaction": "value_allowed_for_p08_target",
+      "value": "/bin/zsh",
+      "value_kind": "path",
+      "value_sha256": "b663616e0c19c82649403596a2fa8185e4ef34c22f2bc3623359e9f0428b9153"
+    },
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "HOME",
+      "present": true,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment"
+      ],
+      "redaction": "value_allowed_for_p08_target",
+      "value": "/Users/verlyn13",
+      "value_kind": "directory_path",
+      "value_sha256": "cfe8504694db97c98b21ccfe2de39e8c78c644bc47d8c011cd2f3489a1cafe1a"
+    },
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "PWD",
+      "present": true,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment",
+        "source:getcwd"
+      ],
+      "redaction": "value_allowed_for_p08_target",
+      "value": "/Users/verlyn13/Organizations/jefahnierocks/host-capability-substrate",
+      "value_kind": "directory_path",
+      "value_sha256": "c64e49bf7f2c4d9501cf092be5086ea08aa66b6945882ecb68365c0563843d3c"
+    },
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "TMPDIR",
+      "present": true,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment"
+      ],
+      "redaction": "value_allowed_for_p08_target",
+      "value": "/var/folders/jx/f_4n055973x5cwnyh_mhlw9h0000gn/T/",
+      "value_kind": "directory_path",
+      "value_sha256": "8826e6b53f3a0f56e33e3e8e459cf0541fef799c8840c1a0780021e9ad5e2b1c"
+    },
+    {
+      "authority": "sandbox-observation",
+      "confidence": "best-effort",
+      "name": "CODEX_HOME",
+      "present": false,
+      "provenance_tags": [
+        "surface:codex_cli_tool_call_subprocess",
+        "authority:sandbox_observation",
+        "source:process_environment_absent",
+        "codex_home:not_set"
+      ],
+      "redaction": "not_present",
+      "value_kind": "absent"
+    }
+  ],
+  "safety": "only_p08_allowed_non_secret_targets_emit_values",
+  "schema_version": "0.1.0",
+  "surface": "codex_cli_tool_call_subprocess",
+  "target_variables": [
+    "PATH",
+    "SHELL",
+    "HOME",
+    "PWD",
+    "TMPDIR",
+    "CODEX_HOME"
+  ]
+}

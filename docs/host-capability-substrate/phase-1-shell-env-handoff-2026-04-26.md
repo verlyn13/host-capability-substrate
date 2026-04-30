@@ -2,14 +2,18 @@
 title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
-status: current
-version: 1.5.0
-last_updated: 2026-04-27
+status: superseded
+version: 1.6.0
+last_updated: 2026-04-30
 tags: [phase-1, shell-env, handoff, agent-context]
 priority: high
 ---
 
 # Phase 1 Shell Environment Handoff
+
+> Superseded by
+> `docs/host-capability-substrate/phase-1-shell-env-handoff-2026-04-30.md`.
+> This file remains as the 2026-04-26/27 historical handoff.
 
 Handoff for the next agent after the 2026-04-26 Phase 0b closeout and same-day
 Phase 1 shell/environment prep work.
@@ -133,6 +137,7 @@ Expected fixture output includes:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6.0 | 2026-04-30 | Marked as superseded by the 2026-04-30 Phase 1 handoff. |
 | 1.5.0 | 2026-04-27 | Ingested `research/external/2026-04-27-p06-probe-shape.md` as a P06 provenance experiment plan and updated the next step to require tool-native trace, startup-file sentinels, and host-level telemetry. |
 | 1.4.0 | 2026-04-27 | Advanced P06 to open/narrowed after Claude-run Test A self-introspection (`/bin/zsh -c`, login=true) and Test B Codex-from-Claude probe reproducing `/bin/zsh -lc` (exit 0). Closed PATH-prefix interception as unsuitable and kept host-level `execve` provenance/startup effects open. |
 | 1.3.0 | 2026-04-26 | Recorded approved Wave 1 live-probe results: P01 OAuth migration blocked by unsupported dynamic registration, P05 Finder-origin runtime smoke, P13 stdio app-server status probe, and P06 nested-Codex caution. |

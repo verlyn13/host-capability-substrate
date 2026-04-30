@@ -29,6 +29,14 @@ trap-fixture:
 shell-logger-fixture:
 	@bash scripts/dev/run-shell-logger-fixture.sh
 
+# P12 secret-safe env inspection regression fixture
+env-inspect-fixture:
+	@bash scripts/dev/run-env-inspect-fixture.sh
+
+# P08 provenance snapshot regression fixture
+provenance-snapshot-fixture:
+	@bash scripts/dev/run-provenance-snapshot-fixture.sh
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"

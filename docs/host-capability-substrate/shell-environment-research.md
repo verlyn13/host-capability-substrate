@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.3.1
-last_updated: 2026-04-28
+version: 2.4.0
+last_updated: 2026-04-30
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.3, April 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.4, April 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -27,9 +27,9 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 
 - **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
-- **5 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P08, P09).
+- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P08 has an initial Codex CLI tool-call snapshot, but additional surfaces still need their own snapshots after their execution contexts are probed.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
-- **2 prompts are design/policy work unchanged by the survey** (P11, P12).
+- **1 prompt remains design/policy work unchanged by the survey** (P11). P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
 
 The revised first-wave program is approximately **55 net research hours** over two workweeks beginning Monday, April 27, 2026 — down from ~80 hours in the original planning report because documentation-level resolution removed work from P01 and P05 and P06 is now closed for CLI surfaces. The remaining tests focus on genuinely undocumented or disputed items: GUI inheritance (P02), startup-script ordering (P03), cross-surface `include_only` behavior (P04), and the Codex app sandbox boundary (P13).
@@ -464,11 +464,11 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 | P05 — Claude Desktop doesn't use apiKeyHelper/shell-env for auth | **Docs-level resolved plus local Finder-origin smoke**: terminal `open -b` propagated a marker, but Finder-origin launch did not and common Claude credential env names were absent by existence-only check. | Keep Desktop as a separate GUI credential surface; do not use terminal `open` as GUI proxy |
 | P06 — Shell binary + invocation form per surface | **Closed for Codex CLI and Claude Code CLI**: local tests split Codex CLI into internal `/bin/zsh -lc` startup shells and actual host-observed tool-call subprocesses `sandbox-exec -- /bin/zsh -c <redacted>`. The focused matrix resolved Codex `allow_login_shell=false` marker propagation for CLI 0.125.0 as same host argv with marker env absent in the no-login-shell config. Claude Code CLI Bash-tool subprocess is host-observed as `/bin/zsh -c <redacted>` with marker propagation and `.zshenv` only. PATH-prefix wrapper interception is unsuitable except as a negative control. | No P06 blocker remains for these CLI surfaces; app/IDE surfaces remain P02/P03/P04/P13 work |
 | P07 — Startup files consulted per surface | **Derived** from P06 findings | Optional — sentinel markers only if P06 wrapper test contradicts expectations (0–4h) |
-| P08 — Provenance of PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME | Schema designed; host-specific values need capture | Yes — but reduced scope: run once, snapshot, commit to repo (6h) |
+| P08 — Provenance of PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME | Initial Codex CLI tool-call snapshot committed; app/IDE/MCP surfaces still need their own snapshots after execution-context probes exist | Partial — Codex CLI fixture exists; remaining surfaces not captured |
 | P09 — direnv/mise visibility across surfaces | Known caveats: mise activate only interactive, direnv needs hook, IDE probes vary | Yes — matrix test but tightly scoped (6h) |
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
 | P11 — LaunchAgent env policy for non-secret session flags | Design/policy, unchanged by survey | Design work (6h, no runtime) |
-| P12 — Secret-safe env inspection helper spec | Design/policy, unchanged by survey; confirmed no prior art | Design work + prototype (10h) |
+| P12 — Secret-safe env inspection helper spec | Repo-local prototype and fixture landed; confirmed no public runtime-env secret-scanner prior art | Final Ring 1 operation-shape design remains future schema/policy work |
 | **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Open / narrowed**: host-visible app bundle/process/schema evidence is captured for Codex app `26.422.71525` build `2210`. GUI app-server control is not reachable from this session, Computer Use cannot operate `com.openai.codex`, and the local Keychain/filesystem/network status probe correlated to the active Codex CLI session rather than the GUI app. | Yes — app-internal sandbox boundary characterization now requires a reachable GUI app-server control path or a human-run sterile Codex app UI probe |
 
 ### Why the reduction
@@ -488,8 +488,10 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 - **P02**: expected answer is strongly inferred but the exact behavior of Codex app on Spotlight launch on *this specific host* has not been empirically captured. Low-cost validation.
 - **P03**: the exact timing of setup-script vs MCP-server init is *not* in any official doc and Codex issues are silent. This is the substance of whether bearer-token MCP servers can rely on setup-script-exported env.
 - **P04**: `shell_environment_policy.include_only` is documented but not validated across app/CLI/IDE. Known issue #3064 suggests behavior diverges from docs — needs a matrix.
-- **P08, P09**: capture host-specific values once, snapshot, use as golden data for regression testing.
-- **P11, P12**: design work, not empirical.
+- **P08**: initial Codex CLI snapshot is now committed; remaining value is per-surface expansion after direct execution-context probes.
+- **P09**: capture direnv/mise marker visibility across tightly scoped surfaces.
+- **P11**: design work, not empirical.
+- **P12**: prototype is now committed; final operation-shape design waits for Ring 0/Ring 1 work.
 - **P13**: Codex app sandbox boundary needs explicit characterization — is it `sandbox-exec` with a seatbelt profile, a bundled app sandbox, or a helper-specific combination? What syscalls/resources are gated? Static bundle/process/schema evidence is insufficient because the macOS apps are full signed applications and may hide relevant behavior behind UI/runtime control paths. This determines how HCS must model `ExecutionContext` for the app vs CLI.
 
 ---
@@ -507,9 +509,9 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 5 | **P06** | 4 | 3 | complete | Closed for Codex CLI and Claude Code CLI through tool trace + startup sentinels + host telemetry |
 | 6 | **P04** | 4 | 3 | 10 | Cross-surface env-policy matrix; documented gap vs observed |
 | 7 | **P03** | 5 | 3 | 8 | Setup-script/MCP timing — genuinely undocumented |
-| 8 | **P08** | 3 | 4 | 6 | Host-specific provenance snapshot |
+| 8 | **P08** | 3 | 4 | partial | Initial Codex CLI provenance snapshot landed; other surfaces remain |
 | 9 | **P09** | 3 | 3 | 6 | direnv/mise cross-surface visibility |
-| 10 | **P12** | 4 | 3 | 10 | Design + prototype for secret-safe inspection |
+| 10 | **P12** | 4 | 3 | prototype done | Secret-safe inspection prototype landed; Ring 1 design remains |
 | 11 | **P11** | 3 | 4 | 6 | Policy design for non-secret session flags |
 | 12 | **P07** | 2 | 4 | 0–4 | Only if P06 surprises |
 
@@ -561,8 +563,8 @@ gantt
 |---|---|---|
 | Foundation ready | 2026-04-27 | Harness, synthetic repo, evidence template, redaction rules committed |
 | Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 closed for CLI surfaces; P13 narrowed with UI/control proof gap explicit |
-| Open-prompt runtime data captured | 2026-05-06 | P03, P04, P08, P09 matrices complete |
-| Design work complete | 2026-05-07 | P11 policy decision table + P12 spec/prototype delivered |
+| Open-prompt runtime data captured | 2026-05-06 | P03, P04, P09 matrices complete; P08 expanded only for directly probed surfaces |
+| Design work complete | 2026-05-07 | P11 policy decision table; P12 prototype is delivered and Ring 1 operation-shape design remains future work |
 | Synthesis complete | 2026-05-08 | ADR drafts, updated `ExecutionContext`/`EnvProvenance`/`CredentialSource`/`ToolResolution`/`StartupPhase` schemas, regression traps written |
 
 ---
@@ -673,6 +675,14 @@ Launch a new thread/worktree. Correlate the marker timestamps. Test both paths: 
 
 **P08** (Provenance snapshot, 6h): Script that captures on each surface the value (name only for secrets, value allowed for PATH/HOME/PWD/TMPDIR/SHELL/CODEX_HOME) and provenance tags of the target var set. Commit output as `provenance-snapshot-YYYY-MM-DD.json` to the HCS repo as golden data.
 
+Prototype status: `scripts/dev/capture-provenance-snapshot.py` generated
+`packages/fixtures/provenance-snapshot-2026-04-30.json` for the Codex CLI
+tool-call subprocess on 2026-04-30, with `authority: sandbox-observation`.
+`scripts/dev/run-provenance-snapshot-fixture.sh` validates the fixture and a
+fresh temporary capture via `just provenance-snapshot-fixture`, now wired into
+`just verify`. Additional surfaces still need separate snapshots after their
+execution contexts are directly probed.
+
 **P09** (direnv/mise cross-surface, 6h): Repo with `.envrc` exporting `HCS_DIRENV_MARKER` and `.mise.toml` with `[env] HCS_MISE_MARKER = "present"`. Launch each surface from within the repo root (not just via IDE opening). Have probe report which markers are visible. Test both terminal-launched and GUI-launched cases.
 
 **P11** (LaunchAgent policy design, 6h): Policy decision table. Criteria: secrecy level (none/low/high), durability (ephemeral/login-scoped/reboot-persistent), GUI visibility requirement, operational need. Classify candidate vars (LANG, LC_ALL, DEFAULT_EDITOR, TMPDIR, proxy vars, HOMEBREW_NO_ANALYTICS, telemetry toggles, org-specific flags). Deliverable: `docs/adrs/ADR-NNN-launchagent-env-policy.md` with explicit list of what belongs at user-session layer and what doesn't.
@@ -686,6 +696,12 @@ redact_values = true  # always true for classified
 transcript_safe = true
 ```
 Build a prototype CLI (`hcs env-inspect`) that implements existence-only, names-only, and classified (reports "present + looks like JWT" / "present + looks like AWS key" / "present + non-secret shape"). Include a regression trap for the `printenv | grep` anti-pattern.
+
+Prototype status: `scripts/dev/hcs-env-inspect.py` and
+`scripts/dev/run-env-inspect-fixture.sh` landed on 2026-04-30 as the repo-local
+P12 prototype. The fixture is exposed as `just env-inspect-fixture` and is wired
+into `just verify`. See
+`docs/host-capability-substrate/research/shell-env/2026-04-30-P12-env-inspect-prototype.md`.
 
 ---
 
@@ -783,3 +799,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.2.0 | 2026-04-28 | Integrated P06 post-Full-Disk-Access host telemetry, splitting Codex internal `/bin/zsh -lc` startup shells from actual tool-call `sandbox-exec -- /bin/zsh -c` subprocesses and narrowing remaining work to Claude host telemetry plus Codex marker-env propagation. |
 | 2.3.0 | 2026-04-28 | Integrated the focused P06 closure run: Codex `allow_login_shell=false` marker propagation resolved for CLI 0.125.0, Claude Code CLI Bash-tool subprocess host-observed, and P06 closed for Codex CLI plus Claude Code CLI. |
 | 2.3.1 | 2026-04-28 | Integrated P13 refresh: current Codex app `26.422.71525`/`2210`, GUI app-server control unavailable from this session, local boundary probe classified as CLI-side control evidence only, and app-internal proof gap moved to UI/control evidence. |
+| 2.4.0 | 2026-04-30 | Integrated P08 initial Codex CLI provenance snapshot fixture and P12 secret-safe env inspection prototype, with both fixtures wired into `just verify`; updated remaining prompt counts and kept final Ring 1 operation design future-scoped. |

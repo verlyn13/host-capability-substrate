@@ -48,7 +48,9 @@ run_group static-gates \
 run_group fixtures \
   redundancy-fixture \
   trap-fixture \
-  shell-logger-fixture
+  shell-logger-fixture \
+  env-inspect-fixture \
+  provenance-snapshot-fixture
 
 fail=0
 failed_indexes=()
