@@ -3,9 +3,9 @@ title: HCS Ontology
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.3.0
+version: 0.4.0
 last_updated: 2026-05-01
-tags: [ontology, entities, schemas, execution-context, isolation]
+tags: [ontology, entities, schemas, execution-context, isolation, github, version-control]
 priority: high
 ---
 
@@ -178,6 +178,67 @@ Do not copy vendor adapter schemas into Ring 0. Vendor config and UI settings
 are observation sources; HCS schemas describe host facts, evidence,
 capabilities, and decisions.
 
+## Version-Control Authority Vocabulary
+
+The 2026-05-01 version-control authority consult refines Q-006 but does not add
+schema by itself. It strengthens the Milestone 1 goal that Git/GitHub facts
+should be modeled as typed evidence before they become mutation authority.
+
+HCS must not collapse these concepts:
+
+- local repository state: path, repo root, `.git` location, current branch,
+  `HEAD`, dirty state, sparse/partial clone state;
+- worktree state: linked worktree path, attached branch, lock status, owning
+  lease/session;
+- remote/ref state: remote URL, fetch/push URL, remote `HEAD`, last fetch time,
+  branch/tag/ref existence;
+- Git identity: effective author email, signing key, signing program, config
+  source and include order;
+- SSH transport: host alias, identity source, agent/socket, known-host
+  authority;
+- GitHub credential source: human `gh`, SSH, GitHub App, Actions
+  `GITHUB_TOKEN`, OIDC-issued token, MCP PAT/OAuth, app/web automation session;
+- GitHub governance: rulesets, branch protection, required reviews, bypass
+  actors, required checks, expected check source;
+- Actions authority: workflow triggers, token permissions, runner labels,
+  third-party action pinning, `pull_request_target`, environments, OIDC use;
+- source-control continuity: protected named references, branch history,
+  control start revision, and control lapse/restart evidence.
+
+Candidate evidence/receipt names for Phase 1 reconciliation:
+
+- `GitRepositoryObservation`
+- `GitRemoteObservation`
+- `GitConfigResolution`
+- `GitIdentityBinding`
+- `GitWorktreeObservation`
+- `GitRefObservation`
+- `GitBranchAncestryObservation`
+- `BranchDeletionProof`
+- `GitHubRepositorySettingsObservation`
+- `GitHubRulesetObservation`
+- `BranchProtectionObservation`
+- `WorkflowPolicyObservation`
+- `CheckRunReceipt`
+- `StatusCheckSourceObservation`
+- `GitHubCredentialObservation`
+- `GitHubMcpSessionObservation`
+- `PullRequestReceipt`
+- `PullRequestReviewReceipt`
+- `SourceControlContinuityReceipt`
+
+Candidate `BranchDeletionProof` should include repository identity, worktree
+attachment, fresh remote state, ancestry or patch-equivalence proof, dirty-state
+check, PR state, lease state, and human review for force/remote/protected or
+ambiguous deletion.
+
+Check results should not be gateable from name and conclusion alone. Gateable
+check evidence should include source app/integration, commit SHA, workflow path
+or provider object, observed time, and freshness.
+
+Do not turn these names into operation endpoints or policy tiers before Q-006
+decides evidence subtype versus standalone entity shape.
+
 ## Provenance on every fact
 
 Every `Evidence` record:
@@ -213,6 +274,7 @@ Every `Evidence` record:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.4.0 | 2026-05-01 | Added version-control authority vocabulary from the Q-006 consult synthesis. |
 | 0.3.0 | 2026-05-01 | Added compatibility/isolation vocabulary from the agentic tool isolation intake as Phase 1 schema reconciliation guidance. |
 | 0.2.0 | 2026-05-01 | Added first shell/env Ring 0 schema docs for `ExecutionContext`, `EnvProvenance`, `CredentialSource`, and `StartupPhase`. |
 | 0.1.0 | 2026-04-22 | Initial stub. Lists 20 entities; points to research plan for shape details. |
