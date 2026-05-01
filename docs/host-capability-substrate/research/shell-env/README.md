@@ -3,7 +3,7 @@ title: HCS shell/environment research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.7.0
+version: 1.8.0
 last_updated: 2026-05-01
 tags: [research, shell-env, execution-context, provenance, credentials, fixtures]
 priority: medium
@@ -41,6 +41,7 @@ only redacted memos or golden fixtures.
 | P12 Env inspection | Repo-local safe-inspection prototype committed. | `2026-04-30-P12-env-inspect-prototype.md` |
 | P13 Codex app sandbox | Open/narrowed; needs GUI app-internal evidence. | `2026-04-26-P13-codex-app-bundle-signing.md` |
 | Codex config/app settings | Official config/app UI ingest committed; runtime behavior still surface-specific. | `2026-05-01-codex-official-config-app-settings-ingest.md` |
+| Claude app/settings | Claude Desktop and Claude Code Desktop settings ingest committed; runtime behavior still surface-specific. | `2026-05-01-claude-desktop-code-settings-ingest.md` |
 
 ## Contents
 
@@ -62,6 +63,7 @@ only redacted memos or golden fixtures.
 | `2026-05-01-P03-mcp-startup-order-plan.md` | 2026-05-01 | Operation-proofed MCP startup-order probe packet plan and redaction-contract fixture. |
 | `2026-05-01-P04-codex-env-policy-matrix-plan.md` | 2026-05-01 | Operation-proofed Codex env-policy probe packet plan and redaction-contract fixture. |
 | `2026-05-01-P09-gui-ide-matrix-plan.md` | 2026-05-01 | Operation-proofed GUI/IDE probe packet plan and redaction-contract fixture. |
+| `2026-05-01-claude-desktop-code-settings-ingest.md` | 2026-05-01 | Claude Desktop MCP config path, filesystem tool permissions, Claude Code Desktop permission modes, worktrees, Preview sessions, and web PR automation surfaces. |
 | `2026-05-01-codex-official-config-app-settings-ingest.md` | 2026-05-01 | Official Codex config basics, macOS app settings, local environments, Git/worktree controls, and permissions ingest. |
 
 ## Fixture Hooks
@@ -81,6 +83,7 @@ only redacted memos or golden fixtures.
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.8.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings ingest memo. |
 | 1.7.0 | 2026-05-01 | Added official Codex config/app settings ingest memo. |
 | 1.6.0 | 2026-05-01 | Added P03 MCP startup-order probe packet plan and fixture. |
 | 1.5.0 | 2026-05-01 | Added P04 Codex env-policy probe packet plan and fixture. |

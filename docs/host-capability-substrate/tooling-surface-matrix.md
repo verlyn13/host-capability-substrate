@@ -3,7 +3,7 @@ title: HCS Tooling Surface Matrix
 category: reference
 component: host_capability_substrate
 status: active
-version: 1.2.0
+version: 1.3.0
 last_updated: 2026-05-01
 tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration]
 priority: high
@@ -68,6 +68,10 @@ Columns in the full table below:
 | `.claude/hooks/hcs-hook` | repo | project | canonical (implementation-phase hook) | **yes** (exit 2 blocks) | yes (logs to `.logs/phase-0/`) | no | no | literal forbidden patterns only; never tier tables | hcs-hook-integrator + human | log-only, blocks literal forbidden | upgraded to RPC HCS gateway; 50ms timeout + cache fallback | same |
 | `~/.claude/agents/` | user-global | user | — | no | no | yes | no | no | user | unchanged (existing 6 generic) | unchanged | unchanged |
 | `~/.claude.json` | user-global | user | generated per-machine | yes (permission precedence) | yes | yes (MCP baseline) | no | no (MCP config only) | user; `sync-mcp.sh` writes baseline | no HCS entry | no HCS entry | **decide via ADR** whether HCS joins baseline |
+| Claude Code Desktop settings UI | app-managed storage | user/app | generated/user-managed | yes (app posture) | yes | yes | no | no | user + Claude app | observe only | observe only; map to `ExecutionContext` facets after probes | observe only |
+| `.claude/worktrees` | repo-local generated worktrees | project/app | generated runtime/worktree state | limited | yes | no | no | no | Claude app + user | do not rely on; do not delete by path shape | observe only with worktree/branch proof | observe only with worktree/branch proof |
+| Claude Preview session storage | app-managed per-workspace browser state | user/app | generated runtime state | limited | yes | no | no | no | user + Claude app | do not inspect | inspect only with redacted operation proof | inspect only with redacted operation proof |
+| Claude Code on the Web automation settings | app/cloud setting | user/cloud | app/cloud managed | yes (GitHub-side effects) | yes | no | no | no | user + Claude service | observe only | route through GitHub authority model | route through GitHub authority model |
 
 ### Codex surfaces
 
@@ -133,6 +137,7 @@ Columns in the full table below:
 | Surface | Config path | Scope | Canonical or generated | Can enforce | Can observe | Can call MCP | Can define skills | Allowed to contain policy | Owner | Phase 0a | Phase 3 | Phase 4 |
 |---------|-------------|-------|------------------------|-------------|-------------|--------------|-------------------|---------------------------|-------|----------|---------|---------|
 | `~/Library/Application Support/Claude/claude_desktop_config.json` | user-global | user | app-managed | no | no | yes | no | no | user | unchanged | possibly register HCS MCP manually if desired | same |
+| Claude Desktop filesystem tool permissions | app-managed storage | user/app | generated/user-managed | yes (app prompts) | yes | yes | no | no | user + Claude app | observe only | do not treat prompts as HCS approval grants | same |
 
 ### iTerm2
 
@@ -160,6 +165,9 @@ CLAUDE.md                  imports AGENTS.md + Claude-specific notes — require
 .claude/settings.json      Claude Code project policy — enforceable; forbidden literals only
 .claude/skills/            Claude-specific wrappers only — empty at Phase 0a
 .claude/hooks/hcs-hook     thin bash helper — log-only at Phase 0a
+Claude Code Desktop UI     app permission/worktree/preview posture — observe only
+Claude Preview sessions    runtime browser state — never repo state
+Claude web automation      PR/comment side effects — GitHub authority model
 .codex/config.toml         project Codex override — minimal
 Codex app settings UI      app posture and diagnostics — observe only
 Codex app local envs       worktree bootstrap/actions — not startup auth
@@ -223,6 +231,7 @@ When adding X to the repo, route by type:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings, filesystem permission, worktree, Preview, and web automation surfaces. |
 | 1.2.0 | 2026-05-01 | Added official Codex system/managed/app settings, Workspace Dependencies, and local-environment/action surfaces. |
 | 1.1.0 | 2026-04-26 | Updated early-phase tool baselines to public CLI semver per D-029 and charter v1.2.0; app build identifiers are now tracked separately. |
 | 1.0.0 | 2026-04-22 | Initial matrix. Created alongside boundary decision v1.1.0 to prevent "where should this go?" drift. |

@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.8.0
+version: 1.9.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -12,7 +12,8 @@ priority: high
 # Phase 1 Shell Environment Handoff
 
 Current handoff after P03/P04/P08/P09/P11/P12 implementation work, the
-P03/P04/P09 probe packets, and the official Codex config/app-settings ingest.
+P03/P04/P09 probe packets, the official Codex config/app-settings ingest, and
+the Claude Desktop / Claude Code Desktop settings ingest.
 This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
@@ -20,7 +21,7 @@ This supersedes
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-05-01T03:14Z |
+| Observed at | 2026-05-01T05:31Z |
 | Branch | `main` |
 | Git relation | Local `main` is ahead of `origin/main`; run `git status --short --branch` for the exact current count. |
 | Worktree expectation | Clean after each scoped commit; inspect any dirty state before proceeding. |
@@ -37,6 +38,8 @@ This supersedes
 | Codex app bundle | `26.429.20946`, build `2312` from local app Info.plist metadata |
 | Codex Workspace Dependencies | `26.430.10722` from operator-provided Codex app settings UI |
 | Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
+| Claude Desktop app bundle | `1.5354.0`, build `1.5354.0` from local app Info.plist metadata |
+| Claude Desktop MCP config metadata | `/Users/verlyn13/Library/Application Support/Claude/claude_desktop_config.json`; mode `644`, size `2251`, modified `Apr 30 21:14:22 2026`; values not read |
 | mise-managed tools | `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
 
 ## Prompt Status
@@ -55,11 +58,12 @@ This supersedes
 | P12 env inspection | Repo-local prototype landed for names-only, existence, classified, and hashed env inspection. | `scripts/dev/hcs-env-inspect.py`; `just env-inspect-fixture` |
 | P13 Codex app sandbox | Open/narrowed; needs reachable GUI app-server control or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 | Codex config/app settings | Official config basics and app settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md` |
+| Claude app/settings | Claude Desktop and Claude Code Desktop settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-claude-desktop-code-settings-ingest.md` |
 
 ## Recent Scope
 
-Recent file categories across the P03/P04/P08/P09/P11/P12 pass plus Codex
-official source ingest:
+Recent file categories across the P03/P04/P08/P09/P11/P12 pass plus Codex and
+Claude official/app source ingest:
 
 - Ring 3 scripts/fixtures:
   `scripts/dev/hcs-env-inspect.py`,
@@ -78,8 +82,8 @@ official source ingest:
   `PLAN.md`, `shell-environment-research.md`,
   `phase-1-shell-env-direct-test-runbook.md`,
   `research/shell-env/README.md`,
-  P03/P04/P08/P09/P11/P12 memos, Codex config/app settings ingest, and trap
-  #18 notes.
+  P03/P04/P08/P09/P11/P12 memos, Codex config/app settings ingest, Claude
+  Desktop / Claude Code Desktop settings ingest, and trap #18 notes.
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
@@ -108,6 +112,15 @@ Phase 1 shell/env scope.
   separate facts.
 - Do not treat app worktree auto-delete snapshots as branch deletion proof or
   worktree ownership proof.
+- Do not treat Claude app `ask` prompts, bypass mode, or auto permissions mode
+  as HCS `ApprovalGrant` or policy authority.
+- Do not inspect Claude Preview cookies, local storage, login sessions, or raw
+  `claude_desktop_config.json` values without a separate redacted operation
+  proof.
+- Treat `.claude/worktrees` as generated but potentially load-bearing state;
+  hidden or ignored state is not deletion authority.
+- Treat Claude web PR/autofix automation as GitHub/external-control-plane
+  authority work until Q-006 lands.
 
 ## Recommended Next Step
 
@@ -149,6 +162,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.9.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings ingest, metadata overlay, and guardrails. |
 | 1.8.0 | 2026-05-01 | Added official Codex config/app settings ingest and app/dependencies version distinction. |
 | 1.7.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
 | 1.6.0 | 2026-05-01 | Added P04 Codex env-policy probe packet status and fixture. |

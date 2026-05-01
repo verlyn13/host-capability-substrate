@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.11.0
+version: 2.12.0
 last_updated: 2026-05-01
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.11, May 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.12, May 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -27,7 +27,7 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 
 - **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
-- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P03 now has an MCP startup-order probe packet, P04 has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed. A 2026-05-01 official Codex config/app-settings ingest also updates the source model for config precedence, app-managed workspace dependencies, Git/worktree settings, permissions, and local environments.
+- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P03 now has an MCP startup-order probe packet, P04 has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed. 2026-05-01 source ingests update the source model for Codex config/app settings and Claude Desktop/Claude Code Desktop settings without treating UI labels as runtime proof.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
 - **P11 now has a design memo** for LaunchAgent/user-session env policy; ADR acceptance remains future synthesis work. P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
@@ -50,6 +50,8 @@ This survey is based on:
 - Anthropic and OpenAI release notes for 2025-2026
 - Operator-provided official Codex config basics, Codex macOS app settings, and
   local-environments excerpts ingested on 2026-05-01
+- Operator-provided Claude macOS app and Claude Code Desktop settings
+  observations ingested on 2026-05-01
 
 Fish shell is explicitly out of scope per user instruction.
 
@@ -233,7 +235,7 @@ Anthropic also warns about a 2026-era OAuth subtlety: when selecting a 1M-contex
 - Project `.mcp.json`: expansion works.
 - User `.claude/settings.json` top-level `env` block: **no expansion** (feature request #46889, #43693).
 - Plugin-installed `.mcp.json`: **broken** — issue #9427 shows env expansion does not happen for plugin-scope configs on macOS.
-- Claude Desktop `~/.claude/claude_desktop_config.json`: per FastMCP docs uses the same `mcpServers` schema, but expansion support is **Unknown** and community reports suggest it does not expand `${VAR}` (practice is to hard-code values).
+- Claude Desktop `~/Library/Application Support/Claude/claude_desktop_config.json`: per FastMCP docs uses the same `mcpServers` schema, but expansion support is **Unknown** and community reports suggest it does not expand `${VAR}` (practice is to hard-code values).
 - Claude Code on the Web: uses subscription credentials, does not read `ANTHROPIC_API_KEY`/`_AUTH_TOKEN` from sandbox env.
 
 **`headersHelper` (2026 addition).** HTTP MCP servers can reference a `headersHelper` command that emits headers JSON; it runs fresh on every connection (no caching) and gets `CLAUDE_MCP_SERVER_NAME` etc. injected. For project/local scope, it only runs after workspace trust acceptance.
@@ -241,6 +243,35 @@ Anthropic also warns about a 2026-era OAuth subtlety: when selecting a 1M-contex
 #### 2.6 Subagent auth inheritance
 
 **Confirmed broken.** Issue #46228 (subagents cannot access OAuth-authenticated MCP servers) and #46696 (subagents don't inherit `CLAUDE_ENV_FILE`) together confirm that subagents spawned via the Agent tool are *almost* entirely isolated from the parent session's env and OAuth state. Requests for the parent to act as an MCP proxy, or a shared token store, are open. HCS should treat parent → subagent as a **new `ExecutionContext` with no automatic credential propagation** — and preserve this isolation as a security feature rather than papering over it.
+
+#### 2.7 Claude Desktop and Claude Code Desktop settings
+
+**Source-ingested, not runtime-probed.** The 2026-05-01 ingest memo records
+operator-provided Claude macOS application and Claude Code Desktop settings.
+Local metadata checks observed `/Applications/Claude.app` bundle id
+`com.anthropic.claudefordesktop`, app bundle version/build `1.5354.0`, and
+the user-global MCP config path
+`~/Library/Application Support/Claude/claude_desktop_config.json`. The config
+metadata check recorded mode, size, and modified time only; raw config values
+were not read.
+
+The Claude app filesystem tool permission surface separates read-only tools
+from write/delete tools and sets the listed read/write tools to `ask`.
+HCS should model those prompts as app-mediated permission checks, not HCS
+`ApprovalGrant` records. "Copy file to Claude" is a separate import/egress
+surface, not merely another read-only file operation.
+
+Claude Code Desktop settings expose permission posture and automation controls:
+bypass permissions mode, auto permissions mode, notifications, project-local
+worktrees under `.claude/worktrees`, branch prefix `claude`, Preview, persisted
+Preview sessions, and Claude Code on the Web PR/autofix/archive automation.
+Bypass mode is a high-risk app posture; auto mode is an app decision aid; and
+persisted Preview sessions are runtime/browser state that may include cookies,
+local storage, and login sessions. Worktree location and branch prefix do not
+prove ownership or safe deletion. Web PR creation/autofix belongs to the
+GitHub/external-control-plane authority workstream.
+
+Detailed ingest: `docs/host-capability-substrate/research/shell-env/2026-05-01-claude-desktop-code-settings-ingest.md`.
 
 ### 3. macOS user session, launchd, and GUI env propagation (2026 state)
 
@@ -435,7 +466,7 @@ Anthropic is **actively removing third-party OAuth support** per 2025–2026 ven
 | Codex app | Open; do not infer from CLI | Open; GUI app-server or UI probes required | Open; app sandbox gates any shell/file behavior | Host-visible Electron/Chromium sandbox markers observed; effective app-internal capability matrix still open | P02 Finder-origin marker absent; model as launchd user session only unless app-internal evidence says otherwise |
 | Codex IDE ext | Via VS Code | VS Code env | VS Code shell-integration | VS Code | Editor process env |
 | Claude Code CLI | Measured for Bash-tool subprocess; local P06 observed `/bin/zsh` | Host telemetry observed Bash-tool subprocess as `/bin/zsh -c <redacted>` | Actual tool shell read `.zshenv` only; internal shell read `.zshenv`, `.zprofile`, `.zlogin` | None observed for CLI Bash tool | Process env at spawn only; no persistence between Bash calls |
-| Claude Desktop | N/A | N/A (OAuth-only, no Bash tool) | N/A | App | N/A |
+| Claude Desktop / Code Desktop | N/A for Bash-tool subprocess until probed | App-managed MCP/filesystem/Preview surfaces; no inferred CLI Bash behavior | N/A | App | Launchd/app state; filesystem prompts, Preview sessions, and web automation require separate receipts |
 | Claude Code IDE ext | Shares CLI config | Inherits VS Code env | VS Code shell-integration | VS Code | Editor env |
 | Zed external agents | Zed's computed env | ACP | Login-shell probe at Zed start | None | Zed env |
 | Warp | User-chosen shell | User-configured | Standard + Warp Drive | None | launchd + user shell + Drive |
@@ -516,7 +547,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
 | P11 — LaunchAgent env policy for non-secret session flags | Design memo landed with variable-class policy table and provisional rules | ADR acceptance remains future synthesis work |
 | P12 — Secret-safe env inspection helper spec | Repo-local prototype and fixture landed; confirmed no public runtime-env secret-scanner prior art | Final Ring 1 operation-shape design remains future schema/policy work |
-| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Open / narrowed**: host-visible app bundle/process/schema evidence is captured for Codex app `26.422.71525` build `2210`. GUI app-server control is not reachable from this session, Computer Use cannot operate `com.openai.codex`, and the local Keychain/filesystem/network status probe correlated to the active Codex CLI session rather than the GUI app. | Yes — app-internal sandbox boundary characterization now requires a reachable GUI app-server control path or a human-run sterile Codex app UI probe |
+| **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Open / narrowed**: host-visible app bundle/process/schema evidence is captured for Codex app `26.422.71525` build `2210`, with a later 2026-05-01 metadata-only app bundle observation at `26.429.20946` build `2312`. GUI app-server control is not reachable from this session, Computer Use cannot operate `com.openai.codex`, and the local Keychain/filesystem/network status probe correlated to the active Codex CLI session rather than the GUI app. | Yes — app-internal sandbox boundary characterization now requires a reachable GUI app-server control path or a human-run sterile Codex app UI probe |
 
 ### Why the reduction
 
@@ -883,3 +914,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.9.0 | 2026-05-01 | Added P04 Codex env-policy probe packet and redaction-contract fixture; kept runtime CLI/app/IDE rows approval-gated. |
 | 2.10.0 | 2026-05-01 | Added P03 MCP startup-order probe packet and redaction-contract fixture; kept runtime ordering rows approval-gated. |
 | 2.11.0 | 2026-05-01 | Ingested official Codex config basics and macOS app settings, including config precedence, managed requirements, workspace dependencies, Git/worktree settings, permissions, and local environments. |
+| 2.12.0 | 2026-05-01 | Ingested Claude Desktop and Claude Code Desktop settings, including MCP config path, filesystem tool permissions, permission modes, worktrees, Preview sessions, and web PR automation surfaces. |
