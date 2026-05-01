@@ -3,9 +3,9 @@ title: HCS Dashboard Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.1.0
-last_updated: 2026-04-22
-tags: [dashboard, view-models, contracts]
+version: 0.2.0
+last_updated: 2026-05-01
+tags: [dashboard, view-models, contracts, source-control, github, evidence]
 priority: medium
 ---
 
@@ -27,6 +27,7 @@ From research plan §12:
 - `CacheEntryCard`
 - `LeaseRow`
 - `HealthStatus`
+- `VersionControlPosture` (candidate from Q-006 / ADR 0020)
 
 ## Minimum views (read-only, Phase 3)
 
@@ -38,6 +39,104 @@ From research plan §12:
 /audit                       recent events, read-only
 /dashboard-summary.json      same data exposed to system.dashboard.summary.v1
 ```
+
+## Candidate source-control posture view
+
+Status: Phase 1 planning only. This does not add a dashboard route, schema, API
+endpoint, policy tier, or GitHub mutation. It records the read model that Q-006
+and ADR 0020 need the dashboard to make visible before source-control mutation
+operations can exist.
+
+Candidate route:
+
+```text
+/source-control              Git/GitHub authority posture, read-only
+```
+
+Candidate `VersionControlPosture` payload:
+
+```json
+{
+  "schema_version": "0.1.0-proposed",
+  "observed_at": "2026-05-01T00:00:00Z",
+  "repository": {
+    "workspace_id": "host-capability-substrate",
+    "repo_root": "/path",
+    "remote_url": "git@github.com:owner/repo.git",
+    "default_branch": "main",
+    "head_sha": "sha",
+    "dirty_state": "clean|dirty|unknown",
+    "evidence_ids": []
+  },
+  "protection": {
+    "state": "fresh|stale|missing|contradictory|unknown",
+    "rulesets": [],
+    "branch_protection": [],
+    "required_reviews": "present|missing|unknown",
+    "admin_bypass": "allowed|disallowed|unknown",
+    "force_push": "disabled|enabled|unknown",
+    "deletion": "disabled|enabled|unknown",
+    "evidence_ids": []
+  },
+  "required_checks": [
+    {
+      "name": "check-name",
+      "expected_source": "github-app-or-workflow-source",
+      "last_observed_sha": "sha",
+      "conclusion": "success|failure|neutral|skipped|cancelled|unknown",
+      "freshness": "fresh|stale|missing|unknown",
+      "evidence_ids": []
+    }
+  ],
+  "actions": {
+    "default_token_permissions": "read|write|none|unknown",
+    "workflow_policy": "pinned|mixed|unpinned|unknown",
+    "runner_classes": ["github-hosted"],
+    "pull_request_target": "present|absent|unknown",
+    "oidc_use": "present|absent|unknown",
+    "evidence_ids": []
+  },
+  "credentials": [
+    {
+      "surface": "gh|ssh|git-signing|github-app|actions-token|oidc|mcp-pat|mcp-oauth|agent-app",
+      "principal": "redacted-or-reference",
+      "scope_summary": "read-only|write|admin|unknown",
+      "health": "healthy|degraded|unknown",
+      "evidence_ids": []
+    }
+  ],
+  "worktrees": [
+    {
+      "path": "/path",
+      "branch": "main",
+      "locked": false,
+      "lease_id": null,
+      "dirty_state": "clean|dirty|unknown",
+      "evidence_ids": []
+    }
+  ],
+  "cleanup_proposals": [
+    {
+      "target_ref": "refs/heads/example",
+      "proof_status": "complete|incomplete|blocked|unknown",
+      "missing_proof": ["BranchDeletionProof"],
+      "evidence_ids": []
+    }
+  ]
+}
+```
+
+Display rules:
+
+- Show missing, stale, and contradictory evidence explicitly; do not hide it
+  behind a green summary.
+- A check row is not gateable unless the expected source, commit SHA, workflow
+  or provider source, conclusion, and freshness are all present.
+- Branch cleanup rows show proof status, not just branch names.
+- Credential rows stay separated by authority surface. A healthy `gh` row does
+  not imply SSH, MCP, Actions, or web-agent authority.
+- Dashboard display is read-only until the approval/audit/dashboard/lease stack
+  exists. Source-control mutations remain blocked by charter invariant 7.
 
 ## Invariants
 
@@ -59,4 +158,5 @@ From research plan §12:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.0 | 2026-05-01 | Added candidate Q-006 source-control posture view model for future read-only dashboard planning. |
 | 0.1.0 | 2026-04-22 | Initial stub. |
