@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.11.0
+version: 1.12.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -15,7 +15,8 @@ Current handoff after P03/P04/P08/P09/P11/P12 implementation work, the
 P03/P04/P09 probe packets, the official Codex config/app-settings ingest, and
 the Claude Desktop / Claude Code Desktop settings ingest. Proposed ADR 0016 now
 records the shell/environment ownership boundary, and proposed ADR 0017 records
-the Codex app execution-context split for synthesis review.
+the Codex app execution-context split. Proposed ADR 0018 records the durable
+credential source preference for synthesis review.
 This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
@@ -23,7 +24,7 @@ This supersedes
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-05-01T15:59Z |
+| Observed at | 2026-05-01T16:04Z |
 | Branch | `main` |
 | Git relation | Local `main` starts aligned with `origin/main`; run `git status --short --branch` for the exact current count. |
 | Worktree expectation | Clean after each scoped commit; inspect any dirty state before proceeding. |
@@ -63,6 +64,7 @@ This supersedes
 | Claude app/settings | Claude Desktop and Claude Code Desktop settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-claude-desktop-code-settings-ingest.md` |
 | ADR 0016 shell/env boundaries | Proposed ADR draft landed; schema and policy implementation remain future work. | `adr/0016-shell-environment-boundaries.md` |
 | ADR 0017 Codex app execution context | Proposed ADR draft landed; P13 app-internal capability rows remain open. | `adr/0017-codex-app-execution-context.md` |
+| ADR 0018 durable credential preference | Proposed ADR draft landed; no live credential or system-config migration made. | `adr/0018-durable-credential-preference.md` |
 
 ## Recent Scope
 
@@ -88,7 +90,7 @@ Claude official/app source ingest:
   `research/shell-env/README.md`,
   P03/P04/P08/P09/P11/P12 memos, Codex config/app settings ingest, Claude
   Desktop / Claude Code Desktop settings ingest, proposed ADR 0016, proposed
-  ADR 0017, and trap #18 notes.
+  ADR 0017, proposed ADR 0018, and trap #18 notes.
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
@@ -129,8 +131,8 @@ Phase 1 shell/env scope.
 
 ## Recommended Next Step
 
-For the synthesis lane, review proposed ADRs 0016 and 0017, then draft ADR 0018
-for durable credential preference if the shell/env conclusions are acceptable.
+For the synthesis lane, review proposed ADRs 0016, 0017, and 0018 before moving
+into Ring 0 schema reconciliation.
 
 Continue with an approved P03/P04/P09 runtime row when a Codex/GUI observation
 path is available:
@@ -170,6 +172,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.12.0 | 2026-05-01 | Added proposed ADR 0018 durable credential source preference status. |
 | 1.11.0 | 2026-05-01 | Added proposed ADR 0017 Codex app execution-context status. |
 | 1.10.0 | 2026-05-01 | Added proposed ADR 0016 shell/environment ownership boundary status. |
 | 1.9.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings ingest, metadata overlay, and guardrails. |
