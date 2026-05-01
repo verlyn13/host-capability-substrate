@@ -64,6 +64,9 @@ Read in order:
 - **LaunchAgent:** `~/Library/LaunchAgents/com.jefahnierocks.host-capability-substrate.plist`
 - **Live policy:** `~/Organizations/jefahnierocks/system-config/policies/host-capability-substrate/`
 
-## Subsidiary
+## Ownership
 
-Owned by **jefahnierocks** (Stronghold governance tier under The Nash Group).
+Owned by **jefahnierocks** as a host-scoped HCS project. Parent-organization
+materials may be cited as research inputs, but HCS operating authority comes
+from this repo's charter, ADRs, decision ledger, and the external policy source
+explicitly named by those HCS-local documents.

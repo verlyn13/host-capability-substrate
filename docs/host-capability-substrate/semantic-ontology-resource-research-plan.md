@@ -13,8 +13,8 @@ priority: high
 
 This document defines the official-source research needed before HCS commits
 its Phase 1 ontology and rollout posture. It is tailored to this repo, this
-host, and the governance direction visible in The Nash Group's Covenant and
-Citadel work-in-progress.
+host, and related Covenant/Citadel work-in-progress previously reviewed as
+local governance inputs.
 
 This is a research intake plan, not a decision. Findings brought back from
 official sources should be recorded with source URL, observed date, version,

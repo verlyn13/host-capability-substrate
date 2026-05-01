@@ -23,19 +23,19 @@ Written against charter v1.1.0.
 
 ## Context
 
-HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped infrastructure already has a precedent in the jefahnierocks subsidiary (`system-config`). Stale `.subsidiary.yaml` convention (`prefix: jfr`) contradicts observed practice (zero `verlyn13/jfr-*` repos exist).
+HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped infrastructure already has a precedent in the jefahnierocks host repo (`system-config`). The former Jefahnierocks root `.subsidiary.yaml` convention (`prefix: jfr`) contradicted observed practice (zero `verlyn13/jfr-*` repos exist) and was later removed rather than renamed because no Jefahnierocks-owned local metadata consumer exists yet.
 
 ## Options considered
 
 ### Option A: `jfr-host-capability-substrate` under `~/Organizations/jefahnierocks/`
 
-**Pros:** follows the stated subsidiary convention in `.subsidiary.yaml`.
-**Cons:** no existing repo uses the prefix; yaml is stale (same pattern as happy-patterns pending cleanup).
+**Pros:** followed the then-stated `.subsidiary.yaml` convention.
+**Cons:** no existing repo uses the prefix; the convention was already out of date with observed repo practice.
 
 ### Option B: `host-capability-substrate` under `~/Organizations/jefahnierocks/`
 
 **Pros:** matches observed practice on 30+ verlyn13 repos; matches `system-config` precedent for host-scoped infrastructure.
-**Cons:** contradicts the yaml (treated as stale and scheduled for separate cleanup).
+**Cons:** contradicted the stale yaml before the Jefahnierocks root file was removed.
 
 ### Option C: place under a parent-level tier (`the-citadel`)
 
@@ -44,13 +44,13 @@ HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped i
 
 ## Decision
 
-**Option B.** Local path `~/Organizations/jefahnierocks/host-capability-substrate/`; GitHub `verlyn13/host-capability-substrate` (public source); subsidiary owner jefahnierocks; sibling to `system-config`.
+**Option B.** Local path `~/Organizations/jefahnierocks/host-capability-substrate/`; GitHub `verlyn13/host-capability-substrate` (public source); owner jefahnierocks; sibling to `system-config`.
 
 ## Consequences
 
 ### Accepts
 
-- Non-compliance with stale `.subsidiary.yaml` prefix. Cleanup spawned separately.
+- Historical non-compliance with the former `.subsidiary.yaml` prefix. The Jefahnierocks root file was later removed rather than renamed because no local metadata consumer exists yet.
 - Long repo name, mitigated by `hcs` alias for env vars, CLI, and URLs.
 - Public source with stricter private deployment boundary (see ADR 0011).
 
@@ -61,7 +61,7 @@ HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped i
 
 ### Future amendments
 
-- If the Nash Group formalizes a parent-scope "host-layer" pillar, reconsider placement.
+- If a parent-scope "host-layer" pillar is formally adopted, reconsider placement.
 - If cross-host / cross-subsidiary HCS usage emerges (unlikely), reconsider.
 
 ## References

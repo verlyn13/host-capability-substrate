@@ -13,8 +13,8 @@ priority: high
 
 Planning report for a local-first validation architecture that uses GitHub
 Actions for coordination, self-hosted runners for most compute, hosted runners
-for small clean-room checks, and The Nash Group's OpenTofu / Policy-as-Code
-stack for durable configuration.
+for small clean-room checks, and the related Citadel OpenTofu /
+Policy-as-Code stack for durable configuration.
 
 This is a Ring 3 docs/research artifact. It does not change ontology, runtime
 policy, HCS code, GitHub workflows, or OpenTofu resources.
@@ -65,7 +65,7 @@ HCS source-of-truth documents consulted:
 - `IMPLEMENT.md`
 - `DECISIONS.md`
 
-Nash/Citadel context inspected:
+Related Covenant/Citadel context inspected:
 
 - `/Users/verlyn13/Organizations/the-nash-group/AGENTS.md`
 - `/Users/verlyn13/Organizations/the-nash-group/.org/standards/agentic-workflow.md`
@@ -100,8 +100,8 @@ External docs checked on 2026-04-26:
 
 ## Existing Citadel posture
 
-The Nash Group already has most of the governance pattern needed for this CI
-architecture:
+The inspected Citadel context already has most of the governance pattern needed
+for this CI architecture:
 
 - The Covenant defines policy and principles.
 - The Citadel enforces infrastructure through OpenTofu and OPA.
@@ -655,9 +655,10 @@ caches, OIDC, packages, and releases depending on workflow features.
 
 ## Agentic workflow compatibility
 
-This design matches the Nash agentic workflow if:
+This design matches the inspected agentic workflow inputs if:
 
-- Parent-level agents write standards and orchestration, not repo internals.
+- External standards/orchestration agents write standards and orchestration,
+  not repo internals.
 - Repo agents modify only their repo.
 - HCS work stays in HCS and does not mutate Citadel from this repo.
 - Citadel changes reference Covenant principles and go through Citadel review.
