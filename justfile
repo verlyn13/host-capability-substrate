@@ -49,6 +49,10 @@ direnv-mise-terminal-fixture:
 direnv-mise-gui-probe-fixture:
 	@bash scripts/dev/prepare-direnv-mise-gui-matrix.sh --fixture
 
+# P04 Codex env-policy probe packet redaction-contract fixture
+codex-env-policy-probe-fixture:
+	@bash scripts/dev/prepare-codex-env-policy-matrix.sh --fixture
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"

@@ -53,7 +53,8 @@ run_group fixtures \
   provenance-snapshot-fixture \
   direnv-mise-fixture \
   direnv-mise-terminal-fixture \
-  direnv-mise-gui-probe-fixture
+  direnv-mise-gui-probe-fixture \
+  codex-env-policy-probe-fixture
 
 fail=0
 failed_indexes=()
