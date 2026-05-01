@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.14.0
+version: 1.15.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -14,10 +14,11 @@ priority: high
 Current handoff after P03/P04/P08/P09/P11/P12 implementation work, the
 P03/P04/P09 probe packets, the official Codex config/app-settings ingest, the
 Claude Desktop / Claude Code Desktop settings ingest, shell/env regression trap
-scaffolds #26-#30, and the first shell/env Ring 0 schema slice. Proposed ADR
-0016 now records the shell/environment ownership boundary, proposed ADR 0017
-records the Codex app execution-context split, and proposed ADR 0018 records
-the durable credential source preference for synthesis review.
+scaffolds #26-#30, external-control-plane trap scaffolds #19-#25/#36, and the
+first shell/env Ring 0 schema slice. Proposed ADR 0016 now records the
+shell/environment ownership boundary, proposed ADR 0017 records the Codex app
+execution-context split, and proposed ADR 0018 records the durable credential
+source preference for synthesis review.
 This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
@@ -25,7 +26,7 @@ This supersedes
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-05-01T16:24Z |
+| Observed at | 2026-05-01T16:35Z |
 | Branch | `main` |
 | Git relation | Local `main` starts aligned with `origin/main`; run `git status --short --branch` for the exact current count. |
 | Worktree expectation | Clean after each scoped commit; inspect any dirty state before proceeding. |
@@ -67,13 +68,14 @@ This supersedes
 | ADR 0017 Codex app execution context | Proposed ADR draft landed; P13 app-internal capability rows remain open. | `adr/0017-codex-app-execution-context.md` |
 | ADR 0018 durable credential preference | Proposed ADR draft landed; no live credential or system-config migration made. | `adr/0018-durable-credential-preference.md` |
 | Regression traps #26-#30 | Scaffold files landed; executable fixtures and harness trajectories remain future Phase 1 work. | `packages/evals/regression/seed.md` |
+| Regression traps #19-#25/#36 | Scaffold files landed for external-control-plane and tunnel-audience traps; executable provider/tunnel fixtures remain future Phase 1 work. | `packages/evals/regression/seed.md` |
 | Ring 0 shell/env schemas | Initial Zod, JSON Schema, ontology docs, and tests landed for `ExecutionContext`, `EnvProvenance`, `CredentialSource`, and `StartupPhase`. | `packages/schemas/src/entities/` |
 
 ## Recent Scope
 
 Recent file categories across the P03/P04/P08/P09/P11/P12 pass, Codex and
-Claude official/app source ingest, shell/env regression-trap scaffolding, and
-initial Ring 0 schema work:
+Claude official/app source ingest, shell/env regression-trap scaffolding,
+external-control-plane trap scaffolding, and initial Ring 0 schema work:
 
 - Ring 3 scripts/fixtures:
   `scripts/dev/hcs-env-inspect.py`,
@@ -96,11 +98,19 @@ initial Ring 0 schema work:
   Desktop / Claude Code Desktop settings ingest, proposed ADR 0016, proposed
   ADR 0017, proposed ADR 0018, trap #18 notes, and regression seed indexing.
 - Regression trap scaffolds:
+  `cloudflare-path-scoping-in-wrong-object.md`,
+  `reusable-policy-attach-wrong-endpoint.md`,
+  `rate-limit-blind-verification-cascade.md`,
+  `one-time-secret-not-captured.md`,
+  `provider-object-id-as-credential-secret.md`,
+  `cli-syntax-from-training-not-evidence.md`,
+  `mcp-bearer-passthrough-no-audience-validation.md`,
   `wrong-shell-helper-syntax.md`,
   `bearer-token-depends-on-setup-script.md`,
   `codex-app-sandbox-env-leak.md`,
   `claude-env-file-durability.md`,
-  `oauth-third-party-fragility.md`.
+  `oauth-third-party-fragility.md`,
+  `cloudflare-access-token-valid-but-tunnel-audtag-mismatch.md`.
 - Ring 0 schemas:
   `packages/schemas/src/entities/execution-context.ts`,
   `packages/schemas/src/entities/env-provenance.ts`,
@@ -114,8 +124,8 @@ are part of this scope.
 
 At this handoff, the P03/P04 probe packets, P08/P12 prototype, P09 terminal
 fixtures, P09 GUI/IDE probe packet, P11 policy-table work, proposed ADRs
-0016-0018, regression traps #26-#30, and initial Ring 0 shell/env schemas are
-tracked as Phase 1 shell/env scope.
+0016-0018, regression traps #19-#30/#36, and initial Ring 0 shell/env schemas
+are tracked as Phase 1 shell/env scope.
 
 ## Guardrails
 
@@ -151,8 +161,9 @@ tracked as Phase 1 shell/env scope.
 
 For the synthesis lane, continue Ring 0 reconciliation by connecting the new
 shell/env entities to the 20 core Milestone 1 entities and ADR 0015 evidence
-types. If the eval lane is prioritized first, continue with the remaining trap
-scaffolds #19-#25 and #36, which need live-provider/tunnel fixture design.
+types. If the eval lane is prioritized first, move from scaffold definitions
+to executable fixture design for #19-#25 and #36, without touching live
+providers until operation proofs and approvals exist.
 
 Continue with an approved P03/P04/P09 runtime row when a Codex/GUI observation
 path is available:
@@ -195,6 +206,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.15.0 | 2026-05-01 | Added external-control-plane regression trap scaffolds #19-#25 and #36. |
 | 1.14.0 | 2026-05-01 | Added initial shell/env Ring 0 schema slice status. |
 | 1.13.0 | 2026-05-01 | Added shell/env regression trap scaffolds #26-#30. |
 | 1.12.0 | 2026-05-01 | Added proposed ADR 0018 durable credential source preference status. |
