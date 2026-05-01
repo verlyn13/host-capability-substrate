@@ -3,7 +3,7 @@ title: HCS shell/environment research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.2.0
+version: 1.3.0
 last_updated: 2026-04-30
 tags: [research, shell-env, execution-context, provenance, credentials, fixtures]
 priority: medium
@@ -35,6 +35,7 @@ only redacted memos or golden fixtures.
 | P06 Shell provenance | Closed for Codex CLI and Claude Code CLI; app/IDE surfaces remain separate. | `2026-04-28-P06-host-telemetry-rerun.md` |
 | P08 Provenance snapshot | Initial Codex CLI tool-call fixture committed. | `2026-04-30-P08-provenance-snapshot.md` |
 | P09 direnv/mise visibility | Terminal blocked/untrusted and isolated allowed/trusted fixtures committed; GUI/IDE matrix remains. | `2026-04-30-P09-direnv-mise-baseline.md`; `2026-04-30-P09-direnv-mise-terminal-matrix.md` |
+| P11 LaunchAgent env policy | Design memo committed; ADR acceptance remains future synthesis work. | `2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 Env inspection | Repo-local safe-inspection prototype committed. | `2026-04-30-P12-env-inspect-prototype.md` |
 | P13 Codex app sandbox | Open/narrowed; needs GUI app-internal evidence. | `2026-04-26-P13-codex-app-bundle-signing.md` |
 
@@ -53,6 +54,7 @@ only redacted memos or golden fixtures.
 | `2026-04-30-P08-provenance-snapshot.md` | 2026-04-30 | Codex CLI tool-call subprocess provenance snapshot and fixture validation. |
 | `2026-04-30-P09-direnv-mise-baseline.md` | 2026-04-30 | Non-mutating direnv/mise marker baseline with isolated temp config/state. |
 | `2026-04-30-P09-direnv-mise-terminal-matrix.md` | 2026-04-30 | Isolated terminal matrix proving marker visibility after temp-scoped `direnv allow` and `mise trust`. |
+| `2026-04-30-P11-launchagent-env-policy-table.md` | 2026-04-30 | Design-only policy table for user-session / LaunchAgent environment variables. |
 | `2026-04-30-P12-env-inspect-prototype.md` | 2026-04-30 | Secret-safe env inspection prototype and fixture validation. |
 
 ## Fixture Hooks
@@ -69,6 +71,7 @@ only redacted memos or golden fixtures.
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.3.0 | 2026-04-30 | Added P11 LaunchAgent env policy design memo. |
 | 1.2.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture. |
 | 1.1.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline fixture. |
 | 1.0.0 | 2026-04-30 | Added shell/env research index and current prompt status. |

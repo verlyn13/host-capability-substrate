@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.6.0
+version: 2.7.0
 last_updated: 2026-04-30
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.6, April 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.7, April 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -29,7 +29,7 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
 - **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
-- **1 prompt remains design/policy work unchanged by the survey** (P11). P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
+- **P11 now has a design memo** for LaunchAgent/user-session env policy; ADR acceptance remains future synthesis work. P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
 
 The revised first-wave program is approximately **55 net research hours** over two workweeks beginning Monday, April 27, 2026 — down from ~80 hours in the original planning report because documentation-level resolution removed work from P01 and P05 and P06 is now closed for CLI surfaces. The remaining tests focus on genuinely undocumented or disputed items: GUI inheritance (P02), startup-script ordering (P03), cross-surface `include_only` behavior (P04), and the Codex app sandbox boundary (P13).
@@ -467,7 +467,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 | P08 — Provenance of PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME | Initial Codex CLI tool-call snapshot committed; app/IDE/MCP surfaces still need their own snapshots after execution-context probes exist | Partial — Codex CLI fixture exists; remaining surfaces not captured |
 | P09 — direnv/mise visibility across surfaces | Terminal fixtures landed: plain noninteractive process sees no markers before allow/trust; direnv blocks unallowed `.envrc`; mise blocks untrusted `.mise.toml`; isolated `direnv allow` / `mise trust` make markers visible to terminal-style subprocesses. | Partial — terminal fixtures exist; GUI/IDE matrix remains |
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
-| P11 — LaunchAgent env policy for non-secret session flags | Design/policy, unchanged by survey | Design work (6h, no runtime) |
+| P11 — LaunchAgent env policy for non-secret session flags | Design memo landed with variable-class policy table and provisional rules | ADR acceptance remains future synthesis work |
 | P12 — Secret-safe env inspection helper spec | Repo-local prototype and fixture landed; confirmed no public runtime-env secret-scanner prior art | Final Ring 1 operation-shape design remains future schema/policy work |
 | **P13 (NEW) — Codex app sandbox as distinct ExecutionContext** | **Open / narrowed**: host-visible app bundle/process/schema evidence is captured for Codex app `26.422.71525` build `2210`. GUI app-server control is not reachable from this session, Computer Use cannot operate `com.openai.codex`, and the local Keychain/filesystem/network status probe correlated to the active Codex CLI session rather than the GUI app. | Yes — app-internal sandbox boundary characterization now requires a reachable GUI app-server control path or a human-run sterile Codex app UI probe |
 
@@ -490,7 +490,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 - **P04**: `shell_environment_policy.include_only` is documented but not validated across app/CLI/IDE. Known issue #3064 suggests behavior diverges from docs — needs a matrix.
 - **P08**: initial Codex CLI snapshot is now committed; remaining value is per-surface expansion after direct execution-context probes.
 - **P09**: terminal blocked/untrusted and isolated allowed/trusted fixtures are now committed; remaining work is GUI/IDE marker visibility across tightly scoped surfaces.
-- **P11**: design work, not empirical.
+- **P11**: design memo now exists; ADR acceptance remains future synthesis work.
 - **P12**: prototype is now committed; final operation-shape design waits for Ring 0/Ring 1 work.
 - **P13**: Codex app sandbox boundary needs explicit characterization — is it `sandbox-exec` with a seatbelt profile, a bundled app sandbox, or a helper-specific combination? What syscalls/resources are gated? Static bundle/process/schema evidence is insufficient because the macOS apps are full signed applications and may hide relevant behavior behind UI/runtime control paths. This determines how HCS must model `ExecutionContext` for the app vs CLI.
 
@@ -512,7 +512,7 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 8 | **P08** | 3 | 4 | partial | Initial Codex CLI provenance snapshot landed; other surfaces remain |
 | 9 | **P09** | 3 | 3 | partial | Terminal fixtures landed; GUI/IDE matrix remains |
 | 10 | **P12** | 4 | 3 | prototype done | Secret-safe inspection prototype landed; Ring 1 design remains |
-| 11 | **P11** | 3 | 4 | 6 | Policy design for non-secret session flags |
+| 11 | **P11** | 3 | 4 | design memo done | Policy table landed; ADR acceptance remains |
 | 12 | **P07** | 2 | 4 | 0–4 | Only if P06 surprises |
 
 **First wave (priorities 1–5)** totals **12 hours** and validates the three resolved/near-resolved prompts plus starts on Codex sandbox characterization and shell-wrapper logging. Completable in **2 working days**.
@@ -564,7 +564,7 @@ gantt
 | Foundation ready | 2026-04-27 | Harness, synthetic repo, evidence template, redaction rules committed |
 | Resolved-prompt validation complete | 2026-04-29 | P01, P02, P05 memos complete; P06 closed for CLI surfaces; P13 narrowed with UI/control proof gap explicit |
 | Open-prompt runtime data captured | 2026-05-06 | P03, P04, P09 matrices complete; P08 expanded only for directly probed surfaces |
-| Design work complete | 2026-05-07 | P11 policy decision table; P12 prototype is delivered and Ring 1 operation-shape design remains future work |
+| Design work complete | 2026-05-07 | P11 policy decision table delivered; P12 prototype is delivered and Ring 1 operation-shape design remains future work |
 | Synthesis complete | 2026-05-08 | ADR drafts, updated `ExecutionContext`/`EnvProvenance`/`CredentialSource`/`ToolResolution`/`StartupPhase` schemas, regression traps written |
 
 ---
@@ -695,6 +695,11 @@ remaining P09 matrix is GUI/IDE behavior.
 
 **P11** (LaunchAgent policy design, 6h): Policy decision table. Criteria: secrecy level (none/low/high), durability (ephemeral/login-scoped/reboot-persistent), GUI visibility requirement, operational need. Classify candidate vars (LANG, LC_ALL, DEFAULT_EDITOR, TMPDIR, proxy vars, HOMEBREW_NO_ANALYTICS, telemetry toggles, org-specific flags). Deliverable: `docs/adrs/ADR-NNN-launchagent-env-policy.md` with explicit list of what belongs at user-session layer and what doesn't.
 
+Design status: `docs/host-capability-substrate/research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md`
+landed on 2026-04-30 as a design memo, not an accepted ADR. It classifies
+common environment-variable classes by secrecy, durability, GUI need, and
+recommended plane. ADR acceptance remains future synthesis work.
+
 **P12** (Secret-safe inspection prototype, 10h): Spec an operation shape like:
 ```toml
 [operation.env_inspect]
@@ -810,3 +815,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.4.0 | 2026-04-30 | Integrated P08 initial Codex CLI provenance snapshot fixture and P12 secret-safe env inspection prototype, with both fixtures wired into `just verify`; updated remaining prompt counts and kept final Ring 1 operation design future-scoped. |
 | 2.5.0 | 2026-04-30 | Integrated P09 non-mutating direnv/mise baseline fixture, with sanitized temporary config/state and no allow/trust or GUI operations; kept allowed/trusted and GUI/IDE matrix future-scoped. |
 | 2.6.0 | 2026-04-30 | Integrated P09 isolated allowed/trusted terminal fixture using temp-scoped `direnv allow` and `mise trust`; kept GUI/IDE matrix future-scoped. |
+| 2.7.0 | 2026-04-30 | Integrated P11 LaunchAgent/user-session env policy design memo; kept ADR acceptance future-scoped. |

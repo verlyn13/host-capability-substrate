@@ -3,7 +3,7 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-04-30
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
@@ -94,6 +94,7 @@ secret-safe operation proof because it touches MCP auth/config behavior.
 | P06 | Closed for Codex CLI and Claude Code CLI through host telemetry; app/IDE surfaces remain separate prompts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md` |
 | P08 | Initial Codex CLI tool-call subprocess snapshot committed as a fixture. | `research/shell-env/2026-04-30-P08-provenance-snapshot.md` |
 | P09 | Terminal fixtures committed for blocked/untrusted and isolated allowed/trusted paths; GUI/IDE matrix remains open. | `research/shell-env/2026-04-30-P09-direnv-mise-baseline.md`; `research/shell-env/2026-04-30-P09-direnv-mise-terminal-matrix.md` |
+| P11 | LaunchAgent/user-session env policy design memo committed; not an accepted ADR. | `research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 | Repo-local secret-safe env-inspect prototype and fixture landed. | `research/shell-env/2026-04-30-P12-env-inspect-prototype.md` |
 | P13 | Open/narrowed; needs reachable GUI app-server control path or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 
@@ -394,11 +395,14 @@ additional PATH wrapper runs.
 - P09 terminal fixtures do not prove GUI launch or IDE extension behavior.
 - P12 is a repo-local prototype only; the final Ring 1 operation surface waits
   for ontology/policy schema work.
+- P11 is a design memo only; do not treat it as live LaunchAgent policy or an
+  accepted ADR.
 
 ## Change Log
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5.0 | 2026-04-30 | Added P11 LaunchAgent/user-session env policy design memo status. |
 | 1.4.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture status. |
 | 1.3.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline status. |
 | 1.2.0 | 2026-04-30 | Added current toolchain overlay, prompt status table, P08/P12 fixture status, and cleared the stale Claude Code version blocker while keeping #18692 unrun. |
