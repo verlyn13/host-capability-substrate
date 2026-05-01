@@ -3,8 +3,8 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.5.0
-last_updated: 2026-04-30
+version: 1.5.1
+last_updated: 2026-05-01
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
 ---
@@ -12,7 +12,7 @@ priority: high
 # HCS Phase 1 Shell/Env Direct-Test Runbook
 
 Executable plan for the W4 shell/environment direct tests from
-[`shell-environment-research.md`](./shell-environment-research.md) v2.6.0.
+[`shell-environment-research.md`](./shell-environment-research.md) v2.7.0.
 
 Target ring: **Ring 3 measurement/eval harness + docs**. This runbook does not
 change Ring 0 schemas, policy, hooks, Codex profiles, or system-config managed
@@ -41,7 +41,7 @@ Current overlay as of 2026-04-30:
 | Surface | Evidence |
 |---|---|
 | macOS | `ProductVersion 26.4.1`, `BuildVersion 25E253` |
-| Git | `main` at `5184222`, one local commit ahead of `origin/main` before the P08/P09/P12 worktree edits |
+| Git | `main` at `a4f6ee3`, five local commits ahead of `origin/main` after the P08/P09/P11/P12 commits |
 | Codex CLI | `codex-cli 0.128.0`; above baseline `0.125.0`; emitted sandbox PATH warning during `--version` but returned successfully |
 | Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
 | Managed tools | `node 24.15.0`, `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
@@ -402,6 +402,7 @@ additional PATH wrapper runs.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5.1 | 2026-05-01 | Corrected the referenced shell research version and current git overlay after the P11 commit. |
 | 1.5.0 | 2026-04-30 | Added P11 LaunchAgent/user-session env policy design memo status. |
 | 1.4.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture status. |
 | 1.3.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline status. |

@@ -3,27 +3,28 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.3.0
-last_updated: 2026-04-30
+version: 1.4.0
+last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
 ---
 
 # Phase 1 Shell Environment Handoff
 
-Current handoff after P08/P09/P12 implementation work on 2026-04-30. This
-supersedes `phase-1-shell-env-handoff-2026-04-26.md`.
+Current handoff after P08/P09/P11/P12 implementation work through the
+2026-05-01 P11 commit. This supersedes
+`phase-1-shell-env-handoff-2026-04-26.md`.
 
 ## Current State
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-04-30 |
+| Observed at | 2026-05-01T03:14Z |
 | Branch | `main` |
-| Base HEAD before current worktree edits | `700aee2 phase1: add direnv mise terminal matrix` |
-| Git relation before current edits | `main` four commits ahead of `origin/main` |
-| Worktree expectation | P11 design memo and orientation updates are uncommitted unless the operator commits them after this handoff. |
-| Validation | `just verify` passed after P11 orientation update. |
+| Current HEAD | `a4f6ee3 phase1: add launchagent env policy table` |
+| Git relation | `main` five commits ahead of `origin/main` |
+| Worktree expectation | Clean after the P11 commit; future work should start as a new scoped diff. |
+| Validation | `just verify` passed for the P11 orientation update before commit. |
 
 ## Toolchain Snapshot
 
@@ -73,9 +74,8 @@ Recent file categories across the P08/P09/P11/P12 pass:
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
 
-At this handoff, the P08/P12 commit, P09 baseline commit, and P09 terminal
-matrix commit are already in `main`; the P11 memo/orientation additions are the
-current uncommitted work.
+At this handoff, the P08/P12 commit, P09 baseline commit, P09 terminal matrix
+commit, and P11 policy-table commit are already in `main`.
 
 ## Guardrails
 
@@ -126,6 +126,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.4.0 | 2026-05-01 | Refreshed handoff after the P11 commit and updated the current branch state. |
 | 1.3.0 | 2026-04-30 | Added P11 design memo status and guardrail. |
 | 1.2.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture and moved next step to GUI/IDE matrix. |
 | 1.1.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline fixture and updated next step. |
