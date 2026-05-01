@@ -130,6 +130,10 @@ that surface and was captured through a valid app observation path.
 - `codex_app_sandboxed` capability rows for Keychain, filesystem, network,
   shell carrier, MCP startup timing, and toolchain PATH remain pending until
   direct per-surface receipts exist.
+- Dashboard-facing app capability rows should distinguish `proven`, `denied`,
+  `pending`, `stale`, and `inapplicable`. `stale` is required when evidence was
+  valid for an older app build or freshness window but has not been re-observed
+  for the current surface.
 - App worktree pruning and snapshot behavior must not be treated as branch or
   worktree deletion authority.
 - Runtime rows for P03, P04, and P09 must continue to name the exact surface:
@@ -155,6 +159,8 @@ that surface and was captured through a valid app observation path.
   UI turn supplies Keychain/filesystem/network status-code evidence.
 - Re-review on material Codex app bundle or Workspace Dependencies changes per
   charter invariant 14.
+- Re-observe stale capability rows after Codex app or Workspace Dependencies
+  updates before treating older rows as current evidence.
 - Amend if official Codex docs publish a stable app/IDE execution-context
   contract that supersedes local P13 inference.
 - Extend after Q-006/Q-008 if app worktree and GitHub PR automation need

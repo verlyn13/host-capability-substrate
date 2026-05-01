@@ -3,9 +3,9 @@ title: HCS local research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.5.0
+version: 1.6.0
 last_updated: 2026-05-01
-tags: [research, local, host-evidence, github, version-control, quality-management, codex, worktree, branch-cleanup, diagnostics, workspace-context, isolation]
+tags: [research, local, host-evidence, github, version-control, quality-management, codex, worktree, branch-cleanup, diagnostics, workspace-context, isolation, ontology]
 priority: medium
 ---
 
@@ -37,11 +37,13 @@ summaries.
 | `2026-04-30-hcs-evidence-planning-synthesis.md` | 2026-04-30 | Synthesis of a user-submitted HCS evidence/planning report covering runtime diagnostics, the D-028 secret contract, workspace manifests, safe process inspection, docs cleanup classification, and claim reconciliation. Queues Q-009. |
 | `2026-05-01-agentic-tool-isolation-synthesis.md` | 2026-05-01 | Synthesis of a user-submitted agentic coding tool isolation report. Separates permission gating, worktree/file isolation, local kernel sandboxing, container/VM isolation, and remote cloud execution. Queues Q-010. |
 | `2026-05-01-version-control-authority-consult-synthesis.md` | 2026-05-01 | Synthesis of a user-submitted version-control authority consult. Refines Q-006 around source-control continuity, expected check source identity, branch deletion proof, Actions posture, and split GitHub credential surfaces. |
+| `2026-05-01-ontology-promotion-receipt-dedupe-plan.md` | 2026-05-01 | Cross-Q planning document for ontology promotion buckets, candidate receipt dedupe, naming discipline, and dependency order before additional Ring 0 schema work. Queues Q-011. |
 
 ## Change Log
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.6.0 | 2026-05-01 | Added ontology promotion and receipt dedupe plan and linked Q-011. |
 | 1.5.0 | 2026-05-01 | Added version-control authority consult synthesis and Q-006 refinement. |
 | 1.4.0 | 2026-05-01 | Added agentic tool isolation synthesis and linked Q-010. |
 | 1.3.0 | 2026-04-30 | Added HCS evidence/planning synthesis and linked Q-009. |

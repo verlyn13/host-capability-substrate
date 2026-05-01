@@ -130,6 +130,8 @@ evidence.
 - HCS should adopt the devcontainer-style distinction between baked env,
   runtime-applied env, and probed env.
 - `CLAUDE_ENV_FILE` is best-effort evidence, not durable substrate state.
+  Existing regression trap #29 (`claude-env-file-durability`) remains the
+  canonical trap for this failure family.
 - Subagent isolation is a security property; parent session env/auth should not
   be bridged implicitly.
 - Setup scripts and local environments are worktree/bootstrap scope unless a
@@ -177,6 +179,8 @@ evidence.
   `docs/host-capability-substrate/research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md`
 - Claude app/settings ingest:
   `docs/host-capability-substrate/research/shell-env/2026-05-01-claude-desktop-code-settings-ingest.md`
+- Regression trap #29:
+  `packages/evals/regression/claude-env-file-durability.md`
 - Related ADRs: ADR 0001, ADR 0007, ADR 0012, ADR 0015
 - Research plan:
   `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`

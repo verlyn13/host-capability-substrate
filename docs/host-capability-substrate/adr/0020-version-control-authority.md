@@ -133,36 +133,45 @@ such as push, branch deletion, ruleset update, workflow update, PR merge, or
 GitHub MCP mutation require typed `OperationShape` inputs and evidence IDs; raw
 shell strings or ambient logged-in tools are not authority.
 
-Initial Phase 1 candidate receipts:
+For ADR acceptance review, five names are the load-bearing minimum for Q-006
+ordering and dashboard planning:
+
+- `GitConfigResolution`
+- `GitIdentityBinding`
+- `BranchDeletionProof`
+- `StatusCheckSourceObservation`
+- `SourceControlContinuityReceipt`
+
+The broader Phase 1 candidate inventory remains deferred to ontology review:
 
 - `GitRepositoryObservation`
 - `GitRemoteObservation`
-- `GitConfigResolution`
-- `GitIdentityBinding`
 - `GitWorktreeObservation`
 - `GitRefObservation`
 - `GitBranchAncestryObservation`
-- `BranchDeletionProof`
 - `GitHubRepositorySettingsObservation`
 - `GitHubRulesetObservation`
 - `BranchProtectionObservation`
 - `WorkflowPolicyObservation`
 - `CheckRunReceipt`
-- `StatusCheckSourceObservation`
 - `GitHubCredentialObservation`
 - `GitHubMcpSessionObservation`
 - `PullRequestReceipt`
 - `PullRequestReviewReceipt`
-- `SourceControlContinuityReceipt`
 
-These may later become standalone Ring 0 entities if ontology review shows that
-policy, dashboard, and kernel code repeatedly depend on them.
+All names remain proposed until Q-006 and ontology review settle evidence
+subtype, receipt, proof-composite, or standalone-entity shape. These may later
+become standalone Ring 0 entities if ontology review shows that policy,
+dashboard, and kernel code repeatedly depend on them.
 
 ## Consequences
 
 ### Accepts
 
 - Q-006 schema work starts with evidence subtypes and receipts.
+- ADR 0020 acceptance would not commit all listed receipt names as schemas; it
+  commits only the version-control authority posture and the near-term review
+  order.
 - Required-check consumption needs check name, source app/integration, commit
   SHA, workflow path or provider object, observed time, and freshness.
 - `BranchDeletionProof` is required before local or remote branch cleanup can
@@ -205,6 +214,8 @@ policy, dashboard, and kernel code repeatedly depend on them.
   security manager, bypass, or app-installation authority changes the baseline.
 - Promote specific receipts to standalone entities only after ontology review
   and repeated policy/dashboard dependence.
+- Reconcile the receipt inventory with the ontology promotion/dedupe plan
+  before any Ring 0 schema changes.
 
 ## References
 
@@ -221,6 +232,8 @@ policy, dashboard, and kernel code repeatedly depend on them.
   `docs/host-capability-substrate/research/local/2026-05-01-version-control-authority-consult-synthesis.md`
 - Version-control authority source note:
   `docs/host-capability-substrate/research/external/2026-05-01-version-control-authority-consult.md`
+- Ontology promotion/dedupe plan:
+  `docs/host-capability-substrate/research/local/2026-05-01-ontology-promotion-receipt-dedupe-plan.md`
 - Codex/ScopeCam execution-reality synthesis:
   `docs/host-capability-substrate/research/local/2026-04-30-codex-scopecam-exchange-synthesis.md`
 - Regression corpus: `packages/evals/regression/seed.md` #35, #39-#44

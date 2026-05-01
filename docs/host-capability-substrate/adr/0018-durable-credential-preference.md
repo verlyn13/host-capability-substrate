@@ -126,8 +126,10 @@ specific process or helper, not the durable credential source.
 ### Accepts
 
 - `CredentialSource` should record source type, owning surface, storage plane,
-  scope/audience, expiry, rotation expectation, healthcheck status, and
-  evidence authority.
+  scope/audience, mutation-scope posture, expiry, rotation expectation,
+  healthcheck status, and evidence authority. This records the field shape HCS
+  may need later; it does not pre-accept any Q-006 GitHub MCP read/mutation
+  split.
 - Tool-native OAuth is still preferred for HTTP MCP when it works and remains
   explicitly enabled per D-030/ADR 0015.
 - `bearer_token_env_var` patterns may remain as transitional or deliberate
@@ -140,6 +142,8 @@ specific process or helper, not the durable credential source.
   `create -> capture -> store -> verify -> scrub` path.
 - Long-lived setup-token-style credentials are acceptable only when scoped,
   revocable, healthchecked, and recorded as their own credential source class.
+  Missing expiry, rotation, or healthcheck evidence should make the source
+  non-gateable or approval-required until policy defines a narrower exception.
 
 ### Rejects
 
