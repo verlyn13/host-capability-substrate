@@ -37,6 +37,10 @@ env-inspect-fixture:
 provenance-snapshot-fixture:
 	@bash scripts/dev/run-provenance-snapshot-fixture.sh
 
+# P09 non-mutating direnv/mise marker baseline fixture
+direnv-mise-fixture:
+	@bash scripts/dev/run-direnv-mise-fixture.sh
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"

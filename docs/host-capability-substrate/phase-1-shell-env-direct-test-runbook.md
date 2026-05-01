@@ -3,7 +3,7 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.2.0
+version: 1.3.0
 last_updated: 2026-04-30
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
@@ -41,7 +41,7 @@ Current overlay as of 2026-04-30:
 | Surface | Evidence |
 |---|---|
 | macOS | `ProductVersion 26.4.1`, `BuildVersion 25E253` |
-| Git | `main` at `5184222`, one local commit ahead of `origin/main` before the P08/P12 worktree edits |
+| Git | `main` at `5184222`, one local commit ahead of `origin/main` before the P08/P09/P12 worktree edits |
 | Codex CLI | `codex-cli 0.128.0`; above baseline `0.125.0`; emitted sandbox PATH warning during `--version` but returned successfully |
 | Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
 | Managed tools | `node 24.15.0`, `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
@@ -93,6 +93,7 @@ secret-safe operation proof because it touches MCP auth/config behavior.
 | P05 | Runtime smoke complete for Claude Desktop auth boundary. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 | Closed for Codex CLI and Claude Code CLI through host telemetry; app/IDE surfaces remain separate prompts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md` |
 | P08 | Initial Codex CLI tool-call subprocess snapshot committed as a fixture. | `research/shell-env/2026-04-30-P08-provenance-snapshot.md` |
+| P09 | Non-mutating direnv/mise baseline fixture committed; allow/trust and GUI/IDE matrix remains open. | `research/shell-env/2026-04-30-P09-direnv-mise-baseline.md` |
 | P12 | Repo-local secret-safe env-inspect prototype and fixture landed. | `research/shell-env/2026-04-30-P12-env-inspect-prototype.md` |
 | P13 | Open/narrowed; needs reachable GUI app-server control path or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 
@@ -387,8 +388,11 @@ additional PATH wrapper runs.
   proxy.
 - P06 CLI evidence is closed for Codex CLI and Claude Code CLI; do not reopen
   the old PATH-wrapper route except as a negative control.
-- P03/P04/P09 remain Wave 2 work. P08 has an initial Codex CLI tool-call
-  fixture, but app/IDE snapshots should wait for direct execution-context probes.
+- P03/P04 and the allowed/trusted portion of P09 remain Wave 2 work. P08 has an
+  initial Codex CLI tool-call fixture, but app/IDE snapshots should wait for
+  direct execution-context probes.
+- P09 baseline is non-mutating only; do not treat it as proof for allowed
+  direnv, trusted mise, GUI launch, or IDE extension behavior.
 - P12 is a repo-local prototype only; the final Ring 1 operation surface waits
   for ontology/policy schema work.
 
@@ -396,6 +400,7 @@ additional PATH wrapper runs.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline status. |
 | 1.2.0 | 2026-04-30 | Added current toolchain overlay, prompt status table, P08/P12 fixture status, and cleared the stale Claude Code version blocker while keeping #18692 unrun. |
 | 1.1.0 | 2026-04-27 | Updated P06 from wrapper-log validation to provenance closure and linked the three-lane provenance experiment plan. |
 | 1.0.0 | 2026-04-26 | Initial W4 shell/env direct-test runbook with local host evidence, artifact contract, Wave 1 order, and operation-proof stubs. |

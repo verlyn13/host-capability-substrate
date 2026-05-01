@@ -50,7 +50,8 @@ run_group fixtures \
   trap-fixture \
   shell-logger-fixture \
   env-inspect-fixture \
-  provenance-snapshot-fixture
+  provenance-snapshot-fixture \
+  direnv-mise-fixture
 
 fail=0
 failed_indexes=()
