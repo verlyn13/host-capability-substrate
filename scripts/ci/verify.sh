@@ -54,7 +54,8 @@ run_group fixtures \
   direnv-mise-fixture \
   direnv-mise-terminal-fixture \
   direnv-mise-gui-probe-fixture \
-  codex-env-policy-probe-fixture
+  codex-env-policy-probe-fixture \
+  codex-mcp-startup-probe-fixture
 
 fail=0
 failed_indexes=()

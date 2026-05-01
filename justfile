@@ -53,6 +53,10 @@ direnv-mise-gui-probe-fixture:
 codex-env-policy-probe-fixture:
 	@bash scripts/dev/prepare-codex-env-policy-matrix.sh --fixture
 
+# P03 Codex MCP startup-order probe packet redaction-contract fixture
+codex-mcp-startup-probe-fixture:
+	@bash scripts/dev/prepare-codex-mcp-startup-order.sh --fixture
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"

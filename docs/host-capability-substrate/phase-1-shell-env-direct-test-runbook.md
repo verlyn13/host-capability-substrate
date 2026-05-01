@@ -3,7 +3,7 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.7.0
+version: 1.8.0
 last_updated: 2026-05-01
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
@@ -12,7 +12,7 @@ priority: high
 # HCS Phase 1 Shell/Env Direct-Test Runbook
 
 Executable plan for the W4 shell/environment direct tests from
-[`shell-environment-research.md`](./shell-environment-research.md) v2.9.0.
+[`shell-environment-research.md`](./shell-environment-research.md) v2.10.0.
 
 Target ring: **Ring 3 measurement/eval harness + docs**. This runbook does not
 change Ring 0 schemas, policy, hooks, Codex profiles, or system-config managed
@@ -90,6 +90,7 @@ secret-safe operation proof because it touches MCP auth/config behavior.
 |---|---|---|
 | P01 | Migration blocked; GitHub MCP OAuth dynamic registration failed, so PAT/broker decision remains open. | `research/shell-env/2026-04-26-P01-codex-auth-metadata.md` |
 | P02 | Validated locally for Finder-origin Codex app launch: terminal-only marker absent. | `research/shell-env/2026-04-26-P02-codex-app-gui-launch-env.md` |
+| P03 | MCP startup-order probe packet and redaction fixture committed; runtime ordering rows remain approval-gated. | `research/shell-env/2026-05-01-P03-mcp-startup-order-plan.md` |
 | P04 | Codex env-policy probe packet and redaction fixture committed; runtime CLI/app/IDE rows remain approval-gated. | `research/shell-env/2026-05-01-P04-codex-env-policy-matrix-plan.md` |
 | P05 | Runtime smoke complete for Claude Desktop auth boundary. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 | Closed for Codex CLI and Claude Code CLI through host telemetry; app/IDE surfaces remain separate prompts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md` |
@@ -390,8 +391,8 @@ additional PATH wrapper runs.
   proxy.
 - P06 CLI evidence is closed for Codex CLI and Claude Code CLI; do not reopen
   the old PATH-wrapper route except as a negative control.
-- P03 plus the runtime rows for P04 and the GUI/IDE portion of P09 remain Wave
-  2 work. P04 and P09 now have probe packets, but app/IDE snapshots should wait
+- Runtime rows for P03, P04, and the GUI/IDE portion of P09 remain Wave 2
+  work. P03/P04/P09 now have probe packets, but app/IDE snapshots should wait
   for direct execution-context probes.
 - P09 terminal fixtures and the GUI/IDE probe packet do not prove GUI launch or
   IDE extension behavior. Runtime GUI/IDE rows still require explicit approval.
@@ -404,6 +405,7 @@ additional PATH wrapper runs.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
 | 1.7.0 | 2026-05-01 | Added P04 Codex env-policy probe packet status and fixture. |
 | 1.6.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and redaction fixture. |
 | 1.5.1 | 2026-05-01 | Corrected the referenced shell research version and current git overlay after the P11 commit. |

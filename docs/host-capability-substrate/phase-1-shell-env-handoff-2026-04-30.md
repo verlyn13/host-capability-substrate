@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.6.0
+version: 1.7.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -11,8 +11,8 @@ priority: high
 
 # Phase 1 Shell Environment Handoff
 
-Current handoff after P04/P08/P09/P11/P12 implementation work plus the P04 and
-P09 probe packets. This supersedes
+Current handoff after P03/P04/P08/P09/P11/P12 implementation work plus the
+P03/P04/P09 probe packets. This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
 ## Current State
@@ -42,6 +42,7 @@ P09 probe packets. This supersedes
 |---|---|---|
 | P01 Codex auth metadata | Migration blocked; keep GitHub MCP PAT/broker posture until a static-client/manual OAuth or broker decision lands. | `research/shell-env/2026-04-26-P01-codex-auth-metadata.md` |
 | P02 GUI env inheritance | Finder-origin Codex app launch did not inherit terminal-only marker. | `research/shell-env/2026-04-26-P02-codex-app-gui-launch-env.md` |
+| P03 MCP startup order | Probe packet landed; runtime startup-order rows remain approval-gated. | `scripts/dev/prepare-codex-mcp-startup-order.sh`; `just codex-mcp-startup-probe-fixture`; `research/shell-env/2026-05-01-P03-mcp-startup-order-plan.md` |
 | P04 Codex env policy | Probe packet landed; runtime CLI/app/IDE rows remain approval-gated. | `scripts/dev/prepare-codex-env-policy-matrix.sh`; `just codex-env-policy-probe-fixture`; `research/shell-env/2026-05-01-P04-codex-env-policy-matrix-plan.md` |
 | P05 Claude Desktop auth boundary | Runtime smoke complete. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 shell provenance | Closed for Codex CLI and Claude Code CLI; app/IDE surfaces remain separate execution contexts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md`; `just shell-logger-fixture` |
@@ -53,7 +54,7 @@ P09 probe packets. This supersedes
 
 ## Recent Scope
 
-Recent file categories across the P04/P08/P09/P11/P12 pass:
+Recent file categories across the P03/P04/P08/P09/P11/P12 pass:
 
 - Ring 3 scripts/fixtures:
   `scripts/dev/hcs-env-inspect.py`,
@@ -64,6 +65,7 @@ Recent file categories across the P04/P08/P09/P11/P12 pass:
   `scripts/dev/run-direnv-mise-terminal-fixture.sh`,
   `scripts/dev/prepare-direnv-mise-gui-matrix.sh`,
   `scripts/dev/prepare-codex-env-policy-matrix.sh`,
+  `scripts/dev/prepare-codex-mcp-startup-order.sh`,
   `packages/fixtures/provenance-snapshot-2026-04-30.json`.
 - Validation wiring:
   `justfile`, `scripts/ci/verify.sh`.
@@ -71,12 +73,12 @@ Recent file categories across the P04/P08/P09/P11/P12 pass:
   `PLAN.md`, `shell-environment-research.md`,
   `phase-1-shell-env-direct-test-runbook.md`,
   `research/shell-env/README.md`,
-  P04/P08/P09/P11/P12 memos, and trap #18 notes.
+  P03/P04/P08/P09/P11/P12 memos, and trap #18 notes.
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
 
-At this handoff, the P04 probe packet, P08/P12 prototype, P09 terminal
+At this handoff, the P03/P04 probe packets, P08/P12 prototype, P09 terminal
 fixtures, P09 GUI/IDE probe packet, and P11 policy-table work are tracked as
 Phase 1 shell/env scope.
 
@@ -98,11 +100,12 @@ Phase 1 shell/env scope.
 
 ## Recommended Next Step
 
-Continue with an approved P04/P09 runtime row, or move to P03 packet prep if no
-Codex/GUI observation path is available:
+Continue with an approved P03/P04/P09 runtime row when a Codex/GUI observation
+path is available:
 
 1. Keep marker reporting to presence/absence only.
-2. Use the packet from `scripts/dev/prepare-codex-env-policy-matrix.sh` or
+2. Use the packet from `scripts/dev/prepare-codex-mcp-startup-order.sh`,
+   `scripts/dev/prepare-codex-env-policy-matrix.sh`, or
    `scripts/dev/prepare-direnv-mise-gui-matrix.sh`.
 3. Do not use terminal `open` as a clean GUI-origin proxy.
 4. Use a human-run sterile app/IDE turn or a proven GUI control path.
@@ -126,6 +129,7 @@ Focused checks that passed during the P08/P09/P12 work:
 - `just direnv-mise-terminal-fixture`
 - `just direnv-mise-gui-probe-fixture`
 - `just codex-env-policy-probe-fixture`
+- `just codex-mcp-startup-probe-fixture`
 - `just shellcheck-scan`
 - `just forbidden-string-scan`
 - `git diff --check`
@@ -134,6 +138,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.7.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
 | 1.6.0 | 2026-05-01 | Added P04 Codex env-policy probe packet status and fixture. |
 | 1.5.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and made git-state wording durable across local handoff commits. |
 | 1.4.0 | 2026-05-01 | Refreshed handoff after the P11 commit and updated the current branch state. |

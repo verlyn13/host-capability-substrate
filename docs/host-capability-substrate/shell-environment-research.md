@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.9.0
+version: 2.10.0
 last_updated: 2026-05-01
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.9, May 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.10, May 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -27,7 +27,7 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 
 - **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
-- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P04 now has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
+- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P03 now has an MCP startup-order probe packet, P04 has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
 - **P11 now has a design memo** for LaunchAgent/user-session env policy; ADR acceptance remains future synthesis work. P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
@@ -459,7 +459,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 |---|---|---|
 | P01 — Codex auth reuse via Keychain + shared CODEX_HOME | **Doc-level resolved, local migration blocked**: local smoke saw ChatGPT login and `auth.json`, but `codex mcp login github` failed because dynamic client registration is unsupported and GitHub MCP remains on `GITHUB_PAT`. | Decide static-client/manual OAuth or keep PAT/broker; do not remove env/PAT wiring yet |
 | P02 — Codex app lacks shell-inherited GITHUB_PAT | **Likely resolved** via launchd semantics + issues #10695, #13566 | Yes — direct differential test (2h) |
-| P03 — MCP startup vs worktree setup ordering | **Undocumented** — genuinely open | Yes — marker-based timing test (8h) |
+| P03 — MCP startup vs worktree setup ordering | **Undocumented** — genuinely open. A setup/MCP startup-order packet and redaction fixture are now committed. | Partial — packet exists; runtime startup-order rows remain |
 | P04 — `shell_environment_policy.include_only` across CLI/app/ext | Schema confirmed; cross-surface behavior undocumented. A probe packet and redaction fixture are now committed. | Partial — packet exists; runtime CLI/app/IDE rows remain |
 | P05 — Claude Desktop doesn't use apiKeyHelper/shell-env for auth | **Docs-level resolved plus local Finder-origin smoke**: terminal `open -b` propagated a marker, but Finder-origin launch did not and common Claude credential env names were absent by existence-only check. | Keep Desktop as a separate GUI credential surface; do not use terminal `open` as GUI proxy |
 | P06 — Shell binary + invocation form per surface | **Closed for Codex CLI and Claude Code CLI**: local tests split Codex CLI into internal `/bin/zsh -lc` startup shells and actual host-observed tool-call subprocesses `sandbox-exec -- /bin/zsh -c <redacted>`. The focused matrix resolved Codex `allow_login_shell=false` marker propagation for CLI 0.125.0 as same host argv with marker env absent in the no-login-shell config. Claude Code CLI Bash-tool subprocess is host-observed as `/bin/zsh -c <redacted>` with marker propagation and `.zshenv` only. PATH-prefix wrapper interception is unsuitable except as a negative control. | No P06 blocker remains for these CLI surfaces; app/IDE surfaces remain P02/P03/P04/P13 work |
@@ -486,7 +486,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 ### Why items remain
 
 - **P02**: expected answer is strongly inferred but the exact behavior of Codex app on Spotlight launch on *this specific host* has not been empirically captured. Low-cost validation.
-- **P03**: the exact timing of setup-script vs MCP-server init is *not* in any official doc and Codex issues are silent. This is the substance of whether bearer-token MCP servers can rely on setup-script-exported env.
+- **P03**: the exact timing of setup-script vs MCP-server init is *not* in any official doc and Codex issues are silent. This is the substance of whether bearer-token MCP servers can rely on setup-script-exported env. The probe packet now exists; runtime ordering still needs an approved Codex observation path.
 - **P04**: `shell_environment_policy.include_only` is documented but not validated across app/CLI/IDE. Known issue #3064 suggests behavior diverges from docs. The probe packet now exists; runtime rows still need an approved observation path.
 - **P08**: initial Codex CLI snapshot is now committed; remaining value is per-surface expansion after direct execution-context probes.
 - **P09**: terminal blocked/untrusted and isolated allowed/trusted fixtures are now committed, and the GUI/IDE probe packet is operation-proofed; remaining work is approved GUI/IDE marker visibility across tightly scoped surfaces.
@@ -508,7 +508,7 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 4 | **P13** | 5 | 3 | open | New: Codex app sandbox boundary characterization; narrowed but blocked on app-internal UI/control evidence |
 | 5 | **P06** | 4 | 3 | complete | Closed for Codex CLI and Claude Code CLI through tool trace + startup sentinels + host telemetry |
 | 6 | **P04** | 4 | 3 | partial | Probe packet landed; runtime CLI/app/IDE rows remain |
-| 7 | **P03** | 5 | 3 | 8 | Setup-script/MCP timing — genuinely undocumented |
+| 7 | **P03** | 5 | 3 | partial | Startup-order probe packet landed; runtime rows remain |
 | 8 | **P08** | 3 | 4 | partial | Initial Codex CLI provenance snapshot landed; other surfaces remain |
 | 9 | **P09** | 3 | 3 | partial | Terminal fixtures and GUI/IDE probe packet landed; GUI/IDE runtime rows remain |
 | 10 | **P12** | 4 | 3 | prototype done | Secret-safe inspection prototype landed; Ring 1 design remains |
@@ -677,6 +677,13 @@ Launch a new thread/worktree. Correlate the marker timestamps. Test both paths: 
 
 **Expected outcome:** Either (a) setup scripts run before MCP, and exported env reaches MCP — bearer-token-via-setup-script works; (b) MCP starts first, and only pre-session env is visible — setup scripts cannot be used for MCP bearer tokens.
 
+Packet status: `scripts/dev/prepare-codex-mcp-startup-order.sh` landed on
+2026-05-01 with `just codex-mcp-startup-probe-fixture`. The fixture validates
+the setup/MCP startup logger redaction contract and does not launch Codex, set
+launchd env, bind localhost ports, or enable the HTTP bearer-token placeholder.
+Runtime startup-order rows remain open until an approved observation path is
+selected.
+
 ### P08, P09, P11, P12 — plan sketches
 
 **P08** (Provenance snapshot, 6h): Script that captures on each surface the value (name only for secrets, value allowed for PATH/HOME/PWD/TMPDIR/SHELL/CODEX_HOME) and provenance tags of the target var set. Commit output as `provenance-snapshot-YYYY-MM-DD.json` to the HCS repo as golden data.
@@ -827,3 +834,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.7.0 | 2026-04-30 | Integrated P11 LaunchAgent/user-session env policy design memo; kept ADR acceptance future-scoped. |
 | 2.8.0 | 2026-05-01 | Added P09 GUI/IDE probe packet and redaction-contract fixture; kept runtime GUI/IDE rows approval-gated. |
 | 2.9.0 | 2026-05-01 | Added P04 Codex env-policy probe packet and redaction-contract fixture; kept runtime CLI/app/IDE rows approval-gated. |
+| 2.10.0 | 2026-05-01 | Added P03 MCP startup-order probe packet and redaction-contract fixture; kept runtime ordering rows approval-gated. |
