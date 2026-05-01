@@ -13,6 +13,9 @@ Follow `PLAN.md` milestone by milestone.
 - Meta-ADRs are permitted when they govern process or sequencing, such as a
   charter amendment wave; they must stay `proposed` until human approval and
   must not bundle the underlying charter/schema/policy change.
+- Per-surface capability-state vocabulary is canonical in
+  `docs/host-capability-substrate/dashboard-contracts.md`; ADRs may reference
+  it but must not introduce competing state lists.
 - Do not implement execution, approvals, sandbox, or audit-write endpoints unless the current milestone explicitly says so.
 - Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md`.
 

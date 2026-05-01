@@ -153,14 +153,25 @@ Field-block conventions:
   Candidate dimensions include `sandbox`, `tcc`, `bundle_identity`,
   `network_egress`, `filesystem_scope`, `credential_routing`,
   `worktree_ownership`, `containment_class`, `runner_isolation`,
-  `version_drift`, `source_control_continuity`, and
-  `check_source_identity`.
+  `source_control_continuity`, and `check_source_identity`.
+- `boundary_dimension` is singular. The taxonomy must define mutually exclusive
+  values, a primary target reference, and allowed supplemental target
+  references for each dimension before schema acceptance. When multiple
+  dimensions could apply, emit the narrowest matching dimension; umbrella
+  values such as `containment_class` apply only when no narrower dimension
+  captures the observation. Genuinely multi-dimensional evidence should be
+  represented as linked observations, not an unconstrained list on one envelope.
+- Version/build/dependency changes are freshness and invalidation signals for
+  specific dimensions, not a standalone boundary dimension unless Q-011 later
+  approves a narrower registry entry.
 - `observed_state` is a domain-specific discriminated payload whose
   discriminator is `boundary_dimension`. Payload schemas are owned by
   domain-specific evidence subtypes; the envelope reasons over
   `observation_state`, `discrepancy_class`, freshness, and evidence refs.
-- Envelope `schema_version`, base `Evidence` schema version, and payload schema
-  version are independent. A TCC payload can evolve without forcing an
+- `schema_version` names the `BoundaryObservation` envelope schema,
+  `evidence_schema_version` names the base `Evidence` contract, and
+  `payload_schema_version` names the domain payload when one exists. Those
+  versions are independent. A TCC payload can evolve without forcing an
   `Evidence` base-shape version bump, and an `Evidence` base-shape bump should
   not silently change a domain payload.
 
@@ -210,6 +221,8 @@ Likely to reopen this envelope shape:
 
 - Reopen after Q-011 if ontology review changes the evidence/receipt/proof
   promotion rule.
+- Q-011 must choose the `boundary_dimension` registry artifact, final version
+  field names, and primary-target encoding before schema implementation.
 - Reopen after Q-008/Q-009 if execution-mode or safe-process-inspection
   receipts need a narrower observation shape or additional versioning fields.
 

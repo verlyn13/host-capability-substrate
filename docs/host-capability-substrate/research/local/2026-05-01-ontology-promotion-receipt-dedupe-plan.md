@@ -218,13 +218,17 @@ These are planning recommendations for human/reviewer approval:
    `SourceControlContinuityReceipt`.
 4. Defer `QualityGate` until `BoundaryObservation`, Q-005 runner/check evidence,
    and Q-006 source-control evidence are reconciled.
-5. Defer `ToolInvocationReceipt`, `CommandCaptureReceipt`, and
+5. Before `BoundaryObservation` schema work, decide the
+   `boundary_dimension` registry artifact, singular dimension rule, primary
+   target binding convention, and whether version/build drift remains a
+   freshness invalidation signal rather than a standalone dimension.
+6. Defer `ToolInvocationReceipt`, `CommandCaptureReceipt`, and
    `ExecutionModeObservation` until Q-009 locks typed operation inputs for
    `system.process.inspect_safe.v1` and `system.cleanup.plan.v1`.
-6. Defer Q-003 authored-fact shapes until Q-003 decides whether coordination
+7. Defer Q-003 authored-fact shapes until Q-003 decides whether coordination
    state is peer to `Evidence` or a specialization, and whether
    `allowed_for_gate` is first-class.
-7. Keep `SharedAgentPolicySchema` rejected as canonical HCS shape.
+8. Keep `SharedAgentPolicySchema` rejected as canonical HCS shape.
 
 ## Dependency Order
 

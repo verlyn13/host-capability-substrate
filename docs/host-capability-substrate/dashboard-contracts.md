@@ -3,7 +3,7 @@ title: HCS Dashboard Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.2.2
+version: 0.2.3
 last_updated: 2026-05-01
 tags: [dashboard, view-models, contracts, source-control, github, evidence, boundary-observation]
 priority: medium
@@ -144,6 +144,10 @@ Status: Phase 1 planning only. This vocabulary is for future per-surface
 capability rows such as Codex app Keychain/filesystem/network, runner
 containment, remote-agent environment, or source-control posture facets.
 
+This section is the canonical planning home for HCS per-surface capability
+state vocabulary. Changes land here first; ADRs may reference or inline the
+states for context, but they must not define competing state lists.
+
 Use seven visible states:
 
 - `proven`: evidence for this exact surface/version is fresh and supports the
@@ -185,6 +189,7 @@ seven-state vocabulary.
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.3 | 2026-05-01 | Declared this document as the canonical planning home for per-surface capability state vocabulary. |
 | 0.2.2 | 2026-05-01 | Expanded candidate capability states from five to seven to align with ADR 0022 boundary observations. |
 | 0.2.1 | 2026-05-01 | Added candidate per-surface capability state vocabulary for pending/stale/denied/inapplicable distinctions. |
 | 0.2.0 | 2026-05-01 | Added candidate Q-006 source-control posture view model for future read-only dashboard planning. |
