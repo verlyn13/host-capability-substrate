@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.9.0
+version: 1.10.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -13,7 +13,8 @@ priority: high
 
 Current handoff after P03/P04/P08/P09/P11/P12 implementation work, the
 P03/P04/P09 probe packets, the official Codex config/app-settings ingest, and
-the Claude Desktop / Claude Code Desktop settings ingest.
+the Claude Desktop / Claude Code Desktop settings ingest. Proposed ADR 0016 now
+records the shell/environment ownership boundary for synthesis review.
 This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
@@ -21,9 +22,9 @@ This supersedes
 
 | Field | Value |
 |---|---|
-| Observed at | 2026-05-01T05:31Z |
+| Observed at | 2026-05-01T05:45Z |
 | Branch | `main` |
-| Git relation | Local `main` is ahead of `origin/main`; run `git status --short --branch` for the exact current count. |
+| Git relation | Local `main` starts aligned with `origin/main`; run `git status --short --branch` for the exact current count. |
 | Worktree expectation | Clean after each scoped commit; inspect any dirty state before proceeding. |
 | Validation | `just verify` is the acceptance gate for each handoff commit. |
 
@@ -59,6 +60,7 @@ This supersedes
 | P13 Codex app sandbox | Open/narrowed; needs reachable GUI app-server control or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 | Codex config/app settings | Official config basics and app settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md` |
 | Claude app/settings | Claude Desktop and Claude Code Desktop settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-claude-desktop-code-settings-ingest.md` |
+| ADR 0016 shell/env boundaries | Proposed ADR draft landed; schema and policy implementation remain future work. | `adr/0016-shell-environment-boundaries.md` |
 
 ## Recent Scope
 
@@ -83,7 +85,8 @@ Claude official/app source ingest:
   `phase-1-shell-env-direct-test-runbook.md`,
   `research/shell-env/README.md`,
   P03/P04/P08/P09/P11/P12 memos, Codex config/app settings ingest, Claude
-  Desktop / Claude Code Desktop settings ingest, and trap #18 notes.
+  Desktop / Claude Code Desktop settings ingest, proposed ADR 0016, and trap
+  #18 notes.
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
@@ -124,6 +127,9 @@ Phase 1 shell/env scope.
 
 ## Recommended Next Step
 
+For the synthesis lane, review proposed ADR 0016 and draft ADR 0017 (Codex app
+as distinct `ExecutionContext`) once the P13 evidence boundary is acceptable.
+
 Continue with an approved P03/P04/P09 runtime row when a Codex/GUI observation
 path is available:
 
@@ -162,6 +168,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.10.0 | 2026-05-01 | Added proposed ADR 0016 shell/environment ownership boundary status. |
 | 1.9.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings ingest, metadata overlay, and guardrails. |
 | 1.8.0 | 2026-05-01 | Added official Codex config/app settings ingest and app/dependencies version distinction. |
 | 1.7.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
