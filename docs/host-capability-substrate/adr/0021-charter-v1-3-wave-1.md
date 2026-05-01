@@ -35,6 +35,9 @@ for focused charter review:
 - ADR 0015 accepted that external control planes are typed evidence surfaces.
 - ADR 0016 proposed the shell/environment ownership boundary and the
   `ExecutionContext` / `EnvProvenance` vocabulary.
+- Q-011 records the ontology promotion and receipt dedupe rule that will decide
+  final `*Observation`, `*Receipt`, `*Proof`, and entity naming. This ADR
+  should not lock names ahead of that review.
 
 Other candidate charter amendments remain queued but are not ready for this
 wave:
@@ -50,6 +53,12 @@ reviewed without forcing the larger ontology and coordination decisions.
 This ADR does not amend the charter by itself. The active charter remains
 v1.2.0 until a separate charter-edit PR lands with required reviewer objections
 addressed and human approval.
+
+If Q-012 accepts one invariant and rejects or defers the other, the charter-edit
+PR should land only the accepted invariant. The default drafter for that PR is
+`hcs-architect` because the change is docs/ADR/charter-scoped; implementation
+agents should not fold schema, policy, hook, adapter, dashboard, or mutation
+work into the same PR.
 
 ## Options considered
 
@@ -101,29 +110,32 @@ addressed and human approval.
 
 Proposed: amend the charter in a separate wave-1 charter PR to add invariants
 16 and 17 only. Invariant 16 should bind external-control-plane operations to
-typed evidence receipts before provider mutations. Invariant 17 should require
-operations to declare the execution context they rely on, while preserving
-intentional typed inheritance such as ADR 0016's Codex `inherit` operator when
-the inheritance is explicitly represented and bound to the target
-`ExecutionContext`.
+typed evidence before provider mutations, without depending on final Q-011
+receipt naming. Invariant 17 should require operations to declare the execution
+context they rely on, while preserving intentional typed inheritance operators
+such as ADR 0016's Codex `inherit` / `include_only` vocabulary or equivalent
+surface-specific typed mechanisms when the inheritance is explicitly
+represented and bound to the target `ExecutionContext`.
 
 Proposed invariant text:
 
 ```text
 16. External-control-plane operations are evidence-first. Operations against
-remote control planes must produce typed evidence receipts before provider-side
+remote control planes must produce typed evidence before provider-side
 mutation is proposed or rendered. HCS must distinguish provider object
-references from secret references, must model audience/path/tunnel validator
-bindings where relevant, and must treat rate-limit/backoff state as evidence
-rather than retry pressure.
+references, public client IDs, policy selector values, secret references, and
+secret material. Where the provider exposes a separable validator surface, such
+as ADR 0015's OriginAccessValidator/AudienceValidationBinding precedent, HCS
+must model that validator binding before proposing mutations that depend on it.
+Rate-limit/backoff state is evidence rather than retry pressure.
 
 17. Execution context is declared, not inferred. Every operation carries a
 resolved ExecutionContext surface reference. Agents must not assume a
-subprocess inherits credentials, environment, filesystem scope, network scope,
-sandbox scope, or app permissions from a parent context unless that inheritance
-is intentionally represented by typed evidence or an explicit operator such as
-Codex's inherit mode, and the evidence is bound to the target execution
-context.
+subprocess inherits any sandbox, capability, environment, or credential scope
+from a parent context unless that inheritance is intentionally represented by
+typed evidence or an explicit surface operator such as Codex
+shell_environment_policy inherit/include_only, and the evidence is bound to the
+target execution context.
 ```
 
 If accepted, the charter-edit PR should bump the charter to v1.3.0 and leave
@@ -139,9 +151,17 @@ invariants 18-20 queued.
   only ADR 0016 and shell research guidance.
 - Intentional inheritance remains legal when modeled explicitly and bound to
   the target context.
+- Invariant 17 creates a deliberate forward binding: Milestone 1 schema
+  reconciliation must either promote `ExecutionContext` into the canonical Ring
+  0 entity list or provide an equivalent canonical entity that satisfies this
+  invariant.
 - Charter v1.3.0 wave 1 remains independent from Q-003, Q-007, and Q-008.
 - Invariants 16 and 17 should be voted and reviewed separately even if they
   land in one charter PR.
+- Partial acceptance is allowed. If only invariant 16 or only invariant 17
+  passes review, the charter-edit PR may land only the accepted invariant.
+- `hcs-architect` should own the charter-edit PR draft after Q-012 approval;
+  policy/security reviewers file objections before human approval.
 
 ### Rejects
 
@@ -182,7 +202,9 @@ invariants 18-20 queued.
   `docs/host-capability-substrate/adr/0017-codex-app-execution-context.md`
 - ADR 0018:
   `docs/host-capability-substrate/adr/0018-durable-credential-preference.md`
-- Decision ledger: `DECISIONS.md` Q-003, Q-007, Q-008
+- Decision ledger: `DECISIONS.md` Q-003, Q-007, Q-008, Q-011, Q-012
+- Ontology promotion/dedupe plan:
+  `docs/host-capability-substrate/research/local/2026-05-01-ontology-promotion-receipt-dedupe-plan.md`
 - Plan: `PLAN.md` charter v1.3.0 candidate invariants 16-20
 - External-control-plane lessons:
   `docs/host-capability-substrate/research/external/2026-04-24-cloudflare-lessons.md`

@@ -10,6 +10,9 @@ Follow `PLAN.md` milestone by milestone.
 - Keep each PR to one milestone (ideally one ring).
 - Update `DECISIONS.md` when making a tradeoff.
 - Update docs whenever schema, policy, or adapter behavior changes.
+- Meta-ADRs are permitted when they govern process or sequencing, such as a
+  charter amendment wave; they must stay `proposed` until human approval and
+  must not bundle the underlying charter/schema/policy change.
 - Do not implement execution, approvals, sandbox, or audit-write endpoints unless the current milestone explicitly says so.
 - Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md`.
 
