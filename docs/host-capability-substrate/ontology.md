@@ -3,9 +3,9 @@ title: HCS Ontology
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.2.0
+version: 0.3.0
 last_updated: 2026-05-01
-tags: [ontology, entities, schemas]
+tags: [ontology, entities, schemas, execution-context, isolation]
 priority: high
 ---
 
@@ -136,6 +136,48 @@ The Zod schema validates that `order` matches the named phase. This protects
 P03/P04/P09 reasoning from treating setup scripts, MCP startup, and tool-call
 subprocesses as interchangeable timing points.
 
+## Compatibility and Isolation Vocabulary
+
+The 2026-05-01 agentic tool isolation intake does not add schema by itself. It
+does refine the vocabulary that Milestone 1 schema reconciliation should
+consider.
+
+HCS must not collapse these concepts:
+
+- permission gating: ask/allow/deny/autopilot/bypass modes and tool rules;
+- workspace write scope: open-workspace or configured-root filesystem bounds;
+- worktree/file isolation: Git worktree or branch separation;
+- kernel sandboxing: Seatbelt, bubblewrap, seccomp, Windows sandbox, or
+  equivalent local process containment;
+- container or VM isolation: devcontainer, Docker worker, VM snapshot, or
+  self-hosted runner boundary;
+- remote cloud execution: vendor or managed infrastructure executing the task;
+- terminal inheritance: live shell/PTY/env coupling;
+- app-managed dependency bundle: bundled Node/Python/toolchain separate from
+  host PATH.
+
+Candidate schema reconciliation points:
+
+- `ExecutionContext` may need explicit containment and execution-location
+  evidence, not only `surface`, shell, sandbox, and env inheritance fields.
+- `AgentClient` should distinguish product family, surface, app build,
+  dependency bundle, permission mode, and containment mechanism.
+- `ToolInstallation` and `ResolvedTool` should represent app-bundled
+  dependencies, cloud setup/runtime tools, devcontainer tools, and host PATH
+  tools as separate authority surfaces.
+- `WorkspaceContext` and `Lease` should represent worktree identity and
+  ownership without implying process, network, or credential isolation.
+- `CredentialSource` should distinguish session-only, build-only,
+  disk-persisted, app-managed OAuth/Keychain, brokered secret reference, and
+  environment compatibility renderings.
+- Future `BoundaryObservation` / `QualityGate` work should decide whether
+  containment posture is modeled directly on `ExecutionContext`, as `Evidence`
+  subtypes, or through a separate boundary envelope.
+
+Do not copy vendor adapter schemas into Ring 0. Vendor config and UI settings
+are observation sources; HCS schemas describe host facts, evidence,
+capabilities, and decisions.
+
 ## Provenance on every fact
 
 Every `Evidence` record:
@@ -171,5 +213,6 @@ Every `Evidence` record:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.0 | 2026-05-01 | Added compatibility/isolation vocabulary from the agentic tool isolation intake as Phase 1 schema reconciliation guidance. |
 | 0.2.0 | 2026-05-01 | Added first shell/env Ring 0 schema docs for `ExecutionContext`, `EnvProvenance`, `CredentialSource`, and `StartupPhase`. |
 | 0.1.0 | 2026-04-22 | Initial stub. Lists 20 entities; points to research plan for shape details. |

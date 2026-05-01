@@ -3,9 +3,9 @@ title: HCS Tooling Surface Matrix
 category: reference
 component: host_capability_substrate
 status: active
-version: 1.3.0
+version: 1.4.0
 last_updated: 2026-05-01
-tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration]
+tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration, isolation]
 priority: high
 ---
 
@@ -21,7 +21,7 @@ Parent decision: [`adr/0001-repo-boundary.md`](./adr/0001-repo-boundary.md). Cha
 - **Codex CLI:** `0.125.0` minimum; GPT-5.5/GPT-5.4-compatible HCS profiles. Codex macOS app build identifiers are tracked separately.
 - **Subsequent minor updates:** acceptable without re-baselining
 
-Re-evaluate at end of Phase 0b.
+Re-evaluate after material version changes per D-029 and charter invariant 14.
 
 ## Reading this matrix
 
@@ -38,6 +38,23 @@ Columns in the full table below:
 - **Allowed to contain policy:** yes / no / pointer-only
 - **Owner of record:** who reviews changes here
 - **Phase 0a / 3 / 4 posture:** what should exist at each phase
+
+## Isolation vocabulary discipline
+
+`Can enforce` in this matrix does not always mean OS-level containment. Keep
+these evidence dimensions separate:
+
+- permission gating: ask/allow/deny modes, allowlists, denylists, tool prompts;
+- worktree/file isolation: separate branch/root, not separate process authority;
+- local kernel sandbox: Seatbelt, bubblewrap, seccomp, Windows sandbox, or
+  equivalent host-enforced process containment;
+- container/VM isolation: devcontainer, Docker worker, VM snapshot, or runner
+  boundary;
+- remote cloud execution: vendor or managed infrastructure, external
+  control-plane evidence, not local host evidence.
+
+Tool docs and UI labels are observation sources. They do not become HCS policy
+or host-authoritative runtime facts until reconciled through typed evidence.
 
 ## Full matrix
 
@@ -131,6 +148,24 @@ Columns in the full table below:
 |---------|-------------|-------|------------------------|-------------|-------------|--------------|-------------------|---------------------------|-------|----------|---------|---------|
 | `.copilot/mcp-config.json` | repo root | project | generated | no | no | yes | no | no | — | **absent at Phase 0a** (add only if Copilot becomes a target agent) | add when targeted | same |
 | `~/.copilot/mcp-config.json` | user-global | user | generated | no | no | yes | no | no | user; `sync-mcp.sh` | unchanged (native github MCP) | unchanged | same |
+
+### Adjacent agent/cloud surfaces (compatibility-only)
+
+The 2026-05-01 agentic tool isolation intake widens compatibility awareness. The
+rows below are not commitments to add project config or adapters. They prevent
+future agents from treating product capability, permission prompts, worktrees,
+and remote execution as one authority class.
+
+| Surface | Evidence class | Scope | HCS posture |
+|---------|----------------|-------|-------------|
+| Devin sessions / child agents | remote VM / vendor cloud | user/org cloud | Observe as external control-plane / remote environment evidence only; no HCS local sandbox claim. |
+| Codex cloud tasks | remote cloud sandbox | user/org cloud | Observe as remote execution receipts; do not satisfy local Codex CLI/app `ExecutionContext` claims. |
+| Cursor cloud / self-hosted cloud agents | remote VM or self-hosted environment | user/org/cloud | Compatibility input for Q-010; local Cursor terminal sandbox remains a separate surface. |
+| GitHub Copilot cloud agent | GitHub Actions-powered remote environment | GitHub cloud | Route through Q-005/Q-006 for runner/check/source identity evidence. |
+| Warp Oz / self-hosted workers | remote cloud or isolated Docker worker | user/org/cloud | Treat local Warp terminal and Oz worker execution as different `ExecutionContext` classes. |
+| Amp | permissioned local execution | user/project | No HCS policy in `.amp/`; require outer boundary evidence for sensitive autonomous execution. |
+| OpenCode | permissioned local execution | user/project | Do not treat permissive default tools as safe; no HCS policy in opencode config. |
+| Augment/Auggie + Intent | permissioned local execution plus Git worktrees | user/project | Worktree isolation is not process isolation; compose with `WorkspaceContext` / `Lease` before mutations. |
 
 ### Claude Desktop
 
@@ -231,6 +266,7 @@ When adding X to the repo, route by type:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.4.0 | 2026-05-01 | Added isolation vocabulary discipline and compatibility-only adjacent agent/cloud surface intake from the 2026-05-01 report. |
 | 1.3.0 | 2026-05-01 | Added Claude Desktop and Claude Code Desktop settings, filesystem permission, worktree, Preview, and web automation surfaces. |
 | 1.2.0 | 2026-05-01 | Added official Codex system/managed/app settings, Workspace Dependencies, and local-environment/action surfaces. |
 | 1.1.0 | 2026-04-26 | Updated early-phase tool baselines to public CLI semver per D-029 and charter v1.2.0; app build identifiers are now tracked separately. |

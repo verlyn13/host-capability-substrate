@@ -3,9 +3,9 @@ title: HCS external research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.10.0
-last_updated: 2026-04-30
-tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos, codex, worktree, branch-cleanup, workspace-context]
+version: 1.11.0
+last_updated: 2026-05-01
+tags: [research, external, substrate-config, auth, mcp, cloudflare, cloudflared, diagnostics, rate-limit, credential-broker, coordination, knowledge-store, rag, resource-budget, ci-runners, quality-management, github, macos, codex, worktree, branch-cleanup, workspace-context, isolation]
 priority: medium
 ---
 
@@ -40,6 +40,7 @@ Do **not** cite these documents as authoritative first-party HCS decisions. Cite
 | `2026-04-29-hcp-quality-management.md` | 2026-04-29 | Document/source-code research report on HCS quality-management needs across macOS Tahoe app/filesystem boundaries, Git/GitHub, package-manager-installed tools, multiple GitHub identities, quality gates, candidate entities, dashboard views, and regression traps. SHA-256: `b5efcc662d9174896ba4f1ec421a00b3ea529ac9e2228adf13f16decd732edef`. |
 | `2026-04-30-codex-scopecam-exchange-lessons.md` | 2026-04-30 | User-submitted evidence report from a separate Codex/ScopeCam exchange. Central lesson: the agent converted tool symptoms into environment explanations before proving execution state, then mixed normal/escalated shell observations, weak SSH/auth probes, worktree topology, branch-flow drift, destructive branch cleanup, and process argv secret exposure. SHA-256: `91c7c9e1ac6abd5cbc11596520bd2bf7e36995030e8808508620016ae3d571a5`. |
 | `2026-04-30-hcs-evidence-planning-report-1.md` | 2026-04-30 | User-submitted HCS evidence/planning report based on Claude macOS / Opus 4.7 work. Normalized to HCS terminology during intake. Reinforces D-025/D-026/D-027/D-028 and proposes candidate HCS diagnostic surfaces, workspace manifest inputs, safe process inspection, docs cleanup classification, and claim reconciliation. SHA-256: `677b108e605580ae931f57f15f61ba1d4ddab3768a481c040f80adc5165686ae`. |
+| `2026-05-01-agentic-coding-tool-isolation-report.md` | 2026-05-01 | User-submitted system-level report comparing agentic coding tools across permission gating, worktree/file isolation, local kernel sandboxing, container/VM isolation, and remote cloud execution. Preserved as source input for Q-010; not accepted as HCS schema or policy. SHA-256: `3a54065b5511bee42990657cf29932f94fd343b58f0a8c8e1214873518870aeb`. |
 
 ## Reconciled conclusions
 
@@ -247,6 +248,27 @@ Reconciled integration:
   MCP config canonicality, and docs/planning-index projection drift remain
   unseeded until a redacted primary audit or human-approved fixture exists.
 
+### 2026-05-01 agentic coding tool isolation report
+
+The report is broad compatibility research across Claude Code, Codex, Cursor,
+Copilot, Devin, Windsurf, Augment/Intent, Amp, OpenCode, Warp, and VS Code. It
+is useful because it separates product permission posture from actual execution
+containment.
+
+Reconciled integration:
+
+- The HCS synthesis lives at
+  `docs/host-capability-substrate/research/local/2026-05-01-agentic-tool-isolation-synthesis.md`.
+- Q-010 records the pending decision for cross-agent isolation and
+  compatibility taxonomy.
+- The report's proposed shared adapter schema is not accepted as canonical HCS
+  shape. HCS should reconcile the useful vocabulary through `ExecutionContext`,
+  `AgentClient`, `ToolInstallation`, `ResolvedTool`, `CredentialSource`,
+  `WorkspaceContext`, `ResourceBudget`, and future `BoundaryObservation`
+  candidates.
+- No vendor config, hook, policy tier, tool adapter, or runtime behavior is
+  accepted from this report.
+
 ## What the reports do not cover
 
 The **2026-04-23 substrate-config reports** do not address: audit hash chain, sandbox execution, lease/lock semantics, regression-trap patterns, intervention records, `op` IPC queue contention as a substrate problem, six-question surface-boundary methodology, Phase 0b measurement surfaces, or trajectory-scoring topics. Those remain the HCS team's design space. The IPC broker memory (`project_op_ipc_broker_requirements.md`) is the authoritative source for the `op` contention problem, not these reports.
@@ -275,6 +297,7 @@ Reports should be staged here verbatim from durable source files; do not edit th
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.11.0 | 2026-05-01 | Added 2026-05-01 agentic coding tool isolation report and Q-010 synthesis pointer. |
 | 1.10.0 | 2026-04-30 | Staged the HCS evidence/planning report, normalized non-HCS labels during intake, recorded its SHA-256, added a synthesis link, and queued Q-009 for diagnostic surfaces and workspace manifest modeling. |
 | 1.9.0 | 2026-04-30 | Staged the Codex/ScopeCam exchange lessons report, recorded its SHA-256, added a synthesis link, queued Q-008, and reconciled six seed-level trap additions (#39-#44). |
 | 1.8.0 | 2026-04-29 | Staged the 2026-04-29 research-method blueprint and HCS quality-management report from `/private/tmp`, recorded SHA-256 hashes, and linked the local synthesis plus Q-007 planning path. |
