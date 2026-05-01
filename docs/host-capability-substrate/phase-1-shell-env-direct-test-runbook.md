@@ -3,7 +3,7 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.5.1
+version: 1.6.0
 last_updated: 2026-05-01
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
@@ -12,7 +12,7 @@ priority: high
 # HCS Phase 1 Shell/Env Direct-Test Runbook
 
 Executable plan for the W4 shell/environment direct tests from
-[`shell-environment-research.md`](./shell-environment-research.md) v2.7.0.
+[`shell-environment-research.md`](./shell-environment-research.md) v2.8.0.
 
 Target ring: **Ring 3 measurement/eval harness + docs**. This runbook does not
 change Ring 0 schemas, policy, hooks, Codex profiles, or system-config managed
@@ -41,7 +41,7 @@ Current overlay as of 2026-04-30:
 | Surface | Evidence |
 |---|---|
 | macOS | `ProductVersion 26.4.1`, `BuildVersion 25E253` |
-| Git | `main` at `a4f6ee3`, five local commits ahead of `origin/main` after the P08/P09/P11/P12 commits |
+| Git | Local `main` carries Phase 1 shell/env commits ahead of `origin/main`; use `git status --short --branch` for the exact current count. |
 | Codex CLI | `codex-cli 0.128.0`; above baseline `0.125.0`; emitted sandbox PATH warning during `--version` but returned successfully |
 | Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
 | Managed tools | `node 24.15.0`, `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
@@ -93,7 +93,7 @@ secret-safe operation proof because it touches MCP auth/config behavior.
 | P05 | Runtime smoke complete for Claude Desktop auth boundary. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 | Closed for Codex CLI and Claude Code CLI through host telemetry; app/IDE surfaces remain separate prompts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md` |
 | P08 | Initial Codex CLI tool-call subprocess snapshot committed as a fixture. | `research/shell-env/2026-04-30-P08-provenance-snapshot.md` |
-| P09 | Terminal fixtures committed for blocked/untrusted and isolated allowed/trusted paths; GUI/IDE matrix remains open. | `research/shell-env/2026-04-30-P09-direnv-mise-baseline.md`; `research/shell-env/2026-04-30-P09-direnv-mise-terminal-matrix.md` |
+| P09 | Terminal fixtures committed; GUI/IDE probe packet and redaction fixture committed; runtime GUI/IDE rows remain approval-gated. | `research/shell-env/2026-04-30-P09-direnv-mise-baseline.md`; `research/shell-env/2026-04-30-P09-direnv-mise-terminal-matrix.md`; `research/shell-env/2026-05-01-P09-gui-ide-matrix-plan.md` |
 | P11 | LaunchAgent/user-session env policy design memo committed; not an accepted ADR. | `research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 | Repo-local secret-safe env-inspect prototype and fixture landed. | `research/shell-env/2026-04-30-P12-env-inspect-prototype.md` |
 | P13 | Open/narrowed; needs reachable GUI app-server control path or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
@@ -392,7 +392,8 @@ additional PATH wrapper runs.
 - P03/P04 and the GUI/IDE portion of P09 remain Wave 2 work. P08 has an initial
   Codex CLI tool-call fixture, but app/IDE snapshots should wait for direct
   execution-context probes.
-- P09 terminal fixtures do not prove GUI launch or IDE extension behavior.
+- P09 terminal fixtures and the GUI/IDE probe packet do not prove GUI launch or
+  IDE extension behavior. Runtime GUI/IDE rows still require explicit approval.
 - P12 is a repo-local prototype only; the final Ring 1 operation surface waits
   for ontology/policy schema work.
 - P11 is a design memo only; do not treat it as live LaunchAgent policy or an
@@ -402,6 +403,7 @@ additional PATH wrapper runs.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and redaction fixture. |
 | 1.5.1 | 2026-05-01 | Corrected the referenced shell research version and current git overlay after the P11 commit. |
 | 1.5.0 | 2026-04-30 | Added P11 LaunchAgent/user-session env policy design memo status. |
 | 1.4.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture status. |

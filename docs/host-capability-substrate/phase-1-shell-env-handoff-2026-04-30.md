@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.4.0
+version: 1.5.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -11,8 +11,8 @@ priority: high
 
 # Phase 1 Shell Environment Handoff
 
-Current handoff after P08/P09/P11/P12 implementation work through the
-2026-05-01 P11 commit. This supersedes
+Current handoff after P08/P09/P11/P12 implementation work plus the P09 GUI/IDE
+probe packet. This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
 ## Current State
@@ -21,10 +21,9 @@ Current handoff after P08/P09/P11/P12 implementation work through the
 |---|---|
 | Observed at | 2026-05-01T03:14Z |
 | Branch | `main` |
-| Current HEAD | `a4f6ee3 phase1: add launchagent env policy table` |
-| Git relation | `main` five commits ahead of `origin/main` |
-| Worktree expectation | Clean after the P11 commit; future work should start as a new scoped diff. |
-| Validation | `just verify` passed for the P11 orientation update before commit. |
+| Git relation | Local `main` is ahead of `origin/main`; run `git status --short --branch` for the exact current count. |
+| Worktree expectation | Clean after each scoped commit; inspect any dirty state before proceeding. |
+| Validation | `just verify` is the acceptance gate for each handoff commit. |
 
 ## Toolchain Snapshot
 
@@ -46,7 +45,7 @@ Current handoff after P08/P09/P11/P12 implementation work through the
 | P05 Claude Desktop auth boundary | Runtime smoke complete. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 shell provenance | Closed for Codex CLI and Claude Code CLI; app/IDE surfaces remain separate execution contexts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md`; `just shell-logger-fixture` |
 | P08 provenance snapshot | Initial Codex CLI tool-call subprocess fixture landed. It is `authority: sandbox-observation`, not host-authoritative. | `packages/fixtures/provenance-snapshot-2026-04-30.json`; `just provenance-snapshot-fixture` |
-| P09 direnv/mise visibility | Terminal fixtures landed for blocked/untrusted and isolated allowed/trusted paths; GUI/IDE matrix remains open. | `scripts/dev/run-direnv-mise-fixture.sh`; `scripts/dev/run-direnv-mise-terminal-fixture.sh`; `just direnv-mise-fixture`; `just direnv-mise-terminal-fixture` |
+| P09 direnv/mise visibility | Terminal fixtures landed; GUI/IDE probe packet landed; runtime GUI/IDE rows remain approval-gated. | `scripts/dev/run-direnv-mise-fixture.sh`; `scripts/dev/run-direnv-mise-terminal-fixture.sh`; `scripts/dev/prepare-direnv-mise-gui-matrix.sh`; `just direnv-mise-fixture`; `just direnv-mise-terminal-fixture`; `just direnv-mise-gui-probe-fixture` |
 | P11 LaunchAgent env policy | Design memo landed; not an accepted ADR or live policy. | `research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 env inspection | Repo-local prototype landed for names-only, existence, classified, and hashed env inspection. | `scripts/dev/hcs-env-inspect.py`; `just env-inspect-fixture` |
 | P13 Codex app sandbox | Open/narrowed; needs reachable GUI app-server control or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
@@ -62,6 +61,7 @@ Recent file categories across the P08/P09/P11/P12 pass:
   `scripts/dev/run-provenance-snapshot-fixture.sh`,
   `scripts/dev/run-direnv-mise-fixture.sh`,
   `scripts/dev/run-direnv-mise-terminal-fixture.sh`,
+  `scripts/dev/prepare-direnv-mise-gui-matrix.sh`,
   `packages/fixtures/provenance-snapshot-2026-04-30.json`.
 - Validation wiring:
   `justfile`, `scripts/ci/verify.sh`.
@@ -74,8 +74,8 @@ Recent file categories across the P08/P09/P11/P12 pass:
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
 
-At this handoff, the P08/P12 commit, P09 baseline commit, P09 terminal matrix
-commit, and P11 policy-table commit are already in `main`.
+At this handoff, the P08/P12 prototype, P09 terminal fixtures, P09 GUI/IDE
+probe packet, and P11 policy-table work are tracked as Phase 1 shell/env scope.
 
 ## Guardrails
 
@@ -95,12 +95,14 @@ commit, and P11 policy-table commit are already in `main`.
 
 ## Recommended Next Step
 
-Continue P09 with an operation-proofed GUI/IDE matrix:
+Continue P09 with an approved GUI/IDE runtime row, or move to P04/P03 if no
+GUI observation path is available:
 
 1. Keep marker reporting to presence/absence only.
-2. Do not use terminal `open` as a clean GUI-origin proxy.
-3. Use a human-run sterile app/IDE turn or a proven GUI control path.
-4. Preserve the distinction between terminal, GUI app, IDE extension, and MCP
+2. Use the packet from `scripts/dev/prepare-direnv-mise-gui-matrix.sh`.
+3. Do not use terminal `open` as a clean GUI-origin proxy.
+4. Use a human-run sterile app/IDE turn or a proven GUI control path.
+5. Preserve the distinction between terminal, GUI app, IDE extension, and MCP
    server execution contexts.
 
 ## Validation Notes
@@ -118,6 +120,7 @@ Focused checks that passed during the P08/P09/P12 work:
 - `just provenance-snapshot-fixture`
 - `just direnv-mise-fixture`
 - `just direnv-mise-terminal-fixture`
+- `just direnv-mise-gui-probe-fixture`
 - `just shellcheck-scan`
 - `just forbidden-string-scan`
 - `git diff --check`
@@ -126,6 +129,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.5.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and made git-state wording durable across local handoff commits. |
 | 1.4.0 | 2026-05-01 | Refreshed handoff after the P11 commit and updated the current branch state. |
 | 1.3.0 | 2026-04-30 | Added P11 design memo status and guardrail. |
 | 1.2.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture and moved next step to GUI/IDE matrix. |

@@ -52,7 +52,8 @@ run_group fixtures \
   env-inspect-fixture \
   provenance-snapshot-fixture \
   direnv-mise-fixture \
-  direnv-mise-terminal-fixture
+  direnv-mise-terminal-fixture \
+  direnv-mise-gui-probe-fixture
 
 fail=0
 failed_indexes=()

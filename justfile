@@ -45,6 +45,10 @@ direnv-mise-fixture:
 direnv-mise-terminal-fixture:
 	@bash scripts/dev/run-direnv-mise-terminal-fixture.sh
 
+# P09 GUI/IDE probe packet redaction-contract fixture
+direnv-mise-gui-probe-fixture:
+	@bash scripts/dev/prepare-direnv-mise-gui-matrix.sh --fixture
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"
