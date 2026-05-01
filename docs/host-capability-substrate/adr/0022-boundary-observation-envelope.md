@@ -84,7 +84,8 @@ mutation operations.
   observations one shared envelope without collapsing their domains.
 - Keeps `QualityGate` deferred until its evidence inputs are stable.
 - Lets dashboard rows show `proven`, `denied`, `pending`, `stale`,
-  `contradictory`, and `inapplicable` states without treating unknown as false.
+  `contradictory`, `inapplicable`, and `unknown` states without treating
+  unknown as false.
 
 **Cons:**
 - Requires one more schema concept during Milestone 1 reconciliation.
@@ -120,8 +121,12 @@ freshness semantics. It does not decide policy and does not replace
 Candidate minimum fields for later schema work:
 
 ```text
+schema_version
+evidence_schema_version
+payload_schema_version optional
 boundary_observation_id
-surface_id or execution_context_id
+surface_id optional
+execution_context_id optional
 workspace_id optional
 credential_source_id optional
 tool_or_provider_ref optional
@@ -133,7 +138,34 @@ discrepancy_class optional
 evidence_refs
 ```
 
-The field names and enum values remain candidates until schema review.
+Field-block conventions:
+
+- Fields not marked optional are required unless schema review proves a
+  narrower shape.
+- At least one target reference must be present: `surface_id`,
+  `execution_context_id`, `workspace_id`, `credential_source_id`, or
+  `tool_or_provider_ref`.
+- `surface_id` and `execution_context_id` are distinct nullable references, not
+  one union field. Query paths should not need a second discriminator to know
+  which reference type was used.
+- `boundary_dimension` is the discriminator for the domain payload. Values
+  belong to an ontology-reviewed taxonomy, not ad hoc adapter emission.
+  Candidate dimensions include `sandbox`, `tcc`, `bundle_identity`,
+  `network_egress`, `filesystem_scope`, `credential_routing`,
+  `worktree_ownership`, `containment_class`, `runner_isolation`,
+  `version_drift`, `source_control_continuity`, and
+  `check_source_identity`.
+- `observed_state` is a domain-specific discriminated payload whose
+  discriminator is `boundary_dimension`. Payload schemas are owned by
+  domain-specific evidence subtypes; the envelope reasons over
+  `observation_state`, `discrepancy_class`, freshness, and evidence refs.
+- Envelope `schema_version`, base `Evidence` schema version, and payload schema
+  version are independent. A TCC payload can evolve without forcing an
+  `Evidence` base-shape version bump, and an `Evidence` base-shape bump should
+  not silently change a domain payload.
+
+The field names, taxonomy values, and enum values remain candidates until
+schema review.
 
 ## Consequences
 
@@ -146,11 +178,20 @@ The field names and enum values remain candidates until schema review.
   `ContainmentObservation`, `ExecutionModeObservation`, `PathCoverage`,
   `OriginAccessValidator`, and `McpAuthorizationSurface` if ontology review
   approves that relationship.
-- Dashboard contracts should preserve visibly distinct states for `pending`,
-  `stale`, `denied`, `contradictory`, and `inapplicable`.
+- Dashboard contracts should preserve the full seven-state vocabulary:
+  `proven`, `denied`, `pending`, `stale`, `contradictory`, `inapplicable`,
+  and `unknown`.
 - Domain payloads remain separate. A boundary envelope can describe a GitHub
   ruleset, macOS TCC grant, app sandbox, package-manager shim, or remote runner
   posture without making those domains interchangeable.
+- Q-010 sub-decision (a) is partially constrained: containment posture is
+  reachable through the `BoundaryObservation` envelope as a
+  `ContainmentObservation` payload. The `AgentClient` containment-mechanism
+  field shape remains open under Q-010.
+- Acceptance of this ADR does not commit charter v1.3.0 invariant 19. The
+  envelope is structurally useful without that charter amendment; invariant 19
+  would generalize the freshness-bound and execution-context-bound rule across
+  future ADRs.
 
 ### Rejects
 
@@ -165,14 +206,29 @@ The field names and enum values remain candidates until schema review.
 
 ### Future amendments
 
+Likely to reopen this envelope shape:
+
 - Reopen after Q-011 if ontology review changes the evidence/receipt/proof
   promotion rule.
-- Reopen after Q-005 if runner isolation evidence needs a standalone lifecycle
-  object rather than a boundary observation.
-- Reopen after Q-006 if source-control continuity or check-source evidence owns
-  a conflicting boundary envelope.
 - Reopen after Q-008/Q-009 if execution-mode or safe-process-inspection
-  receipts need a narrower observation shape.
+  receipts need a narrower observation shape or additional versioning fields.
+
+Expected to fit inside the envelope unless review proves otherwise:
+
+- Reopen after Q-005 only if runner isolation evidence needs a standalone
+  lifecycle object rather than a boundary observation.
+- Reopen after Q-006 only if source-control continuity or check-source evidence
+  owns a conflicting boundary envelope.
+
+Downstream consumers:
+
+- Define how `Decision` / `ApprovalGrant` consume `BoundaryObservation`
+  `evidence_refs` when `observation_state` is `stale`, `contradictory`, or
+  `unknown`. This is Q-007's remaining gate-behavior question and the natural
+  Milestone 2 approval entry point.
+- Q-010 must be re-read against this envelope before drafting `AgentClient`
+  containment schema. If Q-010 resolves containment outside the envelope, this
+  ADR needs amendment.
 - Draft `QualityGate` only after `BoundaryObservation`, Q-005 runner/check
   evidence, and Q-006 source-control evidence have settled.
 - Any schema implementation must use `.agents/skills/hcs-schema-change` and

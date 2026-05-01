@@ -130,10 +130,11 @@ that surface and was captured through a valid app observation path.
 - `codex_app_sandboxed` capability rows for Keychain, filesystem, network,
   shell carrier, MCP startup timing, and toolchain PATH remain pending until
   direct per-surface receipts exist.
-- Dashboard-facing app capability rows should distinguish `proven`, `denied`,
-  `pending`, `stale`, and `inapplicable`. `stale` is required when evidence was
-  valid for an older app build or freshness window but has not been re-observed
-  for the current surface.
+- Dashboard-facing app capability rows should use the shared capability-state
+  vocabulary from the dashboard contracts and ADR 0022: `proven`, `denied`,
+  `pending`, `stale`, `contradictory`, `inapplicable`, and `unknown`. `stale`
+  is required when evidence was valid for an older app build or freshness
+  window but has not been re-observed for the current surface.
 - App worktree pruning and snapshot behavior must not be treated as branch or
   worktree deletion authority.
 - Runtime rows for P03, P04, and P09 must continue to name the exact surface:

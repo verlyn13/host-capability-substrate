@@ -3,9 +3,9 @@ title: HCS Dashboard Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.2.1
+version: 0.2.2
 last_updated: 2026-05-01
-tags: [dashboard, view-models, contracts, source-control, github, evidence]
+tags: [dashboard, view-models, contracts, source-control, github, evidence, boundary-observation]
 priority: medium
 ---
 
@@ -144,19 +144,26 @@ Status: Phase 1 planning only. This vocabulary is for future per-surface
 capability rows such as Codex app Keychain/filesystem/network, runner
 containment, remote-agent environment, or source-control posture facets.
 
-Use five visible states:
+Use seven visible states:
 
 - `proven`: evidence for this exact surface/version is fresh and supports the
   row.
 - `denied`: evidence for this exact surface/version is fresh and rejects the
   capability.
-- `pending`: no valid observation path or receipt exists yet.
+- `pending`: the capability or dimension applies, but no valid observation path
+  or receipt exists yet.
 - `stale`: a prior observation exists, but its freshness window expired or a
   material version/build/dependency update requires re-observation.
+- `contradictory`: two or more fresh-enough observations disagree and need
+  reconciliation.
 - `inapplicable`: the capability does not apply to that surface.
+- `unknown`: HCS does not yet know whether the capability or dimension applies
+  to that surface.
 
-Dashboard code must not collapse `pending`, `stale`, `denied`, and
-`inapplicable` into one null/false state.
+Dashboard code must not collapse `pending`, `stale`, `denied`,
+`contradictory`, `unknown`, and `inapplicable` into one null/false state. Views
+may display a subset only when the subset is explicitly mapped back to this
+seven-state vocabulary.
 
 ## Invariants
 
@@ -178,6 +185,7 @@ Dashboard code must not collapse `pending`, `stale`, `denied`, and
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.2 | 2026-05-01 | Expanded candidate capability states from five to seven to align with ADR 0022 boundary observations. |
 | 0.2.1 | 2026-05-01 | Added candidate per-surface capability state vocabulary for pending/stale/denied/inapplicable distinctions. |
 | 0.2.0 | 2026-05-01 | Added candidate Q-006 source-control posture view model for future read-only dashboard planning. |
 | 0.1.0 | 2026-04-22 | Initial stub. |
