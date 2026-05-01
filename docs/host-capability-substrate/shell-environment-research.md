@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.10.0
+version: 2.11.0
 last_updated: 2026-05-01
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.10, May 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.11, May 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -27,7 +27,7 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 
 - **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
-- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P03 now has an MCP startup-order probe packet, P04 has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
+- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P03 now has an MCP startup-order probe packet, P04 has a Codex env-policy probe packet, P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures and a GUI/IDE probe packet; additional surfaces still need their own snapshots/matrices after their execution contexts are probed. A 2026-05-01 official Codex config/app-settings ingest also updates the source model for config precedence, app-managed workspace dependencies, Git/worktree settings, permissions, and local environments.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
 - **P11 now has a design memo** for LaunchAgent/user-session env policy; ADR acceptance remains future synthesis work. P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
@@ -48,6 +48,8 @@ This survey is based on:
 - Issue trackers: openai/codex, anthropics/claude-code, microsoft/vscode, microsoft/vscode-remote-release
 - Source-code snippets from `codex-rs/core/src/tools/spec.rs`, `codex-rs/core/src/config/mod.rs`, Zed's `util::shell_env::capture`, Ghostty's shell-integration README
 - Anthropic and OpenAI release notes for 2025-2026
+- Operator-provided official Codex config basics, Codex macOS app settings, and
+  local-environments excerpts ingested on 2026-05-01
 
 Fish shell is explicitly out of scope per user instruction.
 
@@ -123,11 +125,56 @@ The fallback file is `$CODEX_HOME/auth.json` with schema `{auth_mode, tokens:{id
 
 #### 1.5 Project-local `.codex/config.toml` trust model and MCP timing
 
-**Confirmed.** Codex walks from project root to cwd, loading each `.codex/config.toml` (closest wins), but **only if the project is trusted**. Untrusted projects skip all `.codex/` layers. Trust is recorded in user config under `[projects."/absolute/path"] trust_level = "trusted" | "untrusted"`. A quirk: running Codex from `$HOME` makes `~/.codex` look like a project config and requires `$HOME` itself to be marked trusted (issue #9932).
+**Confirmed.** Codex config precedence is: CLI flags and `--config` overrides;
+profile values from `--profile <name>`; project `.codex/config.toml` files from
+project root down to the current working directory, with closest wins and only
+for trusted projects; user `~/.codex/config.toml`; Unix system config
+`/etc/codex/config.toml`; then built-in defaults. If a project is untrusted,
+Codex skips project-scoped `.codex/` layers, including project-local config,
+hooks, and rules. User and system config still load. A quirk: running Codex from
+`$HOME` makes `~/.codex` look like a project config and requires `$HOME` itself
+to be marked trusted (issue #9932).
+
+Managed machines may also enforce constraints via `requirements.toml`, such as
+disallowing `approval_policy = "never"` or `sandbox_mode = "danger-full-access"`.
+HCS should treat this as an external/admin constraint source, not as HCS live
+policy copied into this repo.
 
 **MCP startup order (partially documented).** The Codex app loads configured MCP servers and fires `mcpServer/startupStatus/updated` notifications as each server transitions to ready state. Setting `required = true` on an `mcp_servers.<id>` table causes `thread/start` to fail if the server doesn't initialize. For the **Codex app local-environments setup script** (`.codex/<env>.<os>.*` scripts that run on worktree creation), the scripts run when the worktree is first materialized — **before** the first turn but MCP server startup and setup-script execution are sequenced so that MCP servers are booted for the thread. **The exact ordering between setup script completion and MCP server bearer-token-env reads is not explicitly documented** — this is the substance of **P03** and remains a genuine open question. An open enhancement request (#13576) documents that setup scripts "receive no special environment variables providing paths" (no `CODEX_WORKTREE_ROOT` equivalent to Conductor's `CONDUCTOR_ROOT_PATH`), reinforcing that HCS cannot assume setup scripts can feed MCP bearer tokens.
 
-#### 1.6 `shell_snapshot` feature — new and relevant
+#### 1.6 Codex app settings, permissions, and local environments
+
+**Source-ingested, not runtime-probed.** The 2026-05-01 ingest memo records
+operator-provided official Codex docs and app UI settings. Local metadata
+checks observed Codex CLI `0.128.0` and Codex app bundle
+`26.429.20946` build `2312`, while the app settings UI reported Workspace
+Dependencies current version `26.430.10722`. These are separate facts:
+app-bundle version is not the same as the app-managed workspace-dependencies
+bundle.
+
+The Codex macOS app settings surface includes approval policy choices
+(`untrusted`, `on failure`, `on request`, `never`), sandbox choices (`Read only`,
+`Workspace write`, `Full access`), app-managed Workspace Dependencies with
+diagnose/reinstall controls, Git/worktree preferences, commit/PR instruction
+prompts, and permission toggles including Auto-review and Full access. HCS
+should model these as app/user settings and app-managed state, not as HCS
+approval grants or live HCS policy.
+
+Codex local environments are stored inside `.codex` at the project root. Setup
+scripts run when Codex creates a new worktree at the start of a new thread, and
+actions run inside the app integrated terminal. This confirms local
+environments as worktree/bootstrap scope and actions as app/integrated-terminal
+execution context. They are not startup-auth authority for required MCP unless
+P03 runtime evidence proves a specific ordering and inheritance path.
+
+Git/worktree settings are also an app-controlled operational surface: branch
+prefix, PR merge method, force-with-lease preference, draft PR default,
+automatic old-worktree deletion, and auto-delete limit. These settings do not
+prove branch ownership, branch deletion safety, or GitHub merge authority.
+
+Detailed ingest: `docs/host-capability-substrate/research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md`.
+
+#### 1.7 `shell_snapshot` feature — new and relevant
 
 **Confirmed.** Added in 0.81.0 and now stable-on-by-default, `[features].shell_snapshot` captures a snapshot of shell state so repeated commands amortize startup cost. It is **not** just an optimization — an issue (#17271 in the changelog) notes Codex now *prevents stale proxy environment variables from being restored from shell snapshots*, implying the snapshot contains env. A separate regression (#9383) shows `shell_snapshot` corrupts TTY state when a user's zshrc calls `stty sane` — a reminder that this feature lives in the middle of the shell/env boundary and has observable side-effects.
 
@@ -835,3 +882,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.8.0 | 2026-05-01 | Added P09 GUI/IDE probe packet and redaction-contract fixture; kept runtime GUI/IDE rows approval-gated. |
 | 2.9.0 | 2026-05-01 | Added P04 Codex env-policy probe packet and redaction-contract fixture; kept runtime CLI/app/IDE rows approval-gated. |
 | 2.10.0 | 2026-05-01 | Added P03 MCP startup-order probe packet and redaction-contract fixture; kept runtime ordering rows approval-gated. |
+| 2.11.0 | 2026-05-01 | Ingested official Codex config basics and macOS app settings, including config precedence, managed requirements, workspace dependencies, Git/worktree settings, permissions, and local environments. |

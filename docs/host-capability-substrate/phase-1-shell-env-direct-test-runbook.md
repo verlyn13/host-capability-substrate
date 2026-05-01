@@ -3,7 +3,7 @@ title: HCS Phase 1 Shell/Env Direct-Test Runbook
 category: runbook
 component: host_capability_substrate
 status: active
-version: 1.8.0
+version: 1.9.0
 last_updated: 2026-05-01
 tags: [phase-1, shell, environment, execution-context, direct-test, operation-proof]
 priority: high
@@ -12,7 +12,7 @@ priority: high
 # HCS Phase 1 Shell/Env Direct-Test Runbook
 
 Executable plan for the W4 shell/environment direct tests from
-[`shell-environment-research.md`](./shell-environment-research.md) v2.10.0.
+[`shell-environment-research.md`](./shell-environment-research.md) v2.11.0.
 
 Target ring: **Ring 3 measurement/eval harness + docs**. This runbook does not
 change Ring 0 schemas, policy, hooks, Codex profiles, or system-config managed
@@ -49,6 +49,15 @@ Current overlay as of 2026-04-30:
 The old Claude Code #18692 version blocker is cleared by the installed
 `2.1.123` CLI. Any actual #18692 non-repro check still needs its own
 secret-safe operation proof because it touches MCP auth/config behavior.
+
+Current Codex app/settings overlay as of 2026-05-01:
+
+| Surface | Evidence |
+|---|---|
+| Codex app bundle | `/Applications/Codex.app` metadata reports version `26.429.20946`, build `2312` |
+| Codex app Workspace Dependencies | Operator-provided app settings report current version `26.430.10722` |
+| Config source model | Official config basics confirm precedence: CLI flags/`--config`, profiles, trusted project `.codex/config.toml`, user config, Unix system config, built-in defaults |
+| App settings source model | Operator-provided app settings expose approval, sandbox, workspace dependencies, Git/worktree, local environments/actions, and permissions surfaces |
 
 ## Evidence Rules
 
@@ -99,6 +108,7 @@ secret-safe operation proof because it touches MCP auth/config behavior.
 | P11 | LaunchAgent/user-session env policy design memo committed; not an accepted ADR. | `research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 | Repo-local secret-safe env-inspect prototype and fixture landed. | `research/shell-env/2026-04-30-P12-env-inspect-prototype.md` |
 | P13 | Open/narrowed; needs reachable GUI app-server control path or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
+| Codex config/app settings | Official config/app UI ingest committed; runtime behavior remains surface-specific. | `research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md` |
 
 ## Output Contract
 
@@ -396,6 +406,9 @@ additional PATH wrapper runs.
   for direct execution-context probes.
 - P09 terminal fixtures and the GUI/IDE probe packet do not prove GUI launch or
   IDE extension behavior. Runtime GUI/IDE rows still require explicit approval.
+- Codex app settings and Workspace Dependencies are app-managed surfaces. Do not
+  infer backing storage or runtime behavior from UI labels without a direct
+  probe.
 - P12 is a repo-local prototype only; the final Ring 1 operation surface waits
   for ontology/policy schema work.
 - P11 is a design memo only; do not treat it as live LaunchAgent policy or an
@@ -405,6 +418,7 @@ additional PATH wrapper runs.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9.0 | 2026-05-01 | Added official Codex config/app settings ingest status and app/dependencies version distinction. |
 | 1.8.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
 | 1.7.0 | 2026-05-01 | Added P04 Codex env-policy probe packet status and fixture. |
 | 1.6.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and redaction fixture. |

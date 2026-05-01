@@ -3,8 +3,8 @@ title: HCS Tooling Surface Matrix
 category: reference
 component: host_capability_substrate
 status: active
-version: 1.1.0
-last_updated: 2026-04-26
+version: 1.2.0
+last_updated: 2026-05-01
 tags: [tooling, ide, claude-code, codex, cursor, warp, windsurf, vscode, iterm2, mcp, skills, integration]
 priority: high
 ---
@@ -77,6 +77,11 @@ Columns in the full table below:
 | `.codex/config.toml` | repo root | project (opt-in trust) | canonical (project override) | limited | no | yes | no | no | human owns | minimal override | unchanged | adjusted if approvals flow through Codex |
 | `.agents/skills/` | repo root | project | canonical (cross-tool) | no | no | no | **yes** | no | — | see cross-tool row above | — | — |
 | `~/.codex/config.toml` | user-global | user | canonical (user defaults + profiles) | limited | no | yes | no | no | user; version-controlled via chezmoi backup | add `hcs-plan`/`hcs-implement`/`hcs-review` profiles + trusted-project entry | unchanged | unchanged |
+| `/etc/codex/config.toml` | system | host | external canonical (system defaults, if present) | limited | no | yes | no | no | host/admin | observe only | observe only | observe only |
+| Codex managed `requirements.toml` | managed machine | org/admin | external canonical (constraints) | yes (Codex constraints) | no | no | no | no HCS live policy | org/admin | observe only | observe only | observe only |
+| Codex app settings UI | app-managed storage | user/app | generated/user-managed | yes (app posture) | yes (diagnostics) | yes | no | no | user + Codex app | observe only | observe only; map to `ExecutionContext` facets | observe only |
+| Codex app Workspace Dependencies | app-managed bundle | user/app | generated | no | yes | no | no | no | Codex app | observe only | tool-resolution evidence only | tool-resolution evidence only |
+| Codex app local environments/actions | `.codex/` project folder | trusted project/app | canonical (worktree bootstrap + app actions) | limited | yes | no | no | no secrets, no startup auth | human owns | absent/minimal | bootstrap/actions only | bootstrap/actions only |
 | `~/.codex/skills/` | user-global | user | — | no | no | no | yes | no | user | unchanged (existing: codex-primary-runtime, pdf) | unchanged | unchanged |
 | Codex hooks (Bash-only coverage) | `~/.codex/config.toml` | user-global | canonical | **advisory only** (not sufficient for hard enforcement — see §21.4 of plan) | yes | no | no | literal forbidden patterns only | user | log + warn | log + warn; forward severe cases to dashboard | same |
 
@@ -156,6 +161,8 @@ CLAUDE.md                  imports AGENTS.md + Claude-specific notes — require
 .claude/skills/            Claude-specific wrappers only — empty at Phase 0a
 .claude/hooks/hcs-hook     thin bash helper — log-only at Phase 0a
 .codex/config.toml         project Codex override — minimal
+Codex app settings UI      app posture and diagnostics — observe only
+Codex app local envs       worktree bootstrap/actions — not startup auth
 .cursor/rules/             thin pointer rules — no policy duplication
 .cursor/mcp.json           empty at Phase 0a
 .vscode/*.json             editor/task convenience only — no policy
@@ -206,7 +213,7 @@ When adding X to the repo, route by type:
 ### External
 
 - Claude Code [Settings](https://docs.anthropic.com/en/docs/claude-code/settings), [Hooks](https://docs.anthropic.com/en/docs/claude-code/hooks), [Sub-agents](https://docs.anthropic.com/en/docs/claude-code/sub-agents), [Memory](https://docs.anthropic.com/en/docs/claude-code/memory)
-- Codex [AGENTS.md](https://developers.openai.com/codex/guides/agents-md), [Profiles](https://developers.openai.com/codex/config-advanced), [Skills](https://developers.openai.com/codex/skills), [Subagents](https://developers.openai.com/codex/subagents), [Hooks](https://developers.openai.com/codex/hooks)
+- Codex [AGENTS.md](https://developers.openai.com/codex/guides/agents-md), [Config basics](https://developers.openai.com/codex/config-basic), [Profiles](https://developers.openai.com/codex/config-advanced), Codex app settings pane (`codex://settings`), [Local environments](https://developers.openai.com/codex/app/local-environments), [Skills](https://developers.openai.com/codex/skills), [Subagents](https://developers.openai.com/codex/subagents), [Hooks](https://developers.openai.com/codex/hooks)
 - Windsurf [Skills](https://docs.windsurf.com/windsurf/cascade/skills), [AGENTS.md](https://docs.windsurf.com/windsurf/cascade/agents-md), [MCP](https://docs.windsurf.com/windsurf/cascade/mcp)
 - Warp [Agents](https://docs.warp.dev/agent-platform/getting-started/agents-in-warp), [Rules](https://docs.warp.dev/agent-platform/warp-agents/capabilities-overview/rules)
 - iTerm2 [Shell Integration](https://iterm2.com/shell_integration.html)
@@ -216,5 +223,6 @@ When adding X to the repo, route by type:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.2.0 | 2026-05-01 | Added official Codex system/managed/app settings, Workspace Dependencies, and local-environment/action surfaces. |
 | 1.1.0 | 2026-04-26 | Updated early-phase tool baselines to public CLI semver per D-029 and charter v1.2.0; app build identifiers are now tracked separately. |
 | 1.0.0 | 2026-04-22 | Initial matrix. Created alongside boundary decision v1.1.0 to prevent "where should this go?" drift. |

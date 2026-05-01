@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.7.0
+version: 1.8.0
 last_updated: 2026-05-01
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -11,8 +11,9 @@ priority: high
 
 # Phase 1 Shell Environment Handoff
 
-Current handoff after P03/P04/P08/P09/P11/P12 implementation work plus the
-P03/P04/P09 probe packets. This supersedes
+Current handoff after P03/P04/P08/P09/P11/P12 implementation work, the
+P03/P04/P09 probe packets, and the official Codex config/app-settings ingest.
+This supersedes
 `phase-1-shell-env-handoff-2026-04-26.md`.
 
 ## Current State
@@ -33,6 +34,8 @@ P03/P04/P09 probe packets. This supersedes
 | Node | `24.15.0` |
 | npm | `11.12.1` |
 | Codex CLI | `0.128.0`; above baseline `0.125.0`; `--version` printed a sandbox PATH warning but returned successfully |
+| Codex app bundle | `26.429.20946`, build `2312` from local app Info.plist metadata |
+| Codex Workspace Dependencies | `26.430.10722` from operator-provided Codex app settings UI |
 | Claude Code CLI | `2.1.123`; above baseline `2.1.120` |
 | mise-managed tools | `shellcheck 0.11.0`, `shfmt 3.13.1`, `just 1.50.0`, `bun 1.3.13`, `python 3.13.13`, `uv 0.11.8`, `pnpm 10.33.2` |
 
@@ -51,10 +54,12 @@ P03/P04/P09 probe packets. This supersedes
 | P11 LaunchAgent env policy | Design memo landed; not an accepted ADR or live policy. | `research/shell-env/2026-04-30-P11-launchagent-env-policy-table.md` |
 | P12 env inspection | Repo-local prototype landed for names-only, existence, classified, and hashed env inspection. | `scripts/dev/hcs-env-inspect.py`; `just env-inspect-fixture` |
 | P13 Codex app sandbox | Open/narrowed; needs reachable GUI app-server control or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
+| Codex config/app settings | Official config basics and app settings ingested; runtime behavior still requires surface-specific probes. | `research/shell-env/2026-05-01-codex-official-config-app-settings-ingest.md` |
 
 ## Recent Scope
 
-Recent file categories across the P03/P04/P08/P09/P11/P12 pass:
+Recent file categories across the P03/P04/P08/P09/P11/P12 pass plus Codex
+official source ingest:
 
 - Ring 3 scripts/fixtures:
   `scripts/dev/hcs-env-inspect.py`,
@@ -73,7 +78,8 @@ Recent file categories across the P03/P04/P08/P09/P11/P12 pass:
   `PLAN.md`, `shell-environment-research.md`,
   `phase-1-shell-env-direct-test-runbook.md`,
   `research/shell-env/README.md`,
-  P03/P04/P08/P09/P11/P12 memos, and trap #18 notes.
+  P03/P04/P08/P09/P11/P12 memos, Codex config/app settings ingest, and trap
+  #18 notes.
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
@@ -97,6 +103,11 @@ Phase 1 shell/env scope.
   `mise trust`.
 - Do not treat the P11 memo as accepted LaunchAgent policy; it is synthesis
   input for a future ADR.
+- Do not treat Codex app settings UI labels as proof of backing storage or
+  runtime behavior. App bundle version and Workspace Dependencies version are
+  separate facts.
+- Do not treat app worktree auto-delete snapshots as branch deletion proof or
+  worktree ownership proof.
 
 ## Recommended Next Step
 
@@ -138,6 +149,7 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.8.0 | 2026-05-01 | Added official Codex config/app settings ingest and app/dependencies version distinction. |
 | 1.7.0 | 2026-05-01 | Added P03 MCP startup-order probe packet status and fixture. |
 | 1.6.0 | 2026-05-01 | Added P04 Codex env-policy probe packet status and fixture. |
 | 1.5.0 | 2026-05-01 | Added P09 GUI/IDE probe packet status and made git-state wording durable across local handoff commits. |
