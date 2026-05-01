@@ -1,0 +1,204 @@
+{
+  "$id": "https://jefahnierocks.local/host-capability-substrate/schemas/EnvProvenance.schema.json",
+  "title": "EnvProvenance",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "Entity schema version for the first Phase 1 Ring 0 schema slice."
+    },
+    "env_provenance_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Stable local entity identifier. It is not a secret value."
+    },
+    "execution_context_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Stable local entity identifier. It is not a secret value."
+    },
+    "variable_name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "Environment variable name only. The schema intentionally has no value field."
+    },
+    "source_kind": {
+      "type": "string",
+      "enum": [
+        "launchd_user_session",
+        "launchctl_setenv",
+        "launchagent_plist",
+        "shell_rc",
+        "direnv_envrc",
+        "mise_toml_env",
+        "devcontainer",
+        "codex_policy",
+        "claude_env_file",
+        "session_start_hook",
+        "warp_drive",
+        "onepassword_reference",
+        "api_key_helper",
+        "secretspec"
+      ],
+      "description": "Source class for an environment variable name or redacted observation."
+    },
+    "source_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "materialization": {
+      "type": "string",
+      "enum": [
+        "baked",
+        "runtime_applied",
+        "probed"
+      ],
+      "description": "Devcontainer-derived env timing class adopted by ADR 0016."
+    },
+    "observation_mode": {
+      "type": "string",
+      "enum": [
+        "name_only",
+        "existence_only",
+        "classified",
+        "hash_only",
+        "absent",
+        "not_observed"
+      ],
+      "description": "Secret-safe observation mode. Raw values are intentionally excluded."
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": [
+        "secret_shaped",
+        "credential_reference",
+        "non_secret",
+        "unknown"
+      ],
+      "description": "Classifier result without exposing the variable value."
+    },
+    "value_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 digest with algorithm prefix. It is not reversible secret material."
+    },
+    "operator_filter": {
+      "default": "none",
+      "type": "string",
+      "enum": [
+        "inherit",
+        "include_only",
+        "exclude",
+        "set",
+        "overrides",
+        "ignore_default_excludes",
+        "none"
+      ],
+      "description": "Operator policy affecting whether the variable reaches a context."
+    },
+    "credential_source_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Stable local entity identifier. It is not a secret value."
+    },
+    "evidence_refs": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "description": "Reference to an Evidence record or fixture."
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable source name or artifact path."
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "description": "RFC 3339 timestamp with an explicit UTC offset."
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "description": "RFC 3339 timestamp with an explicit UTC offset."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authority": {
+            "type": "string",
+            "enum": [
+              "project-local",
+              "workspace-local",
+              "user-global",
+              "system",
+              "derived",
+              "sandbox-observation",
+              "host-observation",
+              "vendor-doc",
+              "installed-runtime",
+              "human-observed"
+            ],
+            "description": "Authority plane for a fact or observation."
+          },
+          "parser_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "authoritative",
+              "high",
+              "best-effort",
+              "stale",
+              "unknown"
+            ],
+            "description": "Confidence assigned to an observation by the producer."
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "observed_at",
+          "authority",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "description": "Small provenance reference embedded until the full Evidence entity lands."
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "env_provenance_id",
+    "execution_context_id",
+    "variable_name",
+    "source_kind",
+    "materialization",
+    "observation_mode",
+    "sensitivity",
+    "operator_filter",
+    "evidence_refs"
+  ],
+  "additionalProperties": false,
+  "description": "Ring 0 env provenance entity. It records names, classifications, and hashes only."
+}

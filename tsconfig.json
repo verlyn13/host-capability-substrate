@@ -4,6 +4,6 @@
     "composite": true,
     "noEmit": true
   },
-  "include": [],
+  "include": ["packages/**/*.ts"],
   "references": []
 }

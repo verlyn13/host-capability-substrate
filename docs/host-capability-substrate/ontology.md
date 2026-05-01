@@ -2,16 +2,18 @@
 title: HCS Ontology
 category: reference
 component: host_capability_substrate
-status: stub
-version: 0.1.0
-last_updated: 2026-04-22
+status: partial
+version: 0.2.0
+last_updated: 2026-05-01
 tags: [ontology, entities, schemas]
 priority: high
 ---
 
 # HCS Ontology
 
-Authoritative human-facing reference for the 20 core HCS entities. Populated in Phase 1 Thread D (schema work). At Phase 0a this is a stub pointing to the research plan's §2 for sketches and §Appendix A for shape detail.
+Authoritative human-facing reference for HCS Ring 0 entities. The 20 core
+entities remain the Milestone 1 target; the first Phase 1 shell/env schema
+slice has landed for ADRs 0016, 0017, and 0018.
 
 Canonical research plan sketch: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §2 (Ontology) and §Appendix A.
 
@@ -43,6 +45,97 @@ ResourceBudget       per-session CPU/memory/network/sandbox-concurrency allocati
 
 Each entity carries a `schema_version`. Entity schema versions are independent of adapter tool-name versions (MCP tool names follow `system.{namespace}.{verb}.v{N}` in adapter surfaces).
 
+## Phase 1 Shell/Env Entities
+
+The first committed Zod schemas are additive Ring 0 entities that make shell
+and credential boundary claims explicit. They do not add kernel policy,
+adapter behavior, hooks, or execution endpoints.
+
+Generated JSON Schema lives in `packages/schemas/generated/` and is checked by
+`just generate-schemas --check`.
+
+### `ExecutionContext`
+
+Source: `packages/schemas/src/entities/execution-context.ts`
+
+Describes a named runtime surface and startup phase. Initial `surface` values
+include `codex_cli`, `codex_app_sandboxed`, `codex_ide_ext`,
+`claude_code_cli`, `claude_desktop`, `claude_code_ide_ext`,
+`zed_external_agent`, `warp_terminal`, `mcp_server`, `setup_script`, and
+`app_integrated_terminal`.
+
+Key fields:
+
+- `surface`, `kind`, and `phase` identify the context being described.
+- `shell` records carrier, shell path, argv flags, startup files, and marker
+  visibility for that phase.
+- `sandbox` records coarse filesystem, network, and Keychain capability status
+  as `observed_allowed`, `observed_denied`, `pending`, `unknown`, or
+  `not_applicable`.
+- `env_inheritance` records whether terminal shell inheritance was observed or
+  rejected for that surface.
+- `evidence_refs` is required; CLI evidence must not satisfy GUI app or IDE
+  claims unless the evidence names that exact surface.
+
+### `EnvProvenance`
+
+Source: `packages/schemas/src/entities/env-provenance.ts`
+
+Records why an environment variable name is present, absent, classified, or
+hashed for a specific `ExecutionContext`. It adopts the devcontainer timing
+classes `baked`, `runtime_applied`, and `probed`, plus Codex operator-policy
+terms such as `inherit`, `include_only`, `exclude`, `set`, `overrides`, and
+`ignore_default_excludes`.
+
+The schema intentionally has no raw `value` field. Acceptable observation
+modes are `name_only`, `existence_only`, `classified`, `hash_only`, `absent`,
+and `not_observed`.
+
+### `CredentialSource`
+
+Source: `packages/schemas/src/entities/credential-source.ts`
+
+Describes durable credential authority without exposing credential material.
+Initial `source_type` values include `macos_keychain`, `codex_home_file`,
+`claude_credentials_file`, `oauth_device_flow`, `subscription_oauth`,
+`api_key_env`, `api_key_helper`, `onepassword`, `infisical`, `vault`,
+`devenv_secretspec`, `long_lived_setup_token`, `service_account`, and
+`brokered_secret_reference`.
+
+Key fields:
+
+- `storage_plane`, `durability`, `scope`, `rotation`, and `health` capture the
+  operational posture of the source.
+- `secret_ref` is an opaque reference only, such as an `op://` or `hcs://`
+  reference. It is not secret material.
+- `env_var_name` may describe a compatibility rendering, but shell env is not
+  the durable source unless evidence says so for that surface.
+
+### `StartupPhase`
+
+Source: `packages/schemas/src/entities/startup-phase.ts`
+
+Defines the 14-phase temporal ordering from ADR 0016:
+
+1. `boot`
+2. `launchd_user_session`
+3. `gui_app_exec`
+4. `terminal_emulator_launch`
+5. `shell_login_init`
+6. `shell_interactive_init`
+7. `direnv_chpwd`
+8. `mise_activate`
+9. `agent_launch`
+10. `agent_env_policy_apply`
+11. `agent_session_hook`
+12. `mcp_server_init`
+13. `subagent_spawn`
+14. `tool_call_subprocess`
+
+The Zod schema validates that `order` matches the named phase. This protects
+P03/P04/P09 reasoning from treating setup scripts, MCP startup, and tool-call
+subprocesses as interchangeable timing points.
+
 ## Provenance on every fact
 
 Every `Evidence` record:
@@ -66,7 +159,8 @@ Every `Evidence` record:
 
 - `hcs-ontology-reviewer` subagent catches schema drift
 - `hcs-schema-change` skill enforces "schema + docs + JSON Schema + tests move together"
-- Phase 1 Thread D delivers Zod schemas + JSON Schema + full entity docs
+- Phase 1 Thread D delivers remaining Zod schemas + JSON Schema + full entity
+  docs
 
 ## References
 
@@ -77,4 +171,5 @@ Every `Evidence` record:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.0 | 2026-05-01 | Added first shell/env Ring 0 schema docs for `ExecutionContext`, `EnvProvenance`, `CredentialSource`, and `StartupPhase`. |
 | 0.1.0 | 2026-04-22 | Initial stub. Lists 20 entities; points to research plan for shape details. |

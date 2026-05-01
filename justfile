@@ -72,14 +72,24 @@ typecheck:
 	@echo "→ typecheck"
 	@if [ -x node_modules/.bin/tsc ]; then node_modules/.bin/tsc --noEmit; else echo "  (tsc not installed yet — run 'npm install')"; fi
 
-# Unit tests
-test:
+# Unit tests. `just test schemas` limits Vitest to the schema package.
+test target="":
 	@echo "→ unit tests"
-	@if [ -x node_modules/.bin/vitest ]; then node_modules/.bin/vitest run --passWithNoTests; else echo "  (vitest not installed yet — run 'npm install')"; fi
+	@if [ -x node_modules/.bin/vitest ]; then \
+		if [ "{{target}}" = "schemas" ]; then \
+			node_modules/.bin/vitest run packages/schemas/tests; \
+		else \
+			node_modules/.bin/vitest run --passWithNoTests; \
+		fi; \
+	else echo "  (vitest not installed yet — run 'npm install')"; fi
 
 # Schema drift check
 generate-schemas-check:
 	@bash scripts/ci/schema-drift.sh
+
+# Generate JSON Schema from Zod sources. `just generate-schemas --check` checks drift.
+generate-schemas mode="":
+	@if [ "{{mode}}" = "--check" ]; then npm run generate-schemas:check; else npm run generate-schemas; fi
 
 # Ring boundary enforcement
 boundary-check:

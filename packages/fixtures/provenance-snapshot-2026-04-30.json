@@ -139,12 +139,5 @@
   "safety": "only_p08_allowed_non_secret_targets_emit_values",
   "schema_version": "0.1.0",
   "surface": "codex_cli_tool_call_subprocess",
-  "target_variables": [
-    "PATH",
-    "SHELL",
-    "HOME",
-    "PWD",
-    "TMPDIR",
-    "CODEX_HOME"
-  ]
+  "target_variables": ["PATH", "SHELL", "HOME", "PWD", "TMPDIR", "CODEX_HOME"]
 }

@@ -15,6 +15,8 @@
   "scripts": {
     "format": "biome format .",
     "format:fix": "biome format --write .",
+    "generate-schemas": "node --experimental-strip-types packages/schemas/scripts/generate-json-schemas.ts",
+    "generate-schemas:check": "node --experimental-strip-types packages/schemas/scripts/generate-json-schemas.ts --check",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
@@ -28,5 +30,8 @@
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
+  },
+  "dependencies": {
+    "zod": "^4.4.1"
   }
 }

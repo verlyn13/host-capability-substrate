@@ -7,8 +7,5 @@
     "redhat.vscode-yaml",
     "bierner.markdown-mermaid"
   ],
-  "unwantedRecommendations": [
-    "dbaeumer.vscode-eslint",
-    "esbenp.prettier-vscode"
-  ]
+  "unwantedRecommendations": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
 }

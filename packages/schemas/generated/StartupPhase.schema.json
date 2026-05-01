@@ -1,0 +1,137 @@
+{
+  "$id": "https://jefahnierocks.local/host-capability-substrate/schemas/StartupPhase.schema.json",
+  "title": "StartupPhase",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1.0",
+      "description": "Entity schema version for the first Phase 1 Ring 0 schema slice."
+    },
+    "startup_phase_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "description": "Stable local entity identifier. It is not a secret value."
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "boot",
+        "launchd_user_session",
+        "gui_app_exec",
+        "terminal_emulator_launch",
+        "shell_login_init",
+        "shell_interactive_init",
+        "direnv_chpwd",
+        "mise_activate",
+        "agent_launch",
+        "agent_env_policy_apply",
+        "agent_session_hook",
+        "mcp_server_init",
+        "subagent_spawn",
+        "tool_call_subprocess"
+      ],
+      "description": "Ordered startup phase from ADR 0016 shell/environment synthesis."
+    },
+    "order": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 14
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_refs": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "description": "Reference to an Evidence record or fixture."
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable source name or artifact path."
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+            "description": "RFC 3339 timestamp with an explicit UTC offset."
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$",
+                "description": "RFC 3339 timestamp with an explicit UTC offset."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "authority": {
+            "type": "string",
+            "enum": [
+              "project-local",
+              "workspace-local",
+              "user-global",
+              "system",
+              "derived",
+              "sandbox-observation",
+              "host-observation",
+              "vendor-doc",
+              "installed-runtime",
+              "human-observed"
+            ],
+            "description": "Authority plane for a fact or observation."
+          },
+          "parser_version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "authoritative",
+              "high",
+              "best-effort",
+              "stale",
+              "unknown"
+            ],
+            "description": "Confidence assigned to an observation by the producer."
+          }
+        },
+        "required": [
+          "evidence_id",
+          "source",
+          "observed_at",
+          "authority",
+          "confidence"
+        ],
+        "additionalProperties": false,
+        "description": "Small provenance reference embedded until the full Evidence entity lands."
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "startup_phase_id",
+    "phase",
+    "order",
+    "description",
+    "evidence_refs"
+  ],
+  "additionalProperties": false,
+  "description": "Temporal ordering entity for environment and credential availability."
+}
