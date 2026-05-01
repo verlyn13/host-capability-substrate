@@ -3,13 +3,13 @@ title: HCS Shell and Environment Research Report
 category: research
 component: host_capability_substrate
 status: active
-version: 2.5.0
+version: 2.6.0
 last_updated: 2026-04-30
 tags: [shell, environment, zsh, bash, codex, claude-code, launchd, keychain, oauth, direnv, mise, devcontainer, 1password, infisical]
 priority: high
 ---
 
-# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.5, April 2026)
+# HCS Shell and Environment Handling — Landscape Survey + Direct-Test Program (v2.6, April 2026)
 
 Unified landscape survey of Codex/Claude/adjacent-tooling shell and environment semantics as of April 2026, reconciled with the prompt-extraction and planning report's P01–P12 research program. Findings are labeled **Confirmed** (primary/official source), **Likely** (code/issues/reputable secondary), or **Unknown** (explicit gap). Fish is intentionally out of scope. HCS primitive names (`ExecutionContext`, `EnvProvenance`, `CredentialSource`, `ToolResolution`, `StartupPhase`) appear throughout.
 
@@ -27,7 +27,7 @@ These findings materially revise the original backlog. Of the twelve prompts in 
 
 - **3 prompts are now answerable at the documentation level** (P01, P05, and parts of the original P06 source-level question) and need only confirmatory validation runs.
 - **P06 is closed for Codex CLI and Claude Code CLI** through local host telemetry; app/IDE variants are treated as separate `ExecutionContext` prompts.
-- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P08 has an initial Codex CLI tool-call snapshot, and P09 has a non-mutating blocked/untrusted baseline; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
+- **4 prompts still need empirical runtime tests**, now scoped more tightly (P02, P03, P04, P09). P08 has an initial Codex CLI tool-call snapshot, and P09 has terminal blocked/untrusted plus isolated allowed/trusted fixtures; additional surfaces still need their own snapshots/matrices after their execution contexts are probed.
 - **1 prompt is dropped** (P10 — fish, per explicit user guidance).
 - **1 prompt remains design/policy work unchanged by the survey** (P11). P12 has a repo-local prototype and fixture; final Ring 1 operation-shape work remains future schema/policy work.
 - **1 new prompt is added** from the landscape survey (P13 — Codex app sandbox as distinct `ExecutionContext`).
@@ -465,7 +465,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 | P06 — Shell binary + invocation form per surface | **Closed for Codex CLI and Claude Code CLI**: local tests split Codex CLI into internal `/bin/zsh -lc` startup shells and actual host-observed tool-call subprocesses `sandbox-exec -- /bin/zsh -c <redacted>`. The focused matrix resolved Codex `allow_login_shell=false` marker propagation for CLI 0.125.0 as same host argv with marker env absent in the no-login-shell config. Claude Code CLI Bash-tool subprocess is host-observed as `/bin/zsh -c <redacted>` with marker propagation and `.zshenv` only. PATH-prefix wrapper interception is unsuitable except as a negative control. | No P06 blocker remains for these CLI surfaces; app/IDE surfaces remain P02/P03/P04/P13 work |
 | P07 — Startup files consulted per surface | **Derived** from P06 findings | Optional — sentinel markers only if P06 wrapper test contradicts expectations (0–4h) |
 | P08 — Provenance of PATH/SHELL/HOME/PWD/TMPDIR/CODEX_HOME | Initial Codex CLI tool-call snapshot committed; app/IDE/MCP surfaces still need their own snapshots after execution-context probes exist | Partial — Codex CLI fixture exists; remaining surfaces not captured |
-| P09 — direnv/mise visibility across surfaces | Non-mutating baseline fixture landed: plain noninteractive process sees no markers; direnv blocks unallowed `.envrc`; mise blocks untrusted `.mise.toml`. Known caveats remain for allowed/trusted terminal, GUI, and IDE surfaces. | Partial — baseline fixture exists; allowed/trusted and GUI/IDE matrix remains |
+| P09 — direnv/mise visibility across surfaces | Terminal fixtures landed: plain noninteractive process sees no markers before allow/trust; direnv blocks unallowed `.envrc`; mise blocks untrusted `.mise.toml`; isolated `direnv allow` / `mise trust` make markers visible to terminal-style subprocesses. | Partial — terminal fixtures exist; GUI/IDE matrix remains |
 | **P10 — Fish compatibility matrix** | **DROPPED** per user guidance | — |
 | P11 — LaunchAgent env policy for non-secret session flags | Design/policy, unchanged by survey | Design work (6h, no runtime) |
 | P12 — Secret-safe env inspection helper spec | Repo-local prototype and fixture landed; confirmed no public runtime-env secret-scanner prior art | Final Ring 1 operation-shape design remains future schema/policy work |
@@ -489,7 +489,7 @@ Each original backlog item (P01–P12) is reclassified against the landscape sur
 - **P03**: the exact timing of setup-script vs MCP-server init is *not* in any official doc and Codex issues are silent. This is the substance of whether bearer-token MCP servers can rely on setup-script-exported env.
 - **P04**: `shell_environment_policy.include_only` is documented but not validated across app/CLI/IDE. Known issue #3064 suggests behavior diverges from docs — needs a matrix.
 - **P08**: initial Codex CLI snapshot is now committed; remaining value is per-surface expansion after direct execution-context probes.
-- **P09**: non-mutating baseline is now committed; remaining work is allowed/trusted terminal and GUI/IDE marker visibility across tightly scoped surfaces.
+- **P09**: terminal blocked/untrusted and isolated allowed/trusted fixtures are now committed; remaining work is GUI/IDE marker visibility across tightly scoped surfaces.
 - **P11**: design work, not empirical.
 - **P12**: prototype is now committed; final operation-shape design waits for Ring 0/Ring 1 work.
 - **P13**: Codex app sandbox boundary needs explicit characterization — is it `sandbox-exec` with a seatbelt profile, a bundled app sandbox, or a helper-specific combination? What syscalls/resources are gated? Static bundle/process/schema evidence is insufficient because the macOS apps are full signed applications and may hide relevant behavior behind UI/runtime control paths. This determines how HCS must model `ExecutionContext` for the app vs CLI.
@@ -510,7 +510,7 @@ Revised priority order (impact × feasibility × time-to-falsifiable-answer):
 | 6 | **P04** | 4 | 3 | 10 | Cross-surface env-policy matrix; documented gap vs observed |
 | 7 | **P03** | 5 | 3 | 8 | Setup-script/MCP timing — genuinely undocumented |
 | 8 | **P08** | 3 | 4 | partial | Initial Codex CLI provenance snapshot landed; other surfaces remain |
-| 9 | **P09** | 3 | 3 | partial | Non-mutating baseline landed; allowed/trusted and GUI/IDE matrix remains |
+| 9 | **P09** | 3 | 3 | partial | Terminal fixtures landed; GUI/IDE matrix remains |
 | 10 | **P12** | 4 | 3 | prototype done | Secret-safe inspection prototype landed; Ring 1 design remains |
 | 11 | **P11** | 3 | 4 | 6 | Policy design for non-secret session flags |
 | 12 | **P07** | 2 | 4 | 0–4 | Only if P06 surprises |
@@ -685,13 +685,13 @@ execution contexts are directly probed.
 
 **P09** (direnv/mise cross-surface, 6h): Repo with `.envrc` exporting `HCS_DIRENV_MARKER` and `.mise.toml` with `[env] HCS_MISE_MARKER = "present"`. Launch each surface from within the repo root (not just via IDE opening). Have probe report which markers are visible. Test both terminal-launched and GUI-launched cases.
 
-Baseline status: `scripts/dev/run-direnv-mise-fixture.sh` landed on
-2026-04-30 as the non-mutating baseline. It creates an isolated temp project,
-uses sanitized temp `HOME`, `DIRENV_CONFIG`, and `MISE_*` state, does not run
-`direnv allow` or `mise trust`, and verifies that markers are not visible or
-leaked before allow/trust. The fixture is exposed as `just direnv-mise-fixture`
-and is wired into `just verify`. The full P09 matrix still requires explicit
-operation proofs for allow/trust and GUI/IDE surfaces.
+Terminal status: `scripts/dev/run-direnv-mise-fixture.sh` landed on 2026-04-30
+as the blocked/untrusted baseline. `scripts/dev/run-direnv-mise-terminal-fixture.sh`
+landed the same day as the isolated allowed/trusted terminal matrix. Both use
+sanitized temp `HOME`, `DIRENV_CONFIG`, and `MISE_*` state; neither touches the
+real user trust stores. The fixtures are exposed as `just direnv-mise-fixture`
+and `just direnv-mise-terminal-fixture`, both wired into `just verify`. The
+remaining P09 matrix is GUI/IDE behavior.
 
 **P11** (LaunchAgent policy design, 6h): Policy decision table. Criteria: secrecy level (none/low/high), durability (ephemeral/login-scoped/reboot-persistent), GUI visibility requirement, operational need. Classify candidate vars (LANG, LC_ALL, DEFAULT_EDITOR, TMPDIR, proxy vars, HOMEBREW_NO_ANALYTICS, telemetry toggles, org-specific flags). Deliverable: `docs/adrs/ADR-NNN-launchagent-env-policy.md` with explicit list of what belongs at user-session layer and what doesn't.
 
@@ -809,3 +809,4 @@ From the revised survey + plan, the next useful HCS artifacts are:
 | 2.3.1 | 2026-04-28 | Integrated P13 refresh: current Codex app `26.422.71525`/`2210`, GUI app-server control unavailable from this session, local boundary probe classified as CLI-side control evidence only, and app-internal proof gap moved to UI/control evidence. |
 | 2.4.0 | 2026-04-30 | Integrated P08 initial Codex CLI provenance snapshot fixture and P12 secret-safe env inspection prototype, with both fixtures wired into `just verify`; updated remaining prompt counts and kept final Ring 1 operation design future-scoped. |
 | 2.5.0 | 2026-04-30 | Integrated P09 non-mutating direnv/mise baseline fixture, with sanitized temporary config/state and no allow/trust or GUI operations; kept allowed/trusted and GUI/IDE matrix future-scoped. |
+| 2.6.0 | 2026-04-30 | Integrated P09 isolated allowed/trusted terminal fixture using temp-scoped `direnv allow` and `mise trust`; kept GUI/IDE matrix future-scoped. |

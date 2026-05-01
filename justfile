@@ -41,6 +41,10 @@ provenance-snapshot-fixture:
 direnv-mise-fixture:
 	@bash scripts/dev/run-direnv-mise-fixture.sh
 
+# P09 isolated direnv allow / mise trust terminal fixture
+direnv-mise-terminal-fixture:
+	@bash scripts/dev/run-direnv-mise-terminal-fixture.sh
+
 # Format check (no writes)
 format-check:
 	@echo "→ format check"

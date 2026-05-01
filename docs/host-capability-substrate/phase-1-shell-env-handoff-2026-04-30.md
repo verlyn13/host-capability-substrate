@@ -3,7 +3,7 @@ title: Phase 1 Shell Environment Handoff
 category: handoff
 component: host_capability_substrate
 status: current
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-04-30
 tags: [phase-1, shell-env, handoff, agent-context, fixtures]
 priority: high
@@ -20,9 +20,9 @@ supersedes `phase-1-shell-env-handoff-2026-04-26.md`.
 |---|---|
 | Observed at | 2026-04-30 |
 | Branch | `main` |
-| Base HEAD before current worktree edits | `5184222 docs: ingest hcs evidence planning report` |
-| Git relation before current edits | `main` one commit ahead of `origin/main` |
-| Worktree expectation | P08/P09/P12 scripts, fixtures, and docs are uncommitted unless the operator commits them after this handoff. |
+| Base HEAD before current worktree edits | `8a9c3fa phase1: add direnv mise baseline` |
+| Git relation before current edits | `main` three commits ahead of `origin/main` |
+| Worktree expectation | P09 isolated terminal-matrix script and docs are uncommitted unless the operator commits them after this handoff. |
 | Validation | `just verify` passed after P08/P09/P12 fixture wiring. |
 
 ## Toolchain Snapshot
@@ -45,13 +45,13 @@ supersedes `phase-1-shell-env-handoff-2026-04-26.md`.
 | P05 Claude Desktop auth boundary | Runtime smoke complete. | `research/shell-env/2026-04-26-P05-claude-desktop-auth-boundary.md` |
 | P06 shell provenance | Closed for Codex CLI and Claude Code CLI; app/IDE surfaces remain separate execution contexts. | `research/shell-env/2026-04-28-P06-host-telemetry-rerun.md`; `just shell-logger-fixture` |
 | P08 provenance snapshot | Initial Codex CLI tool-call subprocess fixture landed. It is `authority: sandbox-observation`, not host-authoritative. | `packages/fixtures/provenance-snapshot-2026-04-30.json`; `just provenance-snapshot-fixture` |
-| P09 direnv/mise visibility | Non-mutating baseline fixture landed; allowed/trusted and GUI/IDE matrix remains open. | `scripts/dev/run-direnv-mise-fixture.sh`; `just direnv-mise-fixture` |
+| P09 direnv/mise visibility | Terminal fixtures landed for blocked/untrusted and isolated allowed/trusted paths; GUI/IDE matrix remains open. | `scripts/dev/run-direnv-mise-fixture.sh`; `scripts/dev/run-direnv-mise-terminal-fixture.sh`; `just direnv-mise-fixture`; `just direnv-mise-terminal-fixture` |
 | P12 env inspection | Repo-local prototype landed for names-only, existence, classified, and hashed env inspection. | `scripts/dev/hcs-env-inspect.py`; `just env-inspect-fixture` |
 | P13 Codex app sandbox | Open/narrowed; needs reachable GUI app-server control or human-run sterile Codex app UI probe. | `research/shell-env/2026-04-26-P13-codex-app-bundle-signing.md` |
 
-## Current Uncommitted Scope
+## Recent Scope
 
-Expected file categories after the P08/P09/P12 pass:
+Recent file categories across the P08/P09/P12 pass plus P09 terminal matrix:
 
 - Ring 3 scripts/fixtures:
   `scripts/dev/hcs-env-inspect.py`,
@@ -59,6 +59,7 @@ Expected file categories after the P08/P09/P12 pass:
   `scripts/dev/capture-provenance-snapshot.py`,
   `scripts/dev/run-provenance-snapshot-fixture.sh`,
   `scripts/dev/run-direnv-mise-fixture.sh`,
+  `scripts/dev/run-direnv-mise-terminal-fixture.sh`,
   `packages/fixtures/provenance-snapshot-2026-04-30.json`.
 - Validation wiring:
   `justfile`, `scripts/ci/verify.sh`.
@@ -70,6 +71,9 @@ Expected file categories after the P08/P09/P12 pass:
 
 No Ring 0 schema, Ring 1 kernel, Ring 2 adapter, live policy, hook, or runtime
 state changes are part of this scope.
+
+At this handoff, the P08/P12 commit and P09 baseline commit are already in
+`main`; the P09 terminal-matrix additions are the current uncommitted work.
 
 ## Guardrails
 
@@ -87,13 +91,13 @@ state changes are part of this scope.
 
 ## Recommended Next Step
 
-Continue P09 with an operation-proofed allowed/trusted terminal matrix:
+Continue P09 with an operation-proofed GUI/IDE matrix:
 
-1. Keep using temporary `HOME`, `DIRENV_CONFIG`, and `MISE_*` state paths.
-2. Add an explicit proof before any `direnv allow` or `mise trust`, even in a
-   temp project.
-3. Record marker presence/absence only.
-4. Defer GUI-origin tests until the terminal matrix is understood.
+1. Keep marker reporting to presence/absence only.
+2. Do not use terminal `open` as a clean GUI-origin proxy.
+3. Use a human-run sterile app/IDE turn or a proven GUI control path.
+4. Preserve the distinction between terminal, GUI app, IDE extension, and MCP
+   server execution contexts.
 
 ## Validation Notes
 
@@ -109,6 +113,7 @@ Focused checks that passed during the P08/P09/P12 work:
 - `just env-inspect-fixture`
 - `just provenance-snapshot-fixture`
 - `just direnv-mise-fixture`
+- `just direnv-mise-terminal-fixture`
 - `just shellcheck-scan`
 - `just forbidden-string-scan`
 - `git diff --check`
@@ -117,5 +122,6 @@ Focused checks that passed during the P08/P09/P12 work:
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.2.0 | 2026-04-30 | Added P09 isolated allowed/trusted terminal fixture and moved next step to GUI/IDE matrix. |
 | 1.1.0 | 2026-04-30 | Added P09 non-mutating direnv/mise baseline fixture and updated next step. |
 | 1.0.0 | 2026-04-30 | Current handoff after P08/P12 prototype and fixture work. |
