@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import {
+  boundaryObservationSchema,
   credentialSourceSchema,
   envProvenanceSchema,
   evidenceSchema,
@@ -15,6 +16,11 @@ const generatedDir = resolve(packageRoot, 'generated');
 const checkMode = process.argv.includes('--check');
 
 const schemaEntries = [
+  {
+    file: 'BoundaryObservation.schema.json',
+    title: 'BoundaryObservation',
+    schema: boundaryObservationSchema,
+  },
   {
     file: 'CredentialSource.schema.json',
     title: 'CredentialSource',

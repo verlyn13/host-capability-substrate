@@ -10,6 +10,16 @@ export {
   sha256DigestSchema,
 } from './common.ts';
 export {
+  type BoundaryDimension,
+  type BoundaryDiscrepancyClass,
+  type BoundaryObservation,
+  type BoundaryObservationState,
+  boundaryDimensionSchema,
+  boundaryDiscrepancyClassSchema,
+  boundaryObservationSchema,
+  boundaryObservationStateSchema,
+} from './entities/boundary-observation.ts';
+export {
   type CredentialSource,
   credentialDurabilitySchema,
   credentialHealthSchema,

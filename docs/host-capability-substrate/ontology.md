@@ -3,22 +3,23 @@ title: HCS Ontology
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.5.0
-last_updated: 2026-05-01
-tags: [ontology, entities, schemas, evidence, execution-context, isolation, github, version-control]
+version: 0.7.0
+last_updated: 2026-05-02
+tags: [ontology, entities, schemas, evidence, execution-context, isolation, github, version-control, boundary-observation]
 priority: high
 ---
 
 # HCS Ontology
 
-Authoritative human-facing reference for HCS Ring 0 entities. The 20 core
-entities remain the Milestone 1 target; the first Phase 1 shell/env schema
-slice has landed for ADRs 0016, 0017, and 0018, and the base `Evidence`
-entity has landed for ADR 0023.
+Authoritative human-facing reference for HCS Ring 0 entities. The 22 canonical
+entities are the Milestone 1 target. The first Phase 1 shell/env schema slice
+has landed for ADRs 0016, 0017, and 0018, the base `Evidence` entity has
+landed for ADR 0023, and `ExecutionContext` is on the canonical list per ADR
+0021 invariant 17 (charter v1.3.0).
 
 Canonical research plan sketch: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §2 (Ontology) and §Appendix A.
 
-## Entities (20 core)
+## Entities (22 canonical)
 
 ```
 HostProfile          canonical host identity + stable facts
@@ -33,6 +34,7 @@ Capability           a declared kernel operation (e.g., service.activate)
 OperationShape       semantic operation proposal with target + mutation scope
 CommandShape         argv vector + env profile + execution lane (rendered from Operation)
 Evidence             a fact with provenance, freshness, authority, confidence
+ExecutionContext     a named runtime surface and startup phase
 PolicyRule           a tier/destructive-pattern/approval rule (YAML or Rego)
 Decision             gateway output: allowed | requires_approval | denied
 ApprovalGrant        scoped, expiring, replay-resistant authorization
@@ -43,6 +45,9 @@ Lock                 coarser mutex (e.g., "package-manager global")
 SecretReference      op:// URI, never the value
 ResourceBudget       per-session CPU/memory/network/sandbox-concurrency allocation
 ```
+
+`EnvProvenance`, `CredentialSource`, and `StartupPhase` remain Phase 1
+supplemental entities until Q-011-guided ontology review promotes them.
 
 Each entity carries a `schema_version`. Entity schema versions are independent of adapter tool-name versions (MCP tool names follow `system.{namespace}.{verb}.v{N}` in adapter surfaces).
 
@@ -171,6 +176,51 @@ separate non-sandbox evidence record.
 The legacy `evidenceRefSchema` remains as a lightweight reference or embedded
 provenance preview for entities that have not yet been migrated to full
 Evidence records. It is not a competing fact model.
+
+## Phase 1 Boundary Observation Envelope
+
+### `BoundaryObservation`
+
+Source: `packages/schemas/src/entities/boundary-observation.ts`
+
+Implements the ADR 0022 evidence subtype envelope for contextual boundary
+claims. A `BoundaryObservation` describes one freshness-bound boundary fact
+about one surface, execution context, workspace, credential source, or
+provider object. It does not decide policy; it carries the discriminator,
+target binding, observed payload, freshness, and evidence references that
+later policy/gateway services compose.
+
+Key fields:
+
+- `boundary_dimension` is singular and drawn from the registry at
+  `docs/host-capability-substrate/ontology-registry.md`. The Zod enum mirrors
+  that registry; drift between them fails `just verify`.
+- `observed_payload` is a domain-specific JSON value owned by the dimension's
+  payload schema family. The envelope reasons over `observation_state`,
+  `discrepancy_class`, freshness, and `evidence_refs`, not the payload
+  internals.
+- `expected_payload` is present only when the domain payload defines an
+  expected target posture. It must use the same domain payload schema family
+  as `observed_payload`.
+- At least one target reference must be present: `surface_id`,
+  `execution_context_id`, `workspace_id`, `credential_source_id`, or
+  `tool_or_provider_ref`. The envelope refuses an unbound observation.
+- `observation_state` carries the seven-state vocabulary from ADR 0022:
+  `proven`, `denied`, `pending`, `stale`, `contradictory`, `inapplicable`, and
+  `unknown`. `unknown` is not the same as `denied`; missing or unobservable
+  evidence is its own state.
+- `schema_version` names the envelope schema, `evidence_schema_version` names
+  the base `Evidence` contract, and `payload_schema_version` names the domain
+  payload when one exists. The three versions are independent; a domain
+  payload bump must not force an envelope bump, and vice versa.
+
+Multi-dimensional boundary facts are represented as linked observations that
+share target references, not as a single envelope with multiple dimensions.
+
+`BoundaryObservation` does not introduce a new policy tier, dashboard route,
+runtime probe, or mutation operation. Domain payload schemas, gate-behavior
+rules for stale or contradictory observations, and dashboard rendering are
+follow-up Q-007 work.
 
 ## Compatibility and Isolation Vocabulary
 
@@ -321,6 +371,8 @@ Every `Evidence` record:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.7.0 | 2026-05-02 | Added the ADR 0022 `BoundaryObservation` envelope section. Cross-references the ontology-registry as the source of `boundary_dimension` values. |
+| 0.6.0 | 2026-05-02 | Promoted `ExecutionContext` into the canonical entity list per ADR 0021 invariant 17 (charter v1.3.0). Header updated from "20 core" to "22 canonical". |
 | 0.5.0 | 2026-05-01 | Added the ADR 0023 base `Evidence` schema documentation and updated the provenance example. |
 | 0.4.0 | 2026-05-01 | Added version-control authority vocabulary from the Q-006 consult synthesis. |
 | 0.3.0 | 2026-05-01 | Added compatibility/isolation vocabulary from the agentic tool isolation intake as Phase 1 schema reconciliation guidance. |
