@@ -3,7 +3,7 @@ title: Codex Import Dialog Hang and Process-Inspection Evidence
 category: research
 component: host_capability_substrate
 status: active
-version: 1.0.0
+version: 1.1.0
 last_updated: 2026-05-01
 tags: [research, local, codex, app, import, migration, process-inspection, secrets, execution-context]
 priority: high
@@ -16,10 +16,58 @@ priority: high
 This memo records a live Codex macOS app observation from 2026-05-01 AKDT /
 2026-05-02 UTC. The user reported that the Settings / Codex import dialog was
 still open, all options were disabled, and force-quit had not yet occurred.
+The same import prompt was later reproduced by opening a different repo as a
+new Codex project.
 
 Treat this as first-party local host evidence for HCS planning. It does not
 change schema, policy, adapters, hooks, repo settings, or live Codex
 configuration.
+
+## Follow-up Reproduction: Budget Triage
+
+After the HCS memo was first committed, the user opened
+`/Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025` as a new Codex
+project. The same "Select settings to import" dialog appeared and hung with all
+four rows checked:
+
+| Row | Source | Target |
+|---|---|---|
+| Settings | `.claude/settings.json` | `.codex/config.toml` |
+| Commands | `.claude/commands` | `.agents/skills` |
+| Agents | `.claude/agents` | `.codex/agents` |
+| Hooks | `.claude` | `.codex/hooks.json` |
+
+Local repo inspection showed that this is a mixed populated/missing-target
+case:
+
+| Target | Observed state |
+|---|---|
+| `.codex/config.toml` | Already exists and contains project-scope Codex config plus project MCP server stanzas and env blocks. Raw env values are not repeated here. |
+| `.agents/skills/` | Already exists and is populated with project skills. |
+| `.codex/agents/` | Not present in the observed file list. |
+| `.codex/hooks.json` | Not present in the observed file list. |
+
+The Claude sources are non-trivial:
+
+- `.claude/commands/` has 7 command files: `awaken`, `contract`, `migrate`,
+  `review-amendments`, `skills`, `status`, and `tidyup`.
+- `.claude/agents/` has 6 top-level agents: `code-reviewer`,
+  `db-migration-specialist`, `doc-validator`, `observer`,
+  `security-auditor`, and `test-auditor`.
+- `.claude/settings.json` contains an `env` block and multiple hooks. Hook
+  commands reference `$CLAUDE_PROJECT_DIR`, include session lifecycle hooks,
+  Bash hooks, and write/edit/multiedit governance hooks.
+
+The Commands destination, `.agents/skills`, is intentional. The curated
+`migrate-to-codex` reference maps Claude commands and skills to the cross-tool
+`.agents/skills/` project home. This matches HCS's own skills-location
+decision. It is not evidence of a path typo.
+
+This reproduction broadens the failure model: the import dialog can hang on at
+least one non-HCS repo where some targets are populated and some targets are
+missing. It also shows that the dialog does not warn before attempting to merge
+Claude settings into a non-empty `.codex/config.toml` that already contains
+working project MCP configuration.
 
 ## Evidence Captured
 
@@ -163,8 +211,8 @@ The best current model is:
 
 1. The Codex import UI can enter a disabled/loading state with no visible
    recovery path.
-2. The current repo already contains tracked Codex project directives, so the
-   old "fresh target paths are missing" diagnosis is stale for this worktree.
+2. The issue is not HCS-specific. It reproduced when opening budget-triage as a
+   new Codex project.
 3. App logs show skill-list scans completing, but do not show import lifecycle
    telemetry that explains the stuck UI.
 4. The app-server can retain many child MCP/session processes while the dialog
@@ -173,6 +221,9 @@ The best current model is:
 5. The curated migration skill is intentionally autonomous and broad enough to
    edit generated Codex artifacts, so HCS should not treat import output as
    trusted without repo-local review.
+6. In HCS specifically, the current repo already contains tracked Codex project
+   directives, so the old "fresh target paths are missing" diagnosis is stale
+   for this worktree.
 
 ## HCS Planning Inputs
 
