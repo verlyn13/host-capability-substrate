@@ -3,9 +3,9 @@ title: HCS local research artifacts
 category: research
 component: host_capability_substrate
 status: active
-version: 1.6.0
+version: 1.7.0
 last_updated: 2026-05-01
-tags: [research, local, host-evidence, github, version-control, quality-management, codex, worktree, branch-cleanup, diagnostics, workspace-context, isolation, ontology]
+tags: [research, local, host-evidence, github, version-control, quality-management, codex, worktree, branch-cleanup, diagnostics, workspace-context, isolation, ontology, process-inspection]
 priority: medium
 ---
 
@@ -38,11 +38,13 @@ summaries.
 | `2026-05-01-agentic-tool-isolation-synthesis.md` | 2026-05-01 | Synthesis of a user-submitted agentic coding tool isolation report. Separates permission gating, worktree/file isolation, local kernel sandboxing, container/VM isolation, and remote cloud execution. Queues Q-010. |
 | `2026-05-01-version-control-authority-consult-synthesis.md` | 2026-05-01 | Synthesis of a user-submitted version-control authority consult. Refines Q-006 around source-control continuity, expected check source identity, branch deletion proof, Actions posture, and split GitHub credential surfaces. |
 | `2026-05-01-ontology-promotion-receipt-dedupe-plan.md` | 2026-05-01 | Cross-Q planning document for ontology promotion buckets, candidate receipt dedupe, naming discipline, and dependency order before additional Ring 0 schema work. Queues Q-011. |
+| `2026-05-01-codex-import-dialog-hang.md` | 2026-05-01 | Live Codex macOS app import-dialog hang investigation. Corrects stale repo-target assumptions, records app/log/process evidence, and reinforces Q-009 safe process inspection for app-managed MCP children. |
 
 ## Change Log
 
 | Version | Date | Change |
 |---|---:|---|
+| 1.7.0 | 2026-05-01 | Added Codex import-dialog hang and safe process-inspection memo. |
 | 1.6.0 | 2026-05-01 | Added ontology promotion and receipt dedupe plan and linked Q-011. |
 | 1.5.0 | 2026-05-01 | Added version-control authority consult synthesis and Q-006 refinement. |
 | 1.4.0 | 2026-05-01 | Added agentic tool isolation synthesis and linked Q-010. |
