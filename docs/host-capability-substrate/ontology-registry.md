@@ -3,7 +3,7 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.2.0
+version: 0.2.1
 last_updated: 2026-05-02
 tags: [ontology, registry, boundary-observation, evidence, naming-discipline, q-011]
 priority: high
@@ -157,6 +157,40 @@ Sub-rules:
    which sibling `_evidence_refs` array is required. Discriminator-and-array
    pairs are the recommended pattern when an OR-shape would otherwise
    collapse two ontologically distinct facts into one field.
+
+### Version-field naming
+
+Schema entities, evidence subtype envelopes, and proof composites carry up
+to three independent version fields. Their names and semantics are fixed:
+
+- **`schema_version`** — names the entity, envelope, or composite schema
+  itself. Required on every Ring 0 entity, evidence subtype envelope, and
+  proof composite. The current value across the Phase 1 schema slice is
+  the literal `'0.1.0'`.
+- **`evidence_schema_version`** — names the version of the base `Evidence`
+  contract (ADR 0023) under which component evidence references were
+  composed. Required on evidence subtype envelopes and proof composites
+  whose validity depends on the base contract; the broker may reject
+  records whose `evidence_schema_version` does not match the current
+  accepted base contract.
+- **`payload_schema_version`** — names the domain payload schema family
+  when an evidence subtype envelope (or any composite) carries a
+  discriminated domain payload field (such as
+  `BoundaryObservation.observed_payload`). Optional and absent when the
+  envelope or composite has no separate domain payload field; in that
+  case the composite *is* the field block.
+
+Sub-rule:
+
+6. **No fourth version field without registry update.** A composite that
+   needs a fourth independent version (for example a tier-specific window
+   version, or a discriminator-payload-kind version) must add a new
+   registry entry naming the field, the contract it tracks, and the
+   freshness/composition semantics. Otherwise composites must reuse the
+   three canonical fields and accept the current scope of each. This
+   sub-rule prevents the asymmetry surfaced during ADR 0025 v2 review,
+   where a composite without a domain payload had drifted to a redundant
+   `proof_schema_version` field.
 
 ### Adding a new suffix or convention
 
@@ -438,5 +472,6 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.1 | 2026-05-02 | Added the §Version-field naming subsection codifying the three canonical version fields (`schema_version`, `evidence_schema_version`, `payload_schema_version`) and Sub-rule 6 (no fourth version field without registry update). Resolves the BoundaryObservation/BranchDeletionProof asymmetry surfaced during ADR 0025 v2 review, where a composite without a domain payload had drifted to a redundant `proof_schema_version` field. Used as a precondition for ADR 0025 acceptance. |
 | 0.2.0 | 2026-05-02 | Added the §Naming suffix discipline section codifying Q-011 sub-decision (d) (approved 2026-05-01): closed `*Observation` / `*Receipt` / `*Proof` / no-suffix entity-name discipline, plus `<entity>_id` / `<thing>_ref` / `<thing>_evidence_refs` field-name discipline. Codifies the convention already in use across `packages/schemas/src/entities/` and `docs/host-capability-substrate/adr/`; resolves the `hcs-ontology-reviewer` finding that the suffix grammar was referenced but uncodified. Used as a precondition for ADR 0025 v2. |
 | 0.1.0 | 2026-05-02 | Initial registry. Sixteen `boundary_dimension` candidates listed as proposed; Q-011 review grammar and registration rules captured. Created as the named registry for ADR 0022. |
