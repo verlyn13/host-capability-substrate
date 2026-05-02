@@ -3,7 +3,7 @@ title: Host Capability Substrate — Implementation Charter
 category: charter
 component: host_capability_substrate
 status: active
-version: 1.3.0
+version: 1.3.1
 last_updated: 2026-05-02
 tags: [substrate, kernel, adapters, ontology, policy, four-rings, non-import, skills, deployment-boundary]
 priority: critical
@@ -89,6 +89,9 @@ CI checks at merge time:
 - *(added in v1.1.0)* No committed file contains a resolved `op://` value or any string matching known secret patterns (gitleaks/forbidden-string scan).
 - *(added in v1.2.0)* Cleanup capabilities must include a deletion-authority source before any renderer can produce recursive delete or `find -delete` command shapes.
 - *(added in v1.2.0)* Config validators must prefer observed installed-runtime parsing where available before accepting schema/doc-only claims for host harness files.
+- *(added in v1.3.1)* Every `OperationShape` carries a resolved `ExecutionContext` reference. Operations missing that reference fail policy-lint and are rejected by the gateway. Operationalizes invariant 17.
+- *(added in v1.3.1)* Capabilities whose `provider_kind != "local"` declare the typed evidence shape they require — for example a `BoundaryObservation` with a matching `boundary_dimension`, an `OriginAccessValidator` / `AudienceValidationBinding` receipt, or a recorded rate-limit observation — and the gateway refuses an operation against that capability when the declared evidence is absent. Operationalizes invariant 16.
+- *(added in v1.3.1)* `OperationShape` and `CommandShape` argument schemas distinguish `ProviderObjectReference`, `PublicClientId`, `PolicySelectorValue`, `SecretReference`, and raw secret material as separate typed slots. Collapsing two or more of those into a single untyped string field fails CI. Operationalizes invariant 16's "evidence is necessary, not sufficient" clause by preventing type confusion at the operation surface.
 
 ## Authoring rules
 
@@ -125,13 +128,19 @@ When opening a PR:
 - *(v1.2.0)* Writing boolean-like config as strings (for example `"verbose": "true"`) when the installed parser expects JSON booleans
 - *(v1.2.0)* Assuming Codex app, Claude Desktop, IDE agents, or other GUI-launched surfaces inherit `GITHUB_PAT`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or shell-exported setup variables from a terminal session
 - *(v1.2.0)* Echoing or enumerating secret-shaped environment values with `printenv | grep`, `env | grep`, `echo "$API_KEY"`, or argv-equivalent diagnostics
+- *(v1.3.1)* Treating an HTTP 429, MCP fan-out denial, provider-side rate-limit message, or backoff window as a signal to immediately retry. These are evidence to be recorded with provenance; retry behavior requires an explicit policy decision recorded as such.
+- *(v1.3.1)* Conflating `SecretReference`, `ProviderObjectReference`, `PublicClientId`, `PolicySelectorValue`, and raw secret material in `OperationShape` arguments, `CommandShape` rendered output, adapter wiring, hook bodies, or audit payloads.
+- *(v1.3.1)* Proposing or rendering a provider-side mutation against a control plane that exposes a separable validator surface (for example ADR 0015's `OriginAccessValidator` / `AudienceValidationBinding`) without first producing the validator-binding evidence.
+- *(v1.3.1)* Emitting an `OperationShape` without a resolved `ExecutionContext` surface reference, or recording a `Run` whose execution context cannot be traced to a Ring 0 `ExecutionContext` record.
+- *(v1.3.1)* Treating a parent process's sandbox, app/TCC permission, credential authority, provider mutation authority, or HCS `ApprovalGrant` status as evidence for a child `ExecutionContext` without typed inheritance evidence (such as `EnvProvenance` records) bound to the target context for the specific dimension being asserted.
+- *(v1.3.1)* Treating Codex `shell_environment_policy` `inherit` / `include_only` — or any equivalent operator on Claude Desktop, IDE extensions, MCP servers, or setup scripts — as proof of credential authority, sandbox scope, app/TCC permission, provider mutation authority, or HCS `ApprovalGrant` status.
 
 ## How to cite this charter
 
 In a PR description:
 
 ```markdown
-Complies with implementation charter v1.3.0. Ring: {0|1|2|3}. No cross-ring imports added.
+Complies with implementation charter v1.3.1. Ring: {0|1|2|3}. No cross-ring imports added.
 ```
 
 In a policy objection:
@@ -163,6 +172,7 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.1 | 2026-05-02 | Wave-2 of the v1.3.0 amendment cycle: added 3 boundary-enforcement bullets and 6 forbidden-pattern entries operationalizing invariants 16 and 17. Wave-1 (v1.3.0) deferred this plumbing per ADR 0021's charter-and-bookkeeping-only scope; the post-merge `hcs-architect` review flagged the absence as the first invariant wave in HCS history without enforcement plumbing, and this v1.3.1 patch closes that gap. Invariant text unchanged; CI implementation of the new bullets (e.g., the policy-lint check for `OperationShape.ExecutionContext` references) lands in separate PRs against kernel/CI as those surfaces materialize. |
 | 1.3.0 | 2026-05-02 | Added invariants 16 (external-control-plane evidence-first) and 17 (execution-context declared, not inferred) per ADR 0021. Invariants 18-20 remain queued behind Q-003, Q-007, and Q-008. Boundary enforcement and forbidden-pattern entries that operationalize invariants 16 and 17 are deferred to follow-up PRs once supporting schema and CI shape exists. |
 | 1.2.0 | 2026-04-26 | Added invariants 13-15 from Phase 0b closeout: deletion authority is not gitignore state, config-spec claims require authority provenance, and GUI shell-env inheritance must not be assumed. Amended invariant 12 to use public CLI semver with app-build identifiers tracked separately. Extended boundary enforcement and forbidden patterns for cleanup authority, config booleans, GUI env assumptions, and secret-value env inspection. |
 | 1.1.0 | 2026-04-22 | Added invariants 9–12 (skills canonical location, public/private deployment boundary, deprecated-syntax refusal, tool version baseline). Extended boundary enforcement with skills-location, runtime-state-not-in-repo, and no-secrets checks. Added forbidden patterns covering skill duplication, WARP.md, cross-surface policy duplication, `.windsurf/` creation, secret commits, and runtime-state commits. Added authoring requirements for `hcs-ontology-reviewer` on schema changes and `.agents/skills/` for skill changes. |
