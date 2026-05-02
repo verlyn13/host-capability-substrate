@@ -3,7 +3,7 @@ title: Host Capability Substrate — Implementation Charter
 category: charter
 component: host_capability_substrate
 status: active
-version: 1.3.1
+version: 1.3.2
 last_updated: 2026-05-02
 tags: [substrate, kernel, adapters, ontology, policy, four-rings, non-import, skills, deployment-boundary]
 priority: critical
@@ -128,19 +128,22 @@ When opening a PR:
 - *(v1.2.0)* Writing boolean-like config as strings (for example `"verbose": "true"`) when the installed parser expects JSON booleans
 - *(v1.2.0)* Assuming Codex app, Claude Desktop, IDE agents, or other GUI-launched surfaces inherit `GITHUB_PAT`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or shell-exported setup variables from a terminal session
 - *(v1.2.0)* Echoing or enumerating secret-shaped environment values with `printenv | grep`, `env | grep`, `echo "$API_KEY"`, or argv-equivalent diagnostics
-- *(v1.3.1)* Treating an HTTP 429, MCP fan-out denial, provider-side rate-limit message, or backoff window as a signal to immediately retry. These are evidence to be recorded with provenance; retry behavior requires an explicit policy decision recorded as such.
+- *(added in v1.3.1; tightened in v1.3.2)* Treating an HTTP 429, MCP fan-out denial, provider-side rate-limit message, or backoff window as a signal to retry — immediately or after agent-self-implemented backoff. These are evidence to be recorded with provenance; any subsequent retry of the same operation requires a `Decision` record that references the recorded observation by `evidence_id`.
 - *(v1.3.1)* Conflating `SecretReference`, `ProviderObjectReference`, `PublicClientId`, `PolicySelectorValue`, and raw secret material in `OperationShape` arguments, `CommandShape` rendered output, adapter wiring, hook bodies, or audit payloads.
 - *(v1.3.1)* Proposing or rendering a provider-side mutation against a control plane that exposes a separable validator surface (for example ADR 0015's `OriginAccessValidator` / `AudienceValidationBinding`) without first producing the validator-binding evidence.
 - *(v1.3.1)* Emitting an `OperationShape` without a resolved `ExecutionContext` surface reference, or recording a `Run` whose execution context cannot be traced to a Ring 0 `ExecutionContext` record.
-- *(v1.3.1)* Treating a parent process's sandbox, app/TCC permission, credential authority, provider mutation authority, or HCS `ApprovalGrant` status as evidence for a child `ExecutionContext` without typed inheritance evidence (such as `EnvProvenance` records) bound to the target context for the specific dimension being asserted.
-- *(v1.3.1)* Treating Codex `shell_environment_policy` `inherit` / `include_only` — or any equivalent operator on Claude Desktop, IDE extensions, MCP servers, or setup scripts — as proof of credential authority, sandbox scope, app/TCC permission, provider mutation authority, or HCS `ApprovalGrant` status.
+- *(added in v1.3.1; dimensions extended in v1.3.2)* Treating a parent process's sandbox, app/TCC permission, credential authority, provider mutation authority, HCS `ApprovalGrant` status, egress policy, filesystem authority, or `BoundaryObservation` records as evidence for a child `ExecutionContext` without typed inheritance evidence (such as `EnvProvenance` records or a linked-observation chain of `BoundaryObservation` records) bound to the target context for the specific dimension being asserted.
+- *(added in v1.3.1; surface list extended in v1.3.2)* Treating Codex `shell_environment_policy` `inherit` / `include_only` — or any equivalent operator on Claude Desktop, Claude Code IDE extensions, JetBrains AI Assistant, GitHub Copilot CLI, Cursor, Windsurf, Warp, Zed external agents, MCP servers, setup scripts, or launchd `EnvironmentVariables` — as proof of credential authority, sandbox scope, app/TCC permission, provider mutation authority, or HCS `ApprovalGrant` status. The named surfaces are an authority floor, not a ceiling; the "or any equivalent operator" clause covers future or unnamed surfaces.
+- *(v1.3.2)* Using a `BoundaryObservation` (or any other `Evidence` subtype envelope) whose primary target reference (`execution_context_id`, `surface_id`, `workspace_id`, `credential_source_id`, or `tool_or_provider_ref`) does not match the consuming `OperationShape`'s execution context as evidence for that operation. Boundary evidence is bound to the surface that produced it; lateral, parent-context, or unrelated-context reuse must be modeled as linked observations or new evidence, not as cross-context substitution.
+- *(v1.3.2)* Emitting a `BoundaryObservation` (or any other `Evidence` subtype envelope) that claims an `authority` value the producer cannot justify with provenance — for example a sandbox-sourced producer emitting `host-observation` authority, an `observed_at` in the future, or a `parser_version` that does not match an observable parser or source. Sandbox-promotion is already forbidden per invariant 8; this entry extends the rule to fabrication and claim-amplification across all evidence subtype envelopes.
+- *(v1.3.2)* Recording an `ExecutionContext` whose `sandbox` profile, `env_inheritance` mode, or `kind` is materially inconsistent with the observed runtime — for example marking a Codex-app-sandboxed surface as `none` or `workspace_write`, marking a Finder-launched GUI surface as `terminal_shell` inheritance, or marking an MCP server as a CLI surface. `ExecutionContext` is host evidence; misclassification poisons every boundary observation that binds to it.
 
 ## How to cite this charter
 
 In a PR description:
 
 ```markdown
-Complies with implementation charter v1.3.1. Ring: {0|1|2|3}. No cross-ring imports added.
+Complies with implementation charter v1.3.2. Ring: {0|1|2|3}. No cross-ring imports added.
 ```
 
 In a policy objection:
@@ -172,6 +175,7 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.2 | 2026-05-02 | Wave-3 of the v1.3.0 amendment cycle (per ADR 0024): closed gaps identified by the post-merge `hcs-security-reviewer` on commit `f9e30d4`. Added 3 forbidden-pattern entries (cross-context evidence reuse, fabricated `BoundaryObservation`, `ExecutionContext` misclassification). Extended the v1.3.1 parent-context-inheritance forbidden pattern's surface list (added Warp, Zed external agent, Cursor, Windsurf, JetBrains AI Assistant, GitHub Copilot CLI, launchd `EnvironmentVariables`) and inheritance-dimension list (added egress, filesystem authority, `BoundaryObservation`). Tightened the rate-limit-as-retry-trigger forbidden pattern to cover agent-self-implemented backoff and to require a `Decision` record referencing the recorded observation by `evidence_id`. Invariant text unchanged. |
 | 1.3.1 | 2026-05-02 | Wave-2 of the v1.3.0 amendment cycle: added 3 boundary-enforcement bullets and 6 forbidden-pattern entries operationalizing invariants 16 and 17. Wave-1 (v1.3.0) deferred this plumbing per ADR 0021's charter-and-bookkeeping-only scope; the post-merge `hcs-architect` review flagged the absence as the first invariant wave in HCS history without enforcement plumbing, and this v1.3.1 patch closes that gap. Invariant text unchanged; CI implementation of the new bullets (e.g., the policy-lint check for `OperationShape.ExecutionContext` references) lands in separate PRs against kernel/CI as those surfaces materialize. |
 | 1.3.0 | 2026-05-02 | Added invariants 16 (external-control-plane evidence-first) and 17 (execution-context declared, not inferred) per ADR 0021. Invariants 18-20 remain queued behind Q-003, Q-007, and Q-008. Boundary enforcement and forbidden-pattern entries that operationalize invariants 16 and 17 are deferred to follow-up PRs once supporting schema and CI shape exists. |
 | 1.2.0 | 2026-04-26 | Added invariants 13-15 from Phase 0b closeout: deletion authority is not gitignore state, config-spec claims require authority provenance, and GUI shell-env inheritance must not be assumed. Amended invariant 12 to use public CLI semver with app-build identifiers tracked separately. Extended boundary enforcement and forbidden patterns for cleanup authority, config booleans, GUI env assumptions, and secret-value env inspection. |
