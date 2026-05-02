@@ -69,6 +69,7 @@ scripts/
 - Runtime-config claims require installed-runtime/config-spec evidence; do not write boolean-like strings for strict JSON booleans.
 - GUI/app/IDE agents do not automatically inherit terminal shell env, direnv, or zsh startup state.
 - Never echo secret-shaped environment values; use existence-only, names-only, classified, or hashed inspection.
+- GitHub body-bearing operations (`gh pr create`, `gh issue create`, `gh pr comment`, `gh issue comment`, `gh pr edit`, `gh issue edit`) must use `--body-file <path>` or `--body-file -` with stdin for multi-line bodies. Inline `--body "..."` is reserved for single-line content. Per Q-008(e), 2026-05-02.
 
 ## Required workflow
 
