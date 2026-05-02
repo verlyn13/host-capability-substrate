@@ -3,8 +3,8 @@ title: Host Capability Substrate — Implementation Charter
 category: charter
 component: host_capability_substrate
 status: active
-version: 1.2.0
-last_updated: 2026-04-26
+version: 1.3.0
+last_updated: 2026-05-02
 tags: [substrate, kernel, adapters, ontology, policy, four-rings, non-import, skills, deployment-boundary]
 priority: critical
 ---
@@ -69,6 +69,10 @@ Ring 3: Agent/human workflows
 
 15. **GUI shell-env inheritance must not be assumed.** *(added in v1.2.0)* GUI apps, app-bundled agents, IDE extensions, and background workers have their own `ExecutionContext`. They do not automatically inherit terminal shell exports, direnv state, zsh rc files, or agent-session env hooks. Credential and env availability must be modeled through launchd/session env, Keychain/OAuth, explicit MCP auth, brokered secret references, or probed execution-context evidence.
 
+16. **External-control-plane operations are evidence-first.** *(added in v1.3.0)* Operations against remote control planes must produce typed evidence before provider-side mutation is proposed or rendered. HCS must distinguish provider object references, public client IDs, policy selector values, secret references, and secret material. Where the provider exposes a separable validator surface, such as ADR 0015's `OriginAccessValidator` / `AudienceValidationBinding` precedent, HCS must model that validator binding before proposing mutations that depend on it. Rate-limit and backoff state are evidence rather than retry pressure. Typed evidence is necessary, not sufficient; it does not bypass policy/gateway decisions, `ApprovalGrant` consumption, broker finite-state-machine requirements, audit, dashboard review, or lease requirements.
+
+17. **Execution context is declared, not inferred.** *(added in v1.3.0)* Every operation carries a resolved `ExecutionContext` surface reference. Agents must not assume a subprocess inherits any sandbox, capability, environment, or credential scope from a parent context unless that inheritance is intentionally represented by typed evidence bound to the target execution context and to the specific dimension being asserted. Surface-specific operators such as Codex `shell_environment_policy` `inherit` / `include_only` are environment-materialization evidence only for the named target context; they do not prove credential authority, sandbox scope, app/TCC permission, provider mutation authority, or HCS `ApprovalGrant` status.
+
 ## Package boundary enforcement
 
 CI checks at merge time:
@@ -127,7 +131,7 @@ When opening a PR:
 In a PR description:
 
 ```markdown
-Complies with implementation charter v1.1.0. Ring: {0|1|2|3}. No cross-ring imports added.
+Complies with implementation charter v1.3.0. Ring: {0|1|2|3}. No cross-ring imports added.
 ```
 
 In a policy objection:
@@ -159,6 +163,7 @@ Do not amend the charter in the same PR as the change the amendment enables. Cha
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3.0 | 2026-05-02 | Added invariants 16 (external-control-plane evidence-first) and 17 (execution-context declared, not inferred) per ADR 0021. Invariants 18-20 remain queued behind Q-003, Q-007, and Q-008. Boundary enforcement and forbidden-pattern entries that operationalize invariants 16 and 17 are deferred to follow-up PRs once supporting schema and CI shape exists. |
 | 1.2.0 | 2026-04-26 | Added invariants 13-15 from Phase 0b closeout: deletion authority is not gitignore state, config-spec claims require authority provenance, and GUI shell-env inheritance must not be assumed. Amended invariant 12 to use public CLI semver with app-build identifiers tracked separately. Extended boundary enforcement and forbidden patterns for cleanup authority, config booleans, GUI env assumptions, and secret-value env inspection. |
 | 1.1.0 | 2026-04-22 | Added invariants 9–12 (skills canonical location, public/private deployment boundary, deprecated-syntax refusal, tool version baseline). Extended boundary enforcement with skills-location, runtime-state-not-in-repo, and no-secrets checks. Added forbidden patterns covering skill duplication, WARP.md, cross-surface policy duplication, `.windsurf/` creation, secret commits, and runtime-state commits. Added authoring requirements for `hcs-ontology-reviewer` on schema changes and `.agents/skills/` for skill changes. |
 | 1.0.0 | 2026-04-22 | Initial charter. Four rings, eight non-negotiable invariants, CI boundary enforcement, authoring rules, forbidden patterns. |

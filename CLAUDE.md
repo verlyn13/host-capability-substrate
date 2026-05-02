@@ -16,7 +16,7 @@ Early-phase HCS work assumes Claude Code CLI `2.1.120` minimum with Opus 4.7 (`o
 - Never add convenience shell execution.
 - Never move policy into hooks or adapters.
 - When uncertain about a CLI behavior, add a fixture/evidence path rather than guessing.
-- Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md` (v1.2.0+).
+- Honor the implementation charter at `docs/host-capability-substrate/implementation-charter.md` (v1.3.0+).
 
 ## When reviewing
 
@@ -74,6 +74,6 @@ Six project-scoped subagents in `.claude/agents/`, all Opus 4.7, no Bash in any 
 
 Parent research plan (in system-config): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` (v0.3.0+).
 
-Charter: `docs/host-capability-substrate/implementation-charter.md` (v1.2.0+).
+Charter: `docs/host-capability-substrate/implementation-charter.md` (v1.3.0+).
 Tooling surface matrix: `docs/host-capability-substrate/tooling-surface-matrix.md`.
 Boundary decision: see `docs/host-capability-substrate/adr/0001-repo-boundary.md` in this repo (master document lives in system-config).

@@ -12,7 +12,7 @@ Subsequent minor updates acceptable without re-baselining. Re-baseline after mat
 
 Read these before editing:
 
-1. `docs/host-capability-substrate/implementation-charter.md` — binding rules, four rings, non-negotiable invariants (v1.2.0+)
+1. `docs/host-capability-substrate/implementation-charter.md` — binding rules, four rings, non-negotiable invariants (v1.3.0+)
 2. `docs/host-capability-substrate/ontology.md` — entity schemas
 3. `docs/host-capability-substrate/tooling-surface-matrix.md` — where each config file belongs and what it can enforce
 4. `docs/host-capability-substrate/adr/` — architecture decisions
