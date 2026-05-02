@@ -2,8 +2,8 @@
 # Minimal override — most behavior comes from ~/.codex/config.toml (profiles) and
 # the canonical AGENTS.md at the repo root.
 #
-# Per D-007: Codex hooks are advisory (Bash-only coverage). Enforcement lives in
-# Claude Code settings + HCS gateway; Codex hooks log and warn.
+# Per D-007: Codex hooks are project-local advisory guardrails with incomplete
+# Bash coverage. Hard enforcement lives in HCS gateway and host policy layers.
 
 # Refer Codex to the canonical repo contract.
 # AGENTS.md is read by Codex automatically at repo root.

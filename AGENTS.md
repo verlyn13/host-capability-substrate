@@ -114,7 +114,9 @@ A change is not done until:
 
 ## Agent role table
 
-One role per PR. Critic does not edit without a follow-up assignment. Six project-scoped Claude subagents in `.claude/agents/`:
+One role per PR. Critic does not edit without a follow-up assignment. Six
+project-scoped reviewer definitions are mirrored for Claude Code and Codex in
+`.claude/agents/` and `.codex/agents/`:
 
 | Subagent | Tools | Write scope | Role |
 |----------|-------|-------------|------|
@@ -122,10 +124,13 @@ One role per PR. Critic does not edit without a follow-up assignment. Six projec
 | `hcs-ontology-reviewer` | Read, Grep, Glob | none | Schema/entity/provenance drift review |
 | `hcs-policy-reviewer` | Read, Grep, Glob | none | Policy duplication, escalation holes, forbidden leaks |
 | `hcs-security-reviewer` | Read, Grep, Glob | none | Secrets, sandbox, audit, forbidden operations |
-| `hcs-hook-integrator` | Read, Grep, Glob, Edit | .claude/hooks/, adapter hook docs | Wires hooks without owning policy |
+| `hcs-hook-integrator` | Read, Grep, Glob, Edit | .claude/hooks/, .codex/hooks/, .codex/hooks.json, adapter hook docs | Wires hooks without owning policy |
 | `hcs-eval-reviewer` | Read, Grep, Glob, Edit | packages/evals/, packages/fixtures/ | Regression trap quality |
 
-All subagents default to Opus 4.7. No subagent has Bash in its tool list — reviewers catch drift, not execute commands. Implementation work happens in the main session with explicit permission.
+Claude Code subagents default to Opus 4.7; Codex reviewer definitions inherit
+the active Codex model/profile. No reviewer subagent has Bash in its tool list —
+reviewers catch drift, not execute commands. Implementation work happens in the
+main session with explicit permission.
 
 Implementation roles (human-directed; not subagents):
 

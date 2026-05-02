@@ -3,8 +3,8 @@ title: HCS Hook Contracts
 category: reference
 component: host_capability_substrate
 status: stub
-version: 0.3.0
-last_updated: 2026-04-26
+version: 0.4.0
+last_updated: 2026-05-01
 tags: [hooks, claude-code, codex, policy, contracts]
 priority: medium
 ---
@@ -15,7 +15,7 @@ Defines how hooks interact with the HCS substrate. Populated in Phase 3 when the
 
 ## Phase 0a (log-only)
 
-`.claude/hooks/hcs-hook` script:
+`.claude/hooks/hcs-hook` and `.codex/hooks/hcs-hook` scripts:
 
 - Reads JSON event from stdin
 - Writes to `.logs/phase-0/hook-events.jsonl`
@@ -27,9 +27,11 @@ Defines how hooks interact with the HCS substrate. Populated in Phase 3 when the
 
 ## Phase 0b (current soak)
 
-Two hook surfaces coexist during the soak:
+Three hook surfaces coexist during the soak:
 
 - `.claude/hooks/hcs-hook` remains the repo-local minimal guardrail for work inside this repo.
+- `.codex/hooks/hcs-hook` mirrors the repo-local minimal guardrail for trusted
+  Codex project config layers.
 - `scripts/dev/hcs-hook-cli.sh` is the opt-in global measurement hook installed by `just soak-install-hook`.
 
 The Phase 0b measurement hook:
@@ -70,7 +72,11 @@ Hook additionally:
 
 ## Codex hooks
 
-Advisory only. Bash-only coverage per D-007. Codex hook logs + warns; substrate enforces.
+Advisory only. Codex project hooks live in `.codex/hooks.json` and load only
+when the project `.codex/` layer is trusted. Bash coverage is incomplete per
+D-007 and the current Codex hooks documentation; Codex hooks can log and block
+minimal literal forbidden patterns, but substrate policy/gateway remains the
+real enforcement boundary.
 
 ## Populated by
 
@@ -83,11 +89,14 @@ Advisory only. Bash-only coverage per D-007. Codex hook logs + warns; substrate 
 - Charter invariants 1 (no policy in adapters), 4 (audit internal)
 - Boundary decision §11 (stage-by-stage config)
 - D-005, D-006, D-007 in `DECISIONS.md`
+- OpenAI Codex Hooks documentation:
+  `https://developers.openai.com/codex/hooks`
 
 ## Change log
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.4.0 | 2026-05-01 | Added project-scoped `.codex/` hook contract notes and clarified that Codex hooks are trusted-project advisory guardrails, not the enforcement boundary. |
 | 0.3.0 | 2026-04-26 | Added Phase 0b closeout note for trap #18 secret-safe env-inspection parity in the interim classifier and repo-local hook. |
 | 0.2.0 | 2026-04-23 | Added the Phase 0b measurement-hook contract and clarified the distinction between the repo-local guardrail hook and the opt-in soak hook. |
 | 0.1.0 | 2026-04-22 | Initial stub. |

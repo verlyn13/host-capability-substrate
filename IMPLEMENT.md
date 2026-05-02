@@ -118,5 +118,7 @@ Per charter v1.1.0:
 
 - PR touches any `packages/schemas/` file or `docs/host-capability-substrate/ontology.md` → `hcs-ontology-reviewer` objections required
 - PR touches `system-config/policies/host-capability-substrate/` (via workspace) or any file that classifies operations → `hcs-policy-reviewer` objections required
-- PR touches `.claude/settings.json`, `.claude/hooks/`, or any adapter security posture → `hcs-security-reviewer` objections required
+- PR touches `.claude/settings.json`, `.claude/hooks/`, `.codex/config.toml`, `.codex/hooks.json`, `.codex/hooks/`, or any adapter security posture → `hcs-security-reviewer` objections required
+- PR touches `.claude/hooks/`, `.codex/hooks/`, `.codex/hooks.json`, or adapter hook documentation → `hcs-hook-integrator` objections required
+- PR touches `.claude/agents/**` or `.codex/agents/**` → `hcs-architect` objections required; add `hcs-security-reviewer` when permissions, hook posture, or secret-handling instructions change
 - PR adds or edits ADRs → `hcs-architect` review required
