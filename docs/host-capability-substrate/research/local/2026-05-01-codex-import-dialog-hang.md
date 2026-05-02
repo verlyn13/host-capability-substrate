@@ -3,7 +3,7 @@ title: Codex Import Dialog Hang and Process-Inspection Evidence
 category: research
 component: host_capability_substrate
 status: active
-version: 1.1.0
+version: 1.2.0
 last_updated: 2026-05-01
 tags: [research, local, codex, app, import, migration, process-inspection, secrets, execution-context]
 priority: high
@@ -68,6 +68,47 @@ least one non-HCS repo where some targets are populated and some targets are
 missing. It also shows that the dialog does not warn before attempting to merge
 Claude settings into a non-empty `.codex/config.toml` that already contains
 working project MCP configuration.
+
+## Static Migrator Probe: Budget Triage
+
+After the second reproduction, the cached migrator was run in read-only planner
+and validation modes against budget-triage. No budget-triage files were changed.
+
+Commands used:
+
+```bash
+python3 scripts/cli.py --source /Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025 --target /Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025 --plan --skills --subagents
+python3 scripts/cli.py --source /Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025 --target /Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025 --doctor --skills --subagents
+python3 scripts/cli.py --validate-target /Users/verlyn13/Repos/verlyn13/budget-triage-11-5-2025
+```
+
+The planner classified the migration as low readiness:
+
+| Static check | Result |
+|---|---:|
+| Manual-review items | 29 |
+| Existing Codex skill collisions | 15 |
+| Orphaned generated skill directories | 1 |
+| Proposed Codex custom agents | 6 |
+| Proposed command-derived skills | 7 |
+
+Important interpretation details:
+
+- `--skills --subagents` still includes instruction and hook artifacts in the
+  cached migrator's plan. The planned artifact list included `AGENTS.md` and
+  `.codex/hooks.json` in addition to skill and subagent outputs.
+- The existing budget-triage Codex target validated cleanly: `.codex/config.toml`
+  parsed as TOML, the three project MCP server commands were available on
+  `PATH`, and existing `.agents/skills/*/SKILL.md` frontmatter validated.
+- The risky path is therefore not "Codex artifacts are broken"; it is "the
+  autonomous importer is trying to write into already-valid Codex artifacts
+  with many manual-review items and collisions."
+
+Operationally, this supports a conservative recovery rule: if a repo already
+has a valid `.codex/config.toml` or populated `.agents/skills`, do not click
+through or run the write-mode importer. Use `--plan`, `--doctor`, and
+`--validate-target` first, then manually port only the missing surfaces on a
+separate branch.
 
 ## Evidence Captured
 
@@ -236,7 +277,7 @@ accepted decision.
 | Q-010 isolation taxonomy | Codex app import/settings UI is a separate app `ExecutionContext` from Codex CLI, Codex cloud, and IDE extensions. |
 | ADR 0017 / Codex app context | App-server child processes and app-managed MCP launch behavior are host-visible evidence, not proof of GUI-internal completion or capability state. |
 | Tooling surface matrix | Codex app settings/import UI remains observe-only. Project `.codex/` artifacts are repo-controlled after creation. |
-| Regression traps | This is further real evidence for `process-argv-secret-exposure`; if expanded, the trap should assert that agents choose redacted process summaries before reading full argv. |
+| Regression traps | This is further real evidence for `process-argv-secret-exposure`. It also adds `codex-import-populated-target-collisions`, which blocks write-mode import into valid populated targets until a plan, doctor report, collision review, and target validation exist. |
 
 ## Open Questions
 
