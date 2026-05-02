@@ -1,8 +1,9 @@
 ---
 adr_number: 0025
 title: BranchDeletionProof composite shape and force-deletion handling
-status: proposed
+status: accepted
 date: 2026-05-02
+accepted_on: 2026-05-02
 revision: 2
 charter_version: 1.3.2
 tags: [branch-deletion, proof-composite, version-control, evidence, q-008, q-006, phase-1]
@@ -12,16 +13,32 @@ tags: [branch-deletion, proof-composite, version-control, evidence, q-008, q-006
 
 ## Status
 
-proposed (revision 2)
+accepted (revision 2)
 
 ## Date
 
-2026-05-02
+Drafted 2026-05-02; revision 2 same day after the post-merge subagent review
+on revision 1 surfaced 15 blocking findings; accepted 2026-05-02 after the
+re-review pass on revision 2 returned no blocking objections from
+`hcs-architect`, `hcs-ontology-reviewer`, or `hcs-security-reviewer`. Four
+mechanical tweaks applied at acceptance:
+
+- renamed `approval_grant_ref` to `approval_grant_id` to follow ontology-
+  registry §Field-name suffixes (`<entity>_id` for fixed-kind typed FKs;
+  `_ref` is reserved for polymorphic FKs);
+- dropped `proof_schema_version` from the composite field block (the
+  composite has no separate domain payload, so the third version slot is
+  unused; ontology-registry v0.2.1 §Version-field naming codifies the
+  three canonical version fields);
+- annotated `evidence_schema_version` semantics inline so the audit story
+  is explicit;
+- added a layer-3 re-check rule so policy drift between mint and
+  execution invalidates the proof.
 
 ## Charter version
 
 Written against charter v1.3.2 and `docs/host-capability-substrate/ontology-registry.md`
-v0.2.0 (the codified naming suffix discipline).
+v0.2.1 (the codified naming suffix discipline plus version-field naming).
 
 ## Context
 
@@ -143,7 +160,6 @@ stamps the proof body.
 
 ```text
 schema_version
-proof_schema_version optional
 evidence_schema_version
 branch_deletion_proof_id
 authoring_service_id
@@ -169,20 +185,29 @@ dirty_state_evidence_refs            optional
 pr_state_kind  enum: absent | open | closed_unmerged | merged
 pr_state_evidence_refs
 lease_evidence_refs                  optional
-approval_grant_ref                   optional
+approval_grant_id                    optional
 proof_authored_at
 proof_valid_until
 ```
 
-Field-naming notes per ontology-registry v0.2.0:
+Field-naming notes per ontology-registry v0.2.1:
 
+- `schema_version` (literal `'0.1.0'` during the Phase 1 schema slice)
+  names the composite envelope schema. `evidence_schema_version` names the
+  base `Evidence` contract version under which component refs were
+  composed; the broker may reject re-use when the base contract bumps.
+  There is no `payload_schema_version` because the composite has no
+  separate domain payload field — the composite is the field block. Per
+  ontology-registry v0.2.1 §Version-field naming.
 - `<thing>_evidence_refs` arrays use `evidenceRefSchema` from
   `packages/schemas/src/common.ts` with `min(1)` when required.
 - `merge_proof_kind` and `pr_state_kind` are discriminators that select
   which sibling `_evidence_refs` array is required. This replaces the
   revision-1 collapsed-OR fields per ontology-reviewer findings.
-- `repository_id` is a typed FK (`<entity>_id` form), set by the minting
-  service, not agent-supplied.
+- `repository_id` and `approval_grant_id` are typed FKs in the
+  `<entity>_id` form (fixed-kind), per ontology-registry v0.2.1
+  §Field-name suffixes. `repository_id` is set by the minting service from
+  `WorkspaceContext` resolution and is never agent-supplied.
 - `branch_identity` is a substructure of branch-intrinsic facts only;
   `is_force_deletion` is operation intent and lives in `deletion_intent`.
 
@@ -241,7 +266,10 @@ PRs implement them in the right ring:
    refuses such operations regardless of any approval grant. This is the
    binding non-escalable enforcement point. Force deletion of unprotected
    branches and non-force deletion without merge proof require a matching
-   `ApprovalGrant`.
+   `ApprovalGrant`. Layer 3 is consulted at mint time AND re-checked at
+   execution time; a policy change between mint and execution (for
+   example a branch becoming newly protected) invalidates the proof, and
+   the broker rejects the operation.
 4. **Substrate enforcement (`hcs-hook`).** `hcs-hook` MUST intercept the
    three direct git command shapes — `git branch -D <ref>`,
    `git push <remote> --delete <ref>`, and `git update-ref -d <ref>` —
@@ -445,7 +473,7 @@ This ADR does not authorize:
   evidence reuse forbidden pattern; the fabricated-evidence-subtype-envelope
   forbidden pattern; the parent-context-inheritance forbidden pattern)
 - Ontology registry: `docs/host-capability-substrate/ontology-registry.md`
-  v0.2.0 (codified naming suffix discipline)
+  v0.2.1 (codified naming suffix discipline plus version-field naming)
 - Decision ledger: `DECISIONS.md` Q-006, Q-008, Q-011
 - ADR 0020:
   `docs/host-capability-substrate/adr/0020-version-control-authority.md`
