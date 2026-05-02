@@ -3,9 +3,9 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.1.0
+version: 0.2.0
 last_updated: 2026-05-02
-tags: [ontology, registry, boundary-observation, evidence, q-011]
+tags: [ontology, registry, boundary-observation, evidence, naming-discipline, q-011]
 priority: high
 ---
 
@@ -85,6 +85,89 @@ domain payload is later proposed:
   `BranchDeletionProof`) that aggregates multiple evidence records into a
   single gating shape. Dimensions never sit in this bucket; their associated
   domain payloads might.
+
+## Naming suffix discipline
+
+Per Q-011 sub-decision (d) (approved 2026-05-01,
+`docs/host-capability-substrate/human-decision-report-2026-05-01.md`), Ring 0
+entity and field names follow a closed suffix discipline. This codifies the
+convention already in use across `packages/schemas/src/entities/` and
+`docs/host-capability-substrate/adr/`.
+
+### Entity-name suffixes
+
+- **`*Observation`** — a freshness-bound observation. Typically an `Evidence`
+  subtype envelope or a domain-specific observation record. Examples:
+  `BoundaryObservation`, candidate `GitRepositoryObservation`,
+  `GitWorktreeObservation`, `StatusCheckSourceObservation`,
+  `GitBranchAncestryObservation`.
+- **`*Receipt`** — a typed receipt of a definite event or a positive
+  existence claim, including positive-absence claims. Typically an `Evidence`
+  subtype envelope. Examples: candidate `CleanRoomSmokeReceipt`,
+  `WorkflowRunReceipt`, `PullRequestReceipt`, `PullRequestAbsenceReceipt`,
+  `SourceControlContinuityReceipt`.
+- **`*Proof`** — an authored decision composite (Q-011 review-grammar bucket
+  3) that aggregates multiple evidence records into a single gating shape.
+  Examples: candidate `BranchDeletionProof`.
+- **no suffix** — a standalone Ring 0 entity (Q-011 review-grammar bucket 2)
+  with durable identity and lifecycle. Examples: `HostProfile`,
+  `WorkspaceContext`, `Evidence`, `ExecutionContext`, `Capability`,
+  `Decision`, `ApprovalGrant`, `Run`, `Artifact`, `Lease`, `Lock`,
+  `SecretReference`.
+
+Sub-rules:
+
+1. **Mixing suffix categories on a single entity name is forbidden.** No
+   `BranchDeletionProofObservation` and no `BoundaryObservationReceipt`. A
+   name carries at most one suffix.
+2. **Positive-absence claims are explicit `*Receipt`s.** "No PR exists for
+   this branch" is a `PullRequestAbsenceReceipt`, not a missing field. A
+   missing field is structurally undefined; absence is itself an observation
+   that must be produced, dated, and authority-tagged.
+3. **`*Proof` composites do not subtype `Evidence`.** They reference
+   `Evidence` records; they are not themselves freshness-bound observations.
+   Proof composites carry their own authoring metadata
+   (`*_authored_at`, `*_valid_until`, authoring-service identity, requesting
+   principal identity).
+
+### Field-name suffixes (single-FK and reference-array conventions)
+
+- **`<entity>_id`** — a single typed FK to a specific Ring 0 entity by its
+  primary key. Used when the entity kind is fixed by the field's name.
+  Examples in current schemas: `evidence_id`, `workspace_id`,
+  `execution_context_id`, `credential_source_id`, `boundary_observation_id`.
+- **`<thing>_ref`** — a single typed FK that is polymorphic or kind-tagged.
+  Used when the field can resolve to one of several entity kinds, with a
+  separate discriminator field naming the kind. Example in current schemas:
+  `tool_or_provider_ref` on `BoundaryObservation`.
+- **`<thing>_evidence_refs`** (or `subject_refs`, `evidence_refs`) — an
+  array of typed reference objects with embedded provenance preview, using
+  the `evidenceRefSchema` shape from `packages/schemas/src/common.ts`.
+  Component evidence on a proof composite uses this pattern; a single
+  evidence record is the degenerate case (`min(1)`).
+
+Sub-rules:
+
+4. **Singular `_evidence_ref` is reserved for polymorphic single-FK use.**
+   Component evidence on a composite uses the plural `_evidence_refs` form
+   even when only one record is required, so the schema can later carry
+   multiple supporting records without renaming the field.
+5. **Discriminator fields name the kind, not the count.** A field like
+   `merge_proof_kind: "ancestry" | "patch_equivalence" | "vacuous"` selects
+   which sibling `_evidence_refs` array is required. Discriminator-and-array
+   pairs are the recommended pattern when an OR-shape would otherwise
+   collapse two ontologically distinct facts into one field.
+
+### Adding a new suffix or convention
+
+A new suffix or field-name convention requires:
+
+- a citation in `DECISIONS.md` showing the design intent (typically a Q-011
+  sub-decision or a downstream Q-* sub-decision approval);
+- a registry update like this section, before any schema PR uses the new
+  convention;
+- an `hcs-ontology-reviewer` pass before the first schema PR using the new
+  convention lands.
 
 ## Boundary dimension registry
 
@@ -355,4 +438,5 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.2.0 | 2026-05-02 | Added the §Naming suffix discipline section codifying Q-011 sub-decision (d) (approved 2026-05-01): closed `*Observation` / `*Receipt` / `*Proof` / no-suffix entity-name discipline, plus `<entity>_id` / `<thing>_ref` / `<thing>_evidence_refs` field-name discipline. Codifies the convention already in use across `packages/schemas/src/entities/` and `docs/host-capability-substrate/adr/`; resolves the `hcs-ontology-reviewer` finding that the suffix grammar was referenced but uncodified. Used as a precondition for ADR 0025 v2. |
 | 0.1.0 | 2026-05-02 | Initial registry. Sixteen `boundary_dimension` candidates listed as proposed; Q-011 review grammar and registration rules captured. Created as the named registry for ADR 0022. |
