@@ -1,7 +1,7 @@
 ---
 adr_number: 0018
 title: Durable credential source preference
-status: proposed
+status: accepted
 date: 2026-05-01
 charter_version: 1.2.0
 tags: [credentials, oauth, keychain, broker, secret-reference, phase-1]
@@ -11,7 +11,7 @@ tags: [credentials, oauth, keychain, broker, secret-reference, phase-1]
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 

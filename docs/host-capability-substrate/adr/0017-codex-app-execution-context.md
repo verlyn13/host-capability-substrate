@@ -1,7 +1,7 @@
 ---
 adr_number: 0017
 title: Codex app is a distinct execution context
-status: proposed
+status: accepted
 date: 2026-05-01
 charter_version: 1.2.0
 tags: [codex, macos-app, execution-context, sandbox, app-settings, phase-1]
@@ -11,7 +11,7 @@ tags: [codex, macos-app, execution-context, sandbox, app-settings, phase-1]
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 

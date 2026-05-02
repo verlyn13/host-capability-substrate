@@ -1,7 +1,7 @@
 ---
 adr_number: 0021
 title: Charter v1.3.0 wave 1 amendment
-status: proposed
+status: accepted
 date: 2026-05-01
 charter_version: 1.2.0
 tags: [charter, external-control-plane, execution-context, evidence, phase-1]
@@ -11,7 +11,7 @@ tags: [charter, external-control-plane, execution-context, evidence, phase-1]
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 
@@ -33,7 +33,7 @@ Phase 1 work since then produced two stronger generalizations that are ready
 for focused charter review:
 
 - ADR 0015 accepted that external control planes are typed evidence surfaces.
-- ADR 0016 proposed the shell/environment ownership boundary and the
+- ADR 0016 accepted the shell/environment ownership boundary and the
   `ExecutionContext` / `EnvProvenance` vocabulary.
 - Q-011 records the ontology promotion and receipt dedupe rule that will decide
   final `*Observation`, `*Receipt`, `*Proof`, and entity naming. This ADR
@@ -51,8 +51,8 @@ the uncontroversial external-control-plane and execution-context rules can be
 reviewed without forcing the larger ontology and coordination decisions.
 
 This ADR does not amend the charter by itself. The active charter remains
-v1.2.0 until a separate charter-edit PR lands with required reviewer objections
-addressed and human approval.
+v1.2.0 until a separate charter-edit PR lands with the accepted invariant text
+from this ADR.
 
 If Q-012 accepts one invariant and rejects or defers the other, the charter-edit
 PR should land only the accepted invariant. The default drafter for that PR is
@@ -111,11 +111,17 @@ work into the same PR.
 Proposed: amend the charter in a separate wave-1 charter PR to add invariants
 16 and 17 only. Invariant 16 should bind external-control-plane operations to
 typed evidence before provider mutations, without depending on final Q-011
-receipt naming. Invariant 17 should require operations to declare the execution
-context they rely on, while preserving intentional typed inheritance operators
-such as ADR 0016's Codex `inherit` / `include_only` vocabulary or equivalent
-surface-specific typed mechanisms when the inheritance is explicitly
-represented and bound to the target `ExecutionContext`.
+receipt naming. Typed evidence is necessary for provider-side mutation, not
+sufficient authorization by itself. It never bypasses policy/gateway decisions,
+approval-grant consumption, broker finite-state-machine requirements, audit,
+dashboard review, or lease requirements. Invariant 17 should require operations
+to declare the execution context they rely on, while preserving intentional
+typed inheritance only for the dimension the evidence or operator actually
+governs. ADR 0016's Codex `inherit` / `include_only` vocabulary can establish
+environment materialization for a named target context when represented through
+secret-safe `EnvProvenance` evidence; it cannot prove credential authority,
+sandbox scope, app/TCC permission, provider mutation authority, or HCS
+`ApprovalGrant` status.
 
 Proposed invariant text:
 
@@ -127,19 +133,25 @@ references, public client IDs, policy selector values, secret references, and
 secret material. Where the provider exposes a separable validator surface, such
 as ADR 0015's OriginAccessValidator/AudienceValidationBinding precedent, HCS
 must model that validator binding before proposing mutations that depend on it.
-Rate-limit/backoff state is evidence rather than retry pressure.
+Rate-limit/backoff state is evidence rather than retry pressure. Typed evidence
+is necessary, not sufficient; it does not bypass policy/gateway decisions,
+ApprovalGrant consumption, broker finite-state-machine requirements, audit,
+dashboard review, or lease requirements.
 
 17. Execution context is declared, not inferred. Every operation carries a
 resolved ExecutionContext surface reference. Agents must not assume a
 subprocess inherits any sandbox, capability, environment, or credential scope
 from a parent context unless that inheritance is intentionally represented by
-typed evidence or an explicit surface operator such as Codex
-shell_environment_policy inherit/include_only, and the evidence is bound to the
-target execution context.
+typed evidence bound to the target execution context and to the specific
+dimension being asserted. Surface-specific operators such as Codex
+shell_environment_policy inherit/include_only are environment-materialization
+evidence only for the named target context; they do not prove credential
+authority, sandbox scope, app/TCC permission, provider mutation authority, or
+HCS ApprovalGrant status.
 ```
 
-If accepted, the charter-edit PR should bump the charter to v1.3.0 and leave
-invariants 18-20 queued.
+The charter-edit PR should bump the charter to v1.3.0 and leave invariants
+18-20 queued.
 
 ## Consequences
 
@@ -149,12 +161,15 @@ invariants 18-20 queued.
   than only ADR 0015 posture.
 - Execution-context declaration becomes binding charter language rather than
   only ADR 0016 and shell research guidance.
-- Intentional inheritance remains legal when modeled explicitly and bound to
-  the target context.
+- Intentional inheritance remains legal only when modeled explicitly, bound to
+  the target context, and scoped to the exact dimension the evidence or operator
+  governs.
 - Invariant 17 creates a deliberate forward binding: Milestone 1 schema
   reconciliation must either promote `ExecutionContext` into the canonical Ring
   0 entity list or provide an equivalent canonical entity that satisfies this
   invariant.
+- `ExecutionContext` is additional operation context. It does not replace
+  principal, session, agent-client, or audit attribution.
 - Charter v1.3.0 wave 1 remains independent from Q-003, Q-007, and Q-008.
 - Invariants 16 and 17 should be voted and reviewed separately even if they
   land in one charter PR.
@@ -173,6 +188,9 @@ invariants 18-20 queued.
   material, and `SecretReference` values as interchangeable strings.
 - Treating rate-limit errors or MCP fan-out symptoms as prompts to retry or
   mutate more.
+- Treating an environment operator such as Codex `inherit` or `include_only` as
+  proof of credential authority, sandbox scope, app/TCC permission, provider
+  mutation authority, or HCS `ApprovalGrant` status.
 - Changing live policy, schemas, hooks, adapters, dashboard routes, or mutation
   endpoints as part of the charter amendment.
 

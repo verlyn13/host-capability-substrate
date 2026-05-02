@@ -45,8 +45,10 @@ claims before it commits to `QualityGate` or broader policy behavior?
 
 This ADR does not add schemas, generated JSON Schema, policy tiers, hooks,
 adapters, dashboard routes, live GitHub settings, macOS permission probes, or
-mutation operations. It is not ready for human acceptance until Q-011 resolves
-the promotion/dedupe rule and the Evidence base-shape prerequisite.
+mutation operations. Q-011 has resolved the promotion/dedupe rule, and ADR 0023
+has accepted the Evidence base-shape architecture. This ADR is still not ready
+for human acceptance until the full Evidence base entity is implemented through
+the schema-change workflow.
 
 ## Options considered
 
@@ -229,20 +231,24 @@ schema review.
 
 Acceptance preconditions:
 
-- Resolve Q-011 before accepting this ADR. Q-011 owns the
-  evidence/receipt/proof promotion rule, `boundary_dimension` registry
-  artifact, final version field names, primary-target encoding, and dimension
-  naming.
-- Define the full `Evidence` base entity or an explicit canonical substitute
-  before accepting `BoundaryObservation` as an `Evidence` subtype envelope.
-  Until that lands, `evidence_refs` are only embedded provenance references.
+- Q-011 is approved and provides the evidence/receipt/proof promotion rule.
+- The `boundary_dimension` registry artifact location is
+  `docs/host-capability-substrate/ontology-registry.md`. Boundary dimension
+  values must be registered there before schema implementation.
+- Boundary dimensions are singular. The registry must define the primary target
+  convention and allowed supplemental target references for each dimension.
+- Version/build/dependency drift is a freshness invalidation signal unless a
+  narrower dimension is explicitly approved in the registry.
+- ADR 0023 is accepted as the Evidence base-shape architecture.
+- The full `Evidence` base entity must be implemented before accepting
+  `BoundaryObservation` as an `Evidence` subtype envelope. Until that lands,
+  `evidence_refs` are only embedded provenance references.
 
 Likely to reopen this envelope shape:
 
-- Reopen after Q-011 if ontology review changes the evidence/receipt/proof
-  promotion rule.
-- Q-011 must choose the `boundary_dimension` registry artifact, final version
-  field names, and primary-target encoding before schema implementation.
+- Reopen if ontology review changes the evidence/receipt/proof promotion rule.
+- The `boundary_dimension` registry must choose final version field names and
+  primary-target encoding before schema implementation.
 - Reopen after Q-008/Q-009 if execution-mode or safe-process-inspection
   receipts need a narrower observation shape or additional versioning fields.
 

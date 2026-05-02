@@ -1,7 +1,7 @@
 ---
 adr_number: 0016
 title: Shell and environment ownership boundaries
-status: proposed
+status: accepted
 date: 2026-05-01
 charter_version: 1.2.0
 tags: [shell, environment, execution-context, env-provenance, credentials, phase-1]
@@ -11,7 +11,7 @@ tags: [shell, environment, execution-context, env-provenance, credentials, phase
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 

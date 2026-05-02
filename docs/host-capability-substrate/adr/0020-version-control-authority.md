@@ -1,7 +1,7 @@
 ---
 adr_number: 0020
 title: Version control is a typed authority surface
-status: proposed
+status: accepted
 date: 2026-05-01
 charter_version: 1.2.0
 tags: [github, git, version-control, source-control, evidence, rulesets, actions, credentials, phase-1]
@@ -11,7 +11,7 @@ tags: [github, git, version-control, source-control, evidence, rulesets, actions
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 
@@ -49,7 +49,7 @@ configure GitHub, create workflows, create CODEOWNERS, add policy tiers, or
 enable mutation endpoints.
 
 ADR number note: ADR 0019 is already reserved in Q-003 planning for the HCS
-knowledge and coordination store, so this Q-006 draft uses ADR 0020.
+knowledge and coordination store, so this Q-006 ADR uses ADR 0020.
 
 ## Options considered
 
@@ -124,7 +124,7 @@ knowledge and coordination store, so this Q-006 draft uses ADR 0020.
 
 ## Decision
 
-Proposed: HCS should treat version control as a typed authority surface and
+HCS treats version control as a typed authority surface and
 start with evidence subtypes / receipts rather than immediate GitHub-specific
 core entities. Git, GitHub, GitHub Actions, GitHub MCP, `gh`, SSH, signing,
 rulesets, branch protection, PR/review state, checks, and worktrees remain
@@ -133,7 +133,7 @@ such as push, branch deletion, ruleset update, workflow update, PR merge, or
 GitHub MCP mutation require typed `OperationShape` inputs and evidence IDs; raw
 shell strings or ambient logged-in tools are not authority.
 
-For ADR acceptance review, five names are the load-bearing minimum for Q-006
+For the accepted limited posture, five names are the load-bearing minimum for Q-006
 ordering and dashboard planning:
 
 - `GitConfigResolution`
@@ -159,7 +159,7 @@ The broader Phase 1 candidate inventory remains deferred to ontology review:
 - `PullRequestReceipt`
 - `PullRequestReviewReceipt`
 
-All names remain proposed until Q-006 and ontology review settle evidence
+All names remain candidates until Q-006 follow-up and ontology review settle evidence
 subtype, receipt, proof-composite, or standalone-entity shape. These may later
 become standalone Ring 0 entities if ontology review shows that policy,
 dashboard, and kernel code repeatedly depend on them.
