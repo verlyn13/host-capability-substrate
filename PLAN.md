@@ -204,11 +204,11 @@ just verify
 
 ## Milestone 1 — Ontology schemas (Ring 0)
 
-**Goal:** 20 core entities are real and versioned.
+**Goal:** 22 canonical entities are real and versioned.
 
 **Acceptance:**
 
-- 20 core entities (HostProfile, WorkspaceContext, Principal, AgentClient, Session, ToolProvider, ToolInstallation, ResolvedTool, Capability, OperationShape, CommandShape, Evidence, PolicyRule, Decision, ApprovalGrant, Run, Artifact, Lease, Lock, SecretReference, ResourceBudget) as Zod schemas
+- 22 canonical entities (HostProfile, WorkspaceContext, Principal, AgentClient, Session, ToolProvider, ToolInstallation, ResolvedTool, Capability, OperationShape, CommandShape, Evidence, ExecutionContext, PolicyRule, Decision, ApprovalGrant, Run, Artifact, Lease, Lock, SecretReference, ResourceBudget) as Zod schemas. `ExecutionContext` is on the canonical list per ADR 0021 invariant 17 forward binding (charter v1.3.0); `EnvProvenance`, `CredentialSource`, and `StartupPhase` remain Phase 1 supplemental entities until Q-011-guided ontology review promotes them.
 - JSON Schema generated from Zod
 - Every entity has `schema_version`
 - Provenance schema (`Evidence`) is reusable by every fact-returning service
