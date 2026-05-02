@@ -1,8 +1,9 @@
 ---
 adr_number: 0022
 title: BoundaryObservation evidence envelope
-status: proposed
+status: accepted
 date: 2026-05-01
+accepted_on: 2026-05-02
 charter_version: 1.2.0
 tags: [boundary-observation, evidence, quality-gate, execution-context, phase-1, q-007]
 ---
@@ -11,15 +12,19 @@ tags: [boundary-observation, evidence, quality-gate, execution-context, phase-1,
 
 ## Status
 
-proposed
+accepted
 
 ## Date
 
-2026-05-01
+Drafted 2026-05-01. Accepted 2026-05-02 after the base `Evidence` entity landed
+through the schema-change workflow (`packages/schemas/src/entities/evidence.ts`,
+`packages/schemas/generated/Evidence.schema.json`), satisfying the prerequisite
+that ADR 0023 and Q-011 had already cleared.
 
 ## Charter version
 
-Written against charter v1.2.0.
+Written against charter v1.2.0. Charter v1.3.0 (ADR 0021) does not change this
+ADR's posture; invariants 16 and 17 are compatible.
 
 ## Context
 
@@ -45,10 +50,12 @@ claims before it commits to `QualityGate` or broader policy behavior?
 
 This ADR does not add schemas, generated JSON Schema, policy tiers, hooks,
 adapters, dashboard routes, live GitHub settings, macOS permission probes, or
-mutation operations. Q-011 has resolved the promotion/dedupe rule, and ADR 0023
-has accepted the Evidence base-shape architecture. This ADR is still not ready
-for human acceptance until the full Evidence base entity is implemented through
-the schema-change workflow.
+mutation operations. Q-011 has resolved the promotion/dedupe rule, ADR 0023
+has accepted the Evidence base-shape architecture, and the full base `Evidence`
+entity has now landed through the schema-change workflow. Acceptance commits
+the envelope shape only; `BoundaryObservation` Zod source, generated JSON
+Schema, the `boundary_dimension` registry contents, policy tiers, dashboard
+routes, and runtime probes remain follow-up work.
 
 ## Options considered
 
@@ -116,7 +123,7 @@ the schema-change workflow.
 
 ## Decision
 
-Proposed: model `BoundaryObservation` as an `Evidence` subtype envelope first.
+Model `BoundaryObservation` as an `Evidence` subtype envelope first.
 It represents a contextual boundary claim about one surface, version/build,
 execution context, provider surface, workspace, or credential/tool binding. It
 inherits `Evidence` provenance, authority, confidence, observed time, and
