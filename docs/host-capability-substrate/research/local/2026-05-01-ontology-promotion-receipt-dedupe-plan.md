@@ -137,13 +137,13 @@ way first," not "commit schema in this shape."
 | `GitHubMcpSessionObservation` | Q-006 | Evidence subtype | Freshness-bound MCP session state | Dedupe with generic `McpSessionObservation` plus provider/surface fields. |
 | `PullRequestReceipt` | Q-006 | Evidence receipt | Point-in-time PR state/action | Candidate; may specialize `RemoteMutationReceipt` for mutating PR ops. |
 | `PullRequestReviewReceipt` | Q-006 | Evidence receipt | Point-in-time review state/action | Candidate. |
-| `SourceControlContinuityReceipt` | Q-006 | Evidence receipt | Control-start/lapse/restart continuity window | One of the five load-bearing Q-006 names to review first; naming may become `Observation`. |
-| `BoundaryObservation` | Q-007/Q-010 | Evidence subtype | Freshness-bound boundary claim | Highest-leverage near-term promotion candidate. |
+| `SourceControlContinuityReceipt` | Q-006 | Evidence receipt | Control-start/lapse/restart continuity window | One of the five load-bearing Q-006 names to review first; naming may become `SourceControlContinuityObservation`. Do not also emit `source_control_continuity` as a `BoundaryObservation` dimension unless Q-006/Q-011 approve the wrapper relationship. |
+| `BoundaryObservation` | Q-007/Q-010 | Evidence subtype | Freshness-bound boundary claim | Highest-leverage near-term candidate after Q-011 and Evidence base-shape sequencing. |
 | `QualityGate` | Q-007 | Standalone entity candidate | Durable gate definition with evidence inputs | Defer until `BoundaryObservation`, Q-005, and Q-006 shapes settle. |
 | `CredentialBinding` | Q-007 | Evidence subtype candidate | Freshness-bound credential-to-surface binding | Dedupe with `CredentialSource` + `GitIdentityBinding`. |
 | `SigningIdentity` | Q-007 | Evidence/entity candidate | Freshness-bound signing identity or durable principal mapping | Defer; likely part of `GitIdentityBinding` plus `CredentialSource`. |
 | `BundleObservation` | Q-007/Q-010 | Evidence subtype | Freshness-bound app bundle fact | Likely `BoundaryObservation` specialization. |
-| `SandboxContext` | Q-007/Q-010 | Evidence/entity candidate | Freshness-bound containment fact | Dedupe with `ExecutionContext.sandbox` and `BoundaryObservation`. |
+| `SandboxContext` | Q-007/Q-010 | Evidence/entity candidate | Freshness-bound containment fact | Dedupe with `ExecutionContext.sandbox` and `BoundaryObservation`; Q-011 must decide whether `ExecutionContext.sandbox` remains direct snapshot fields, narrows to last-observed pointers, or gets a deprecation path once boundary observations exist. |
 | `TCCGrantObservation` | Q-007 | Evidence subtype | Freshness-bound macOS permission fact | Likely `BoundaryObservation` specialization. |
 | `LaunchContext` | Q-007 | Evidence subtype/value | Freshness-bound launch-source fact | Dedupe with `ExecutionContext` fields before adding entity. |
 | `VolumeObservation` | Q-007 | Evidence subtype | Freshness-bound filesystem/volume fact | Likely `BoundaryObservation` specialization. |
@@ -187,7 +187,7 @@ both names to Ring 0 until a reviewer explains why the split is necessary.
 | MCP sessions | `McpSessionObservation`, `GitHubMcpSessionObservation` | Prefer generic with provider/surface fields unless Q-006 needs provider-specific constraints. |
 | Check and workflow evidence | `CheckRunReceipt`, `WorkflowRunReceipt`, `StatusCheckSourceObservation`, `WorkflowPolicyObservation` | Preserve distinctions: check result, workflow run, expected source, and workflow posture. |
 | Tool provenance | `ToolProvenance`, `ShimResolution`, `PackageManagerObservation`, `ResolvedTool` evidence | Let `ResolvedTool` remain the durable answer; observations feed it. |
-| Boundary evidence | `BoundaryObservation`, `SandboxContext`, `TCCGrantObservation`, `BundleObservation`, `LaunchContext`, `VolumeObservation`, `ContainmentObservation` | Promote `BoundaryObservation` first; specialize only after repeated use. |
+| Boundary evidence | `BoundaryObservation`, `SandboxContext`, `TCCGrantObservation`, `BundleObservation`, `LaunchContext`, `VolumeObservation`, `ContainmentObservation` | Promote `BoundaryObservation` only after Q-011 and the Evidence base-shape prerequisite; specialize only after repeated use. |
 | Credential binding | `CredentialSource`, `CredentialBinding`, `GitHubCredentialObservation`, `GitIdentityBinding`, `SigningIdentity` | Keep `CredentialSource` durable; use observations for resolved bindings. |
 | Branch cleanup | `BranchDeletionProof`, `GitBranchAncestryObservation`, `BranchFlowObservation`, `GitWorktreeObservation` | Keep `BranchDeletionProof` as one proof composite consuming the others. |
 | External mutation receipts | `RemoteMutationReceipt`, `PullRequestReceipt`, `PullRequestReviewReceipt`, `PolicyPlanReceipt` | Use generic receipt plus provider-specific fields unless the operation lifecycle differs. |
@@ -207,43 +207,50 @@ both names to Ring 0 until a reviewer explains why the split is necessary.
 
 These are planning recommendations for human/reviewer approval:
 
-1. Promote `BoundaryObservation` first as an `Evidence` subtype candidate. It
-   unblocks Q-007a and reduces duplicate sandbox/TCC/bundle/containment names.
-2. Treat `BranchDeletionProof` as the single canonical branch-cleanup proof.
+1. Resolve the full `Evidence` base shape or explicit canonical substitute
+   before accepting any `Evidence` subtype envelope. The schema package still
+   uses embedded `evidence_refs` as a temporary provenance reference.
+2. Promote `BoundaryObservation` first as an `Evidence` subtype candidate after
+   Q-011 and the Evidence base-shape prerequisite. It unblocks Q-007a and
+   reduces duplicate sandbox/TCC/bundle/containment names.
+3. Treat `BranchDeletionProof` as the single canonical branch-cleanup proof.
    Review whether it derives from or is consumed by `ApprovalGrant` before
    making it a standalone Ring 0 entity.
-3. For ADR 0020 acceptance review, treat these five Q-006 names as the
+4. For ADR 0020 acceptance review, treat these five Q-006 names as the
    load-bearing minimum: `GitConfigResolution`, `GitIdentityBinding`,
    `BranchDeletionProof`, `StatusCheckSourceObservation`, and
    `SourceControlContinuityReceipt`.
-4. Defer `QualityGate` until `BoundaryObservation`, Q-005 runner/check evidence,
+5. Defer `QualityGate` until `BoundaryObservation`, Q-005 runner/check evidence,
    and Q-006 source-control evidence are reconciled.
-5. Before `BoundaryObservation` schema work, decide the
+6. Before `BoundaryObservation` schema work, decide the
    `boundary_dimension` registry artifact, singular dimension rule, primary
    target binding convention, and whether version/build drift remains a
    freshness invalidation signal rather than a standalone dimension.
-6. Defer `ToolInvocationReceipt`, `CommandCaptureReceipt`, and
+7. Defer `ToolInvocationReceipt`, `CommandCaptureReceipt`, and
    `ExecutionModeObservation` until Q-009 locks typed operation inputs for
    `system.process.inspect_safe.v1` and `system.cleanup.plan.v1`.
-7. Defer Q-003 authored-fact shapes until Q-003 decides whether coordination
+8. Defer Q-003 authored-fact shapes until Q-003 decides whether coordination
    state is peer to `Evidence` or a specialization, and whether
    `allowed_for_gate` is first-class.
-8. Keep `SharedAgentPolicySchema` rejected as canonical HCS shape.
+9. Keep `SharedAgentPolicySchema` rejected as canonical HCS shape.
 
 ## Dependency Order
 
 Recommended review order:
 
 1. Q-011: approve or amend this promotion/dedupe rule.
-2. Q-007a: `BoundaryObservation` evidence subtype.
-3. Q-003: coordination authored facts and gateability.
-4. Q-006(g): expected check-source gateability.
-5. Q-006(f): `BranchDeletionProof` minimum proof.
-6. Q-008: command-symptom invariant and branch-cleanup reuse.
-7. Q-009: typed `ProcessInspectionRequest` and `CleanupPlanRequest` inputs.
-8. Q-005: runner/check receipt taxonomy.
-9. Q-007b: `QualityGate`.
-10. Q-010: cross-agent containment and remote-agent receipts.
+2. Evidence base shape: define the full `Evidence` entity or explicit
+   canonical substitute required before any `Evidence` subtype envelope is
+   accepted.
+3. Q-007a: `BoundaryObservation` evidence subtype.
+4. Q-003: coordination authored facts and gateability.
+5. Q-006(g): expected check-source gateability.
+6. Q-006(f): `BranchDeletionProof` minimum proof.
+7. Q-008: command-symptom invariant and branch-cleanup reuse.
+8. Q-009: typed `ProcessInspectionRequest` and `CleanupPlanRequest` inputs.
+9. Q-005: runner/check receipt taxonomy.
+10. Q-007b: `QualityGate`.
+11. Q-010: cross-agent containment and remote-agent receipts.
 
 ## Reviewer Path
 

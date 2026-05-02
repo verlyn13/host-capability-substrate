@@ -35,14 +35,18 @@ Git/GitHub authority evidence. Q-008 adds command/execution-mode anomalies and
 destructive Git hygiene. Q-010 adds cross-agent containment vocabulary. Q-011
 then recommends promoting `BoundaryObservation` first as an `Evidence` subtype
 candidate so those domains do not each invent their own incompatible boundary
-envelope.
+envelope. The current schema package still has only embedded `evidence_refs`;
+the full `Evidence` base entity has not landed on main. That makes the
+`Evidence` base shape a prerequisite for accepting this ADR as an inheritance
+or subtype decision.
 
 The immediate question is Q-007a: how should HCS represent contextual boundary
 claims before it commits to `QualityGate` or broader policy behavior?
 
 This ADR does not add schemas, generated JSON Schema, policy tiers, hooks,
 adapters, dashboard routes, live GitHub settings, macOS permission probes, or
-mutation operations.
+mutation operations. It is not ready for human acceptance until Q-011 resolves
+the promotion/dedupe rule and the Evidence base-shape prerequisite.
 
 ## Options considered
 
@@ -131,8 +135,8 @@ workspace_id optional
 credential_source_id optional
 tool_or_provider_ref optional
 boundary_dimension
-observed_state
-expected_state optional
+observed_payload
+expected_payload optional
 observation_state = proven | denied | pending | stale | contradictory | inapplicable | unknown
 discrepancy_class optional
 evidence_refs
@@ -151,9 +155,11 @@ Field-block conventions:
 - `boundary_dimension` is the discriminator for the domain payload. Values
   belong to an ontology-reviewed taxonomy, not ad hoc adapter emission.
   Candidate dimensions include `sandbox`, `tcc`, `bundle_identity`,
-  `network_egress`, `filesystem_scope`, `credential_routing`,
-  `worktree_ownership`, `containment_class`, `runner_isolation`,
-  `source_control_continuity`, and `check_source_identity`.
+  `egress_policy`, `egress_observed`, `filesystem_authority`,
+  `credential_routing`, `worktree_ownership`, `containment_class`,
+  `runner_isolation`, `path_coverage`, `origin_access_validation`,
+  `launch_context`, `volume_authority`, `mcp_authorization`, and
+  `check_source`.
 - `boundary_dimension` is singular. The taxonomy must define mutually exclusive
   values, a primary target reference, and allowed supplemental target
   references for each dimension before schema acceptance. When multiple
@@ -164,10 +170,14 @@ Field-block conventions:
 - Version/build/dependency changes are freshness and invalidation signals for
   specific dimensions, not a standalone boundary dimension unless Q-011 later
   approves a narrower registry entry.
-- `observed_state` is a domain-specific discriminated payload whose
+- `observed_payload` is a domain-specific discriminated payload whose
   discriminator is `boundary_dimension`. Payload schemas are owned by
   domain-specific evidence subtypes; the envelope reasons over
   `observation_state`, `discrepancy_class`, freshness, and evidence refs.
+- `expected_payload` is present only when a domain payload schema defines an
+  expected/declared target posture to compare against the observed payload. It
+  must use the same domain payload schema family as `observed_payload`; it is
+  not an envelope-level free-form policy slot.
 - `schema_version` names the `BoundaryObservation` envelope schema,
   `evidence_schema_version` names the base `Evidence` contract, and
   `payload_schema_version` names the domain payload when one exists. Those
@@ -217,6 +227,16 @@ schema review.
 
 ### Future amendments
 
+Acceptance preconditions:
+
+- Resolve Q-011 before accepting this ADR. Q-011 owns the
+  evidence/receipt/proof promotion rule, `boundary_dimension` registry
+  artifact, final version field names, primary-target encoding, and dimension
+  naming.
+- Define the full `Evidence` base entity or an explicit canonical substitute
+  before accepting `BoundaryObservation` as an `Evidence` subtype envelope.
+  Until that lands, `evidence_refs` are only embedded provenance references.
+
 Likely to reopen this envelope shape:
 
 - Reopen after Q-011 if ontology review changes the evidence/receipt/proof
@@ -242,6 +262,10 @@ Downstream consumers:
 - Q-010 must be re-read against this envelope before drafting `AgentClient`
   containment schema. If Q-010 resolves containment outside the envelope, this
   ADR needs amendment.
+- Treat linked observations as the named pattern for multi-dimensional boundary
+  facts. For example, a TCC fact observed inside an app sandbox is represented
+  as linked `BoundaryObservation` records that share target references, not as
+  one envelope with multiple dimensions.
 - Draft `QualityGate` only after `BoundaryObservation`, Q-005 runner/check
   evidence, and Q-006 source-control evidence have settled.
 - Any schema implementation must use `.agents/skills/hcs-schema-change` and
@@ -253,7 +277,7 @@ Downstream consumers:
 ### Internal
 
 - Charter: `docs/host-capability-substrate/implementation-charter.md` v1.2.0,
-  invariants 1, 2, 7, 8, 13, 14, and 15
+  invariants 1, 2, 5, 7, 8, 10, 13, 14, and 15
 - Decision ledger: `DECISIONS.md` Q-007, Q-010, Q-011
 - ADR 0015:
   `docs/host-capability-substrate/adr/0015-external-control-plane-automation.md`
