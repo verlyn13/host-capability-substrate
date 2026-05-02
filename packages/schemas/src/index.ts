@@ -30,6 +30,16 @@ export {
   envSensitivitySchema,
 } from './entities/env-provenance.ts';
 export {
+  type Evidence,
+  type EvidenceKind,
+  type EvidenceSubjectKind,
+  evidenceKindSchema,
+  evidenceRedactionModeSchema,
+  evidenceSchema,
+  evidenceSubjectKindSchema,
+  evidenceSubjectRefSchema,
+} from './entities/evidence.ts';
+export {
   codexShellEnvironmentPolicyModeSchema,
   contextCapabilityStatusSchema,
   type ExecutionContext,

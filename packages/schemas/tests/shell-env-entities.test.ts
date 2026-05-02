@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   credentialSourceSchema,
   envProvenanceSchema,
+  evidenceSchema,
   executionContextSchema,
   startupPhaseSchema,
 } from '../src/index.ts';
@@ -15,7 +16,7 @@ const evidenceRef = {
   confidence: 'high',
 } as const;
 
-describe('shell/env Phase 1 schemas', () => {
+describe('Phase 1 Ring 0 schemas', () => {
   it('validates StartupPhase order against the ADR 0016 sequence', () => {
     expect(
       startupPhaseSchema.parse({
@@ -127,5 +128,82 @@ describe('shell/env Phase 1 schemas', () => {
         secret_material: 'not-allowed',
       }).success,
     ).toBe(false);
+  });
+
+  it('validates Evidence as the shared provenance and freshness base entity', () => {
+    const evidence = evidenceSchema.parse({
+      schema_version: '0.1.0',
+      evidence_id: 'evidence:codex-cli-tool-shell',
+      evidence_kind: 'observation',
+      subject_refs: [
+        {
+          subject_kind: 'execution_context',
+          subject_id: 'ctx:codex-cli:tool-call',
+          relation: 'observed_context',
+        },
+      ],
+      source:
+        'docs/host-capability-substrate/research/shell-env/2026-04-28-P06-host-telemetry-rerun.md',
+      source_ref: 'host-telemetry:p06',
+      observed_at: '2026-04-28T00:00:00Z',
+      valid_until: null,
+      authority: 'host-observation',
+      confidence: 'high',
+      parser_version: 'human-review:v1',
+      execution_context_id: 'ctx:codex-cli:tool-call',
+      payload_schema_version: 'p06-host-telemetry:v1',
+      payload: {
+        shell_argv: ['/bin/zsh', '-c', '<redacted>'],
+      },
+      redaction_mode: 'redacted',
+    });
+
+    expect(evidence.evidence_kind).toBe('observation');
+    expect(evidence.subject_refs[0]?.subject_kind).toBe('execution_context');
+  });
+
+  it('keeps sandbox-observation Evidence bound to the sandbox context and trace', () => {
+    expect(
+      evidenceSchema.safeParse({
+        schema_version: '0.1.0',
+        evidence_id: 'evidence:sandbox-missing-context',
+        evidence_kind: 'observation',
+        subject_refs: [
+          {
+            subject_kind: 'execution_context',
+            subject_id: 'ctx:codex-cli:tool-call',
+          },
+        ],
+        source: 'packages/fixtures/provenance-snapshot-2026-04-30.json',
+        observed_at: '2026-04-30T00:00:00Z',
+        valid_until: null,
+        authority: 'sandbox-observation',
+        confidence: 'best-effort',
+        parser_version: 'fixture:v1',
+      }).success,
+    ).toBe(false);
+
+    expect(
+      evidenceSchema.parse({
+        schema_version: '0.1.0',
+        evidence_id: 'evidence:sandbox-bound',
+        evidence_kind: 'fixture',
+        subject_refs: [
+          {
+            subject_kind: 'execution_context',
+            subject_id: 'ctx:codex-cli:tool-call',
+          },
+        ],
+        source: 'packages/fixtures/provenance-snapshot-2026-04-30.json',
+        observed_at: '2026-04-30T00:00:00Z',
+        valid_until: null,
+        authority: 'sandbox-observation',
+        confidence: 'best-effort',
+        parser_version: 'fixture:v1',
+        execution_context_id: 'ctx:codex-cli:tool-call',
+        source_ref: 'fixture:provenance-snapshot-2026-04-30',
+        redaction_mode: 'classified',
+      }).authority,
+    ).toBe('sandbox-observation');
   });
 });

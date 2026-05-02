@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   credentialSourceSchema,
   envProvenanceSchema,
+  evidenceSchema,
   executionContextSchema,
   startupPhaseSchema,
 } from '../src/index.ts';
@@ -18,6 +19,11 @@ const schemaEntries = [
     file: 'CredentialSource.schema.json',
     title: 'CredentialSource',
     schema: credentialSourceSchema,
+  },
+  {
+    file: 'Evidence.schema.json',
+    title: 'Evidence',
+    schema: evidenceSchema,
   },
   {
     file: 'EnvProvenance.schema.json',

@@ -3,9 +3,9 @@ title: HCS Ontology
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.4.0
+version: 0.5.0
 last_updated: 2026-05-01
-tags: [ontology, entities, schemas, execution-context, isolation, github, version-control]
+tags: [ontology, entities, schemas, evidence, execution-context, isolation, github, version-control]
 priority: high
 ---
 
@@ -13,7 +13,8 @@ priority: high
 
 Authoritative human-facing reference for HCS Ring 0 entities. The 20 core
 entities remain the Milestone 1 target; the first Phase 1 shell/env schema
-slice has landed for ADRs 0016, 0017, and 0018.
+slice has landed for ADRs 0016, 0017, and 0018, and the base `Evidence`
+entity has landed for ADR 0023.
 
 Canonical research plan sketch: `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md` §2 (Ontology) and §Appendix A.
 
@@ -136,6 +137,41 @@ The Zod schema validates that `order` matches the named phase. This protects
 P03/P04/P09 reasoning from treating setup scripts, MCP startup, and tool-call
 subprocesses as interchangeable timing points.
 
+## Phase 1 Evidence Base
+
+### `Evidence`
+
+Source: `packages/schemas/src/entities/evidence.ts`
+
+Defines the canonical Ring 0 fact base entity from ADR 0023. Evidence records
+are freshness-bound facts, receipts, fixtures, derived facts, or human-decision
+records with shared provenance fields.
+
+Key fields:
+
+- `evidence_kind` distinguishes `observation`, `receipt`, `derived`,
+  `human_decision`, and `fixture`.
+- `subject_refs` names what the evidence is about. Each reference has a
+  `subject_kind`, `subject_id`, and optional relation.
+- `source`, `source_ref`, `observed_at`, `valid_until`, `authority`,
+  `confidence`, and `parser_version` form the shared provenance and freshness
+  contract.
+- `host_id`, `workspace_id`, `execution_context_id`, `session_id`, and
+  `run_id` bind evidence to the surfaces that produced or scoped it.
+- `payload_schema_version`, `payload`, and `redaction_mode` carry optional
+  JSON-compatible payload data after redaction, classification, hashing, or
+  reference-only handling.
+
+Sandbox observations are deliberately constrained. If `authority` is
+`sandbox-observation`, the record must name `execution_context_id` and include
+at least one trace reference: `session_id`, `run_id`, or `source_ref`. Sandbox
+evidence remains sandbox-authority evidence; a stronger fact requires a
+separate non-sandbox evidence record.
+
+The legacy `evidenceRefSchema` remains as a lightweight reference or embedded
+provenance preview for entities that have not yet been migrated to full
+Evidence records. It is not a competing fact model.
+
 ## Compatibility and Isolation Vocabulary
 
 The 2026-05-01 agentic tool isolation intake does not add schema by itself. It
@@ -245,16 +281,27 @@ Every `Evidence` record:
 
 ```json
 {
-  "value": "...",
+  "schema_version": "0.1.0",
+  "evidence_id": "evidence:example",
+  "evidence_kind": "observation",
+  "subject_refs": [
+    {
+      "subject_kind": "execution_context",
+      "subject_id": "ctx:codex-cli:tool-call"
+    }
+  ],
   "source": "...",
   "observed_at": "...",
-  "valid_until": "...",
-  "authority": "project-local | workspace-local | user-global | system | derived | sandbox-observation",
-  "cwd": "...",
+  "valid_until": null,
+  "authority": "project-local | workspace-local | user-global | system | derived | sandbox-observation | host-observation | vendor-doc | installed-runtime | human-observed",
   "parser_version": "...",
   "confidence": "authoritative | high | best-effort | stale | unknown",
-  "host_id": "...",
-  "session_id": "..."
+  "execution_context_id": "...",
+  "payload_schema_version": "...",
+  "payload": {
+    "redacted_example": true
+  },
+  "redaction_mode": "redacted"
 }
 ```
 
@@ -274,6 +321,7 @@ Every `Evidence` record:
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.5.0 | 2026-05-01 | Added the ADR 0023 base `Evidence` schema documentation and updated the provenance example. |
 | 0.4.0 | 2026-05-01 | Added version-control authority vocabulary from the Q-006 consult synthesis. |
 | 0.3.0 | 2026-05-01 | Added compatibility/isolation vocabulary from the agentic tool isolation intake as Phase 1 schema reconciliation guidance. |
 | 0.2.0 | 2026-05-01 | Added first shell/env Ring 0 schema docs for `ExecutionContext`, `EnvProvenance`, `CredentialSource`, and `StartupPhase`. |

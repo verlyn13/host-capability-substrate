@@ -45,7 +45,9 @@ export const evidenceRefSchema = z
     confidence: evidenceConfidenceSchema,
   })
   .strict()
-  .describe('Small provenance reference embedded until the full Evidence entity lands.');
+  .describe(
+    'Lightweight reference or embedded provenance preview for an Evidence record. Not a substitute for the full Evidence entity.',
+  );
 
 export const observationStatusSchema = z
   .enum(['observed_present', 'observed_absent', 'pending', 'unknown', 'not_applicable'])
