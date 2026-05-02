@@ -335,7 +335,8 @@ Changes to this registry follow the schema-change workflow at
 1. Open a PR that updates this file and any matching enum in
    `packages/schemas/src/entities/boundary-observation.ts`.
 2. Cite the motivating ADR or synthesis source. Speculative additions without a
-   primary citation are blocked per registration rule 5.
+   primary citation cannot be promoted from `proposed` and remain ineligible
+   for downstream payload work.
 3. `hcs-ontology-reviewer` files objections before human review.
 4. Status moves from `proposed` to `accepted` only after human acceptance.
 5. Removing or renaming a dimension requires evidence that no

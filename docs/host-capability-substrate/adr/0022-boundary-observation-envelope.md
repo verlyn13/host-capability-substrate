@@ -4,7 +4,7 @@ title: BoundaryObservation evidence envelope
 status: accepted
 date: 2026-05-01
 accepted_on: 2026-05-02
-charter_version: 1.2.0
+charter_version: 1.3.0
 tags: [boundary-observation, evidence, quality-gate, execution-context, phase-1, q-007]
 ---
 
