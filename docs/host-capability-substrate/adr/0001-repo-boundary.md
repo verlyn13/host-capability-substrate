@@ -40,7 +40,7 @@ HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped i
 ### Option C: place under a parent-level tier (`the-citadel`)
 
 **Pros:** host infrastructure might belong at parent scope.
-**Cons:** jefahnierocks's `system-config` already establishes that host-scoped infrastructure lives in this subsidiary; parent tier is reserved for truly cross-subsidiary resources.
+**Cons:** jefahnierocks's `system-config` already establishes the current workspace precedent for host-scoped infrastructure; parent-tier placement would require a separate cross-workspace governance decision.
 
 ## Decision
 
@@ -62,13 +62,13 @@ HCS needs a canonical local path, GitHub slug, and scope boundary. Host-scoped i
 ### Future amendments
 
 - If a parent-scope "host-layer" pillar is formally adopted, reconsider placement.
-- If cross-host / cross-subsidiary HCS usage emerges (unlikely), reconsider.
+- If cross-host or cross-workspace HCS usage emerges, reconsider placement.
 
 ## References
 
 ### Internal
 
-- Binding decision (master): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate/0001-repo-boundary-decision.md` (v1.1.0+). **This ADR is a short in-repo pointer to that master document; edits go there.**
+- Binding decision (master): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate/0001-repo-boundary-decision.md` (v1.2.0+). **This ADR is a short in-repo pointer to that master document; edits go there.**
 - Charter: `docs/host-capability-substrate/implementation-charter.md`
 - Decision ledger: `DECISIONS.md` entry D-017
 
