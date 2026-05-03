@@ -1,7 +1,7 @@
 ---
 adr_number: 0029
 title: Q-008(b) anomalous-command-capture blocking thresholds
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [anomalous-capture, blocking-thresholds, policy-shape, gateway, q-008, phase-1]
@@ -11,11 +11,11 @@ tags: [anomalous-capture, blocking-thresholds, policy-shape, gateway, q-008, pha
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
 
 ## Charter version
 
@@ -41,6 +41,27 @@ Written against charter v1.3.2 and
   shape sketch sections; field renames per registry v0.3.3 Sub-rule 6
   (`reason_code` → `reason_kind`, `required_grant_class` →
   `required_grant_kind`).
+- **Acceptance** (2026-05-03): all four reviewer subagents
+  (`hcs-architect`, `hcs-ontology-reviewer`, `hcs-policy-reviewer`,
+  `hcs-security-reviewer`) returned READY-FOR-ACCEPTANCE on v2 with
+  no new blocking findings. Three forward-looking concerns flagged
+  for downstream work (not ADR-level mechanical tweaks): (1) the
+  first-commit-SHA `repository_id` idiom from §`ApprovalGrant.scope`
+  per-class extensions needs an ontology-registry entry before the
+  schema PR using it lands; (2) the typed self-assertion-acknowledgment
+  grant binding behavior should be cross-referenced from canonical
+  policy YAML at `system-config/policies/host-capability-substrate/`
+  rather than re-derived there; (3) the schema PR enumerating
+  `Decision.reason_kind` must list each named value introduced by
+  this ADR (`producer_class_forgery_attempt`,
+  `cross_receipt_inconsistency`, `operation_class_unregistered`,
+  `empty_apparent_success`, `capture_failure`,
+  `abnormal_termination`, `authority_self_asserted`, `mode_unknown`,
+  `capture_truncated_at_cap`). Combination F's
+  `external_control_plane_mutation` cell (`approval_required`)
+  remains posture-only; canonical numeric thresholds and per-cell
+  refinements land in `tiers.yaml` once HCS Milestone 2 ships. No
+  mechanical text tweaks were applied at acceptance.
 
 ## Context
 
