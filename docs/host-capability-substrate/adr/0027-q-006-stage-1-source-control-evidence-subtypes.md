@@ -1,8 +1,9 @@
 ---
 adr_number: 0027
 title: Q-006 stage-1 source-control evidence subtypes (Repository, Remote, BranchProtection)
-status: proposed
+status: accepted
 date: 2026-05-02
+accepted_on: 2026-05-02
 revision: 2
 charter_version: 1.3.2
 tags: [git, github, evidence-subtype, branch-protection, q-006, q-008, phase-1]
@@ -12,24 +13,43 @@ tags: [git, github, evidence-subtype, branch-protection, q-006, q-008, phase-1]
 
 ## Status
 
-proposed (revision 2)
+accepted (revision 2)
 
 ## Date
 
 Drafted 2026-05-02; revision 2 same day after the post-merge subagent
 review on revision 1 returned 10 blocking findings (4 architect, 0
-ontology, 6 security). Revision 2 closes them. Cross-cutting design
-rules surfaced during the review (authority field placement,
-cross-context enforcement layer) are codified in
-`docs/host-capability-substrate/ontology-registry.md` v0.3.0; this ADR
-cites that registry rather than re-litigating.
+ontology, 6 security). Revision 2 closed them. Re-review on v2
+returned no blocking objections from `hcs-architect`; the
+`hcs-ontology-reviewer` and `hcs-security-reviewer` were
+process-blocked on path discovery but their substantive registry-side
+findings are codified in registry v0.3.1 (gateway tiebreaker,
+audit-chain coverage of rejections, field-level scrubber rule,
+capture-status × redaction-mode matrix). Two mechanical tweaks
+applied at acceptance:
+
+- renamed `ref_class` to `ref_kind` per registry v0.3.1 §Sub-rule 6
+  (`_kind` is the canonical discriminator suffix; `_class` is not
+  codified);
+- expanded the `ref_kind` enum from `branch | tag | other | unknown`
+  to `branch | tag | note | replace | stash | bisect |
+  remote_tracking | unknown`, dropping the `other` anti-pattern in
+  favor of explicit Git ref classes per ontology review.
+
+Cross-cutting design rules surfaced during the review (authority
+field placement, cross-context enforcement layer, redaction posture,
+discriminator suffix) are codified in
+`docs/host-capability-substrate/ontology-registry.md` v0.3.1; this
+ADR cites that registry rather than re-litigating.
 
 ## Charter version
 
 Written against charter v1.3.2 and
-`docs/host-capability-substrate/ontology-registry.md` v0.3.0 (codified
+`docs/host-capability-substrate/ontology-registry.md` v0.3.1 (codified
 suffix discipline, version-field naming, authority discipline,
-cross-context enforcement layer, redaction posture).
+cross-context enforcement layer with layer-disagreement tiebreaker
+and rejection-audit coverage, redaction posture with field-level
+scrubber rule and capture-status × redaction-mode matrix).
 
 ## Context
 
@@ -38,7 +58,12 @@ near-term review names plus a deferred broader inventory of fourteen
 candidate Q-006 receipts pending Q-011-guided ontology review. Q-011
 was approved 2026-05-01 and the registry codification landed in
 registry v0.2.0 (suffix discipline), v0.2.1 (version-field naming),
-and v0.3.0 (authority + cross-context + redaction discipline).
+and v0.3.0 (authority + cross-context + redaction discipline). Registry
+v0.3.1 (this ADR's binding citation) added: §Sub-rule 6 codifying
+`_kind` as the canonical discriminator suffix; §Sub-rule 7 codifying
+subject-kind enum naming; §Layer-disagreement tiebreaker (gateway
+wins on disagreement); §Audit-chain coverage of rejections;
+§Field-level scrubber rule; §Capture-status × redaction-mode matrix.
 
 This ADR is the first **stage-1 expansion** of the broader Q-006
 inventory. It commits posture for three foundational receipts:
@@ -127,7 +152,7 @@ binding for each of the three receipts.
 ### Authoring discipline (Ring 1 mint API)
 
 All three receipts are **minted by Ring 1 services**; producers
-supply observation data, not authority claims. Per registry v0.3.0
+supply observation data, not authority claims. Per registry v0.3.1
 §Authority discipline, fields whose value determines or strongly
 implies the evidence record's authority class are kernel-set, never
 producer-supplied.
@@ -141,7 +166,7 @@ For these three receipts:
   session's `WorkspaceContext`; agent-supplied `repository_id` is
   rejected.
 - Cross-context binding rejection lives in the three Ring 1 layers
-  named in registry v0.3.0 §Cross-context enforcement layer (mint
+  named in registry v0.3.1 §Cross-context enforcement layer (mint
   API + broker FSM re-check + gateway re-derive).
 
 ### `GitRepositoryObservation`
@@ -166,7 +191,7 @@ detected_at
 ```
 
 Note: `detected_by` (kernel_probe / host_telemetry / sandbox_marker)
-is **not** in the producer payload. Per registry v0.3.0 §Authority
+is **not** in the producer payload. Per registry v0.3.1 §Authority
 discipline, the producer-context source is a kernel-set field on
 `Evidence` itself (`producer` field), populated by the mint API from
 the requesting session's `ExecutionContext`.
@@ -197,7 +222,7 @@ record's freshness is bounded by:
 - Repository identity does not change while `valid_until` holds; new
   freshness is required after invalidation.
 
-**Redaction posture.** Per registry v0.3.0 §Redaction posture, the
+**Redaction posture.** Per registry v0.3.1 §Redaction posture, the
 canonical persistence-redaction field is `Evidence.redaction_mode`.
 For `GitRepositoryObservation` payloads, the default
 `redaction_mode` is `redacted`: `git_dir_path` and `work_tree_path`
@@ -229,7 +254,7 @@ A typed `Evidence` record using `evidenceSchema` directly, with
 repository_id
 remote_name
 remote_url                                             // redacted per redaction_mode (URL credentials stripped)
-ref_class            enum: branch | tag | other | unknown
+ref_kind            enum: branch | tag | note | replace | stash | bisect | remote_tracking | unknown
 ref_name
 observed_commit_sha   nullable    // null when ref_state in {gone, ambiguous, unknown}
 last_fetch_at
@@ -237,27 +262,43 @@ last_fetch_outcome   enum: ok | network_error | auth_error | rejected
 ref_state            enum: present | gone | ambiguous | unknown
 ```
 
-**`ref_class` discriminator.** The audit-finding-driven addition;
-distinguishes branch refs from tag refs (and other ref classes) so
-downstream proof composites (e.g., ADR 0025 v2's
-`BranchDeletionProof`) can bind only to `ref_class: branch`
-observations. A `GitRemoteObservation` with `ref_class: tag` cannot
-be passed off as a branch-ref observation; the mint API enforces the
-discriminator from the underlying ref-name format
-(`refs/heads/...` vs `refs/tags/...` vs other).
+**`ref_kind` discriminator.** The audit-finding-driven addition;
+distinguishes branch refs from other Git ref classes so downstream
+proof composites (e.g., ADR 0025 v2's `BranchDeletionProof`) can bind
+only to `ref_kind: branch` observations. A `GitRemoteObservation`
+with `ref_kind: tag` (or any non-branch value) cannot be passed off
+as a branch-ref observation; the mint API enforces the discriminator
+from the underlying ref-name format. Mapping (canonical Git ref
+namespaces under `refs/`):
 
-**`last_fetch_outcome` verifiability rule.** Per registry v0.3.0
+- `refs/heads/<name>`     → `branch`
+- `refs/tags/<name>`      → `tag`
+- `refs/notes/<name>`     → `note`
+- `refs/replace/<sha>`    → `replace`
+- `refs/stash`            → `stash`
+- `refs/bisect/<name>`    → `bisect`
+- `refs/remotes/<remote>/<name>` → `remote_tracking`
+- anything else, or parse failure → `unknown` (mint API may reject
+  if the producer asserts `unknown` without a parse-failure trace).
+
+The enum follows registry v0.3.1 §Sub-rule 6 (`_kind` is the canonical
+discriminator suffix; revision 1's `ref_class` was renamed at
+acceptance per ontology review). The enum drops the catch-all `other`
+value per the reviewer recommendation that named values are preferred
+over `other`-as-anti-pattern.
+
+**`last_fetch_outcome` verifiability rule.** Per registry v0.3.1
 §Authority discipline, operational claims are producer-asserted but
 must be kernel-verifiable. The producer asserts `last_fetch_outcome`
 based on transport result; the kernel re-verifies via separate
 evidence (`ToolInvocationReceipt` from ADR 0028 plus
 `CommandCaptureReceipt` for the producing `git fetch` invocation).
 Mismatch between producer claim and kernel-verified transport result
-fails composition at the broker FSM re-check (registry v0.3.0
+fails composition at the broker FSM re-check (registry v0.3.1
 §Cross-context enforcement layer layer 2).
 
 **`ref_state` gateway behavior.** The gateway's interpretation of
-`ref_state` values (registry v0.3.0 §Cross-context enforcement layer
+`ref_state` values (registry v0.3.1 §Cross-context enforcement layer
 layer 3 territory; canonical-policy-driven specifics):
 
 - `present`: deletion-relevant evidence is fresh; gateway proceeds.
@@ -321,7 +362,7 @@ linear_history_required optional
 last_observed_at
 ```
 
-**Authoring discipline.** Per registry v0.3.0 §Authority discipline,
+**Authoring discipline.** Per registry v0.3.1 §Authority discipline,
 producer-supplied authority-class fields are forbidden. The mint API
 resolves `Evidence.authority` based on the producer's
 `ExecutionContext`:
@@ -333,7 +374,7 @@ resolves `Evidence.authority` based on the producer's
   `host-observation` (host) or `sandbox-observation` (sandbox) per
   inv. 8.
 - Self-asserted producer claim with no telemetry: `self-asserted`
-  authority per registry v0.3.0 (cannot satisfy ADR 0025 v2's
+  authority per registry v0.3.1 (cannot satisfy ADR 0025 v2's
   `is_protected` field for the gateway's layer-3 re-check).
 
 **Redaction posture.** Default `redaction_mode` is `redacted`:
@@ -355,7 +396,7 @@ secret); `required_check_names` are typed strings, audit-safe.
   name `tool_or_provider_ref` as the primary target reference and
   `workspace_id` as an allowed supplemental.
 
-### Authority handling (cross-cutting; per registry v0.3.0)
+### Authority handling (cross-cutting; per registry v0.3.1)
 
 - Local Git operations (`git remote -v`, `git config --get`, fetched
   state from `.git`) produce `host-observation` authority on host or
@@ -365,7 +406,7 @@ secret); `required_check_names` are typed strings, audit-safe.
 - Sandbox-context observations remain `sandbox-observation` and
   cannot be promoted (charter inv. 8).
 - Producer claims without backing telemetry produce `self-asserted`
-  authority per registry v0.3.0 §Self-assertion authority class.
+  authority per registry v0.3.1 §Self-assertion authority class.
 - Authority-class fields (`detected_by`, equivalent producer-context
   signals) are kernel-set only; not in producer payloads.
 
@@ -380,7 +421,7 @@ This ADR does not authorize:
   implementation PR per ontology-registry §Adding or removing a
   dimension and §Registration rules rule 7).
 - Adding `self-asserted` to the `evidenceAuthoritySchema` enum
-  (deferred to a separate schema-change PR; registry v0.3.0
+  (deferred to a separate schema-change PR; registry v0.3.1
   §Self-assertion authority class records the rule).
 - ADR 0026 substrate hook architecture (separate ADR, gated on
   `BranchProtectionObservation` schema acceptance).
@@ -399,7 +440,7 @@ This ADR does not authorize:
 - `evidenceSchema` (ADR 0023) is the canonical envelope for non-
   contextual-boundary Q-006 receipts.
 - `GitRemoteObservation` per-(repository, remote_name, ref) grain
-  with `ref_class` discriminator is the canonical answer for
+  with `ref_kind` discriminator is the canonical answer for
   ScopeCam-style "remote-gone" observations and forecloses tag-vs-
   branch confusion.
 - `BranchProtectionObservation` is a `BoundaryObservation` payload
@@ -409,7 +450,7 @@ This ADR does not authorize:
   `repository_id` resolved from `WorkspaceContext` →
   `GitRepositoryObservation` → child observations) is the canonical
   cross-context binding for Q-006 work.
-- Per registry v0.3.0:
+- Per registry v0.3.1:
   - Authority-class fields are kernel-set; producer payload contains
     observation data only.
   - Cross-context binding rejection happens at three Ring 1 layers
@@ -431,14 +472,14 @@ This ADR does not authorize:
 - Treating "ref not visible in last fetch" as deletion authority
   without a fresh `GitRemoteObservation`.
 - Producer-supplied authority-class fields in any of the three
-  receipts (per registry v0.3.0 §Authority discipline).
+  receipts (per registry v0.3.1 §Authority discipline).
 - Filesystem-path-derived or remote-URL-derived `repository_id`
   resolution. First-commit-SHA-rooted is canonical.
 - Cross-remote `BranchProtectionObservation` reuse (fork's
   protection observation used to gate upstream deletion).
 - Tag-ref `GitRemoteObservation` records passed as branch-ref
-  observations (the `ref_class` discriminator forbids).
-- Schema-layer cross-context binding enforcement (per registry v0.3.0
+  observations (the `ref_kind` discriminator forbids).
+- Schema-layer cross-context binding enforcement (per registry v0.3.1
   §Cross-context enforcement layer; binding lives at Ring 1).
 - Promoting sandbox-observed branch protection to host-authoritative.
 - Treating `gh api` response in a sandbox-observation execution
