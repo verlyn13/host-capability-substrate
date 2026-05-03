@@ -3,7 +3,7 @@ adr_number: 0028
 title: Q-008(a) execution-mode receipts (ToolInvocation, CommandCapture, ExecutionMode)
 status: proposed
 date: 2026-05-02
-revision: 2
+revision: 3
 charter_version: 1.3.2
 tags: [execution-mode, tool-invocation, command-capture, evidence-subtype, q-008, phase-1]
 ---
@@ -12,25 +12,37 @@ tags: [execution-mode, tool-invocation, command-capture, evidence-subtype, q-008
 
 ## Status
 
-proposed (revision 2)
+proposed (revision 3)
 
 ## Date
 
 Drafted 2026-05-02; revision 2 same day after the post-merge subagent
 review on revision 1 returned 11 blocking findings (3 architect, 3
-ontology, 5 security). Revision 2 closes them. Cross-cutting design
-rules surfaced during the review (authority field placement, self-
-assertion authority class, cross-context enforcement layer, redaction
-posture) are codified in
-`docs/host-capability-substrate/ontology-registry.md` v0.3.0; this ADR
-cites that registry rather than re-litigating.
+ontology, 5 security). Revision 2 closed them. Revision 3 same day
+after the v2 re-review surfaced five additional gaps in security and
+ontology coverage (B-S2 producer-crash watchdog, B-S3 audit-chain
+coverage of mint-rejected Decisions, B-S4 excerpt upper bound, `mode:
+unknown` gateway behavior, `ContextInheritanceObservation` naming)
+plus two cosmetic improvements (`mode` enum value rename to break
+lexical collision with the `sandbox-observation` authority class;
+`argv_capture_mode` enum extension to add `mixed` for symmetry with
+base `redaction_mode`). Cross-cutting design rules surfaced during
+both review passes (authority field placement, self-assertion
+authority class, cross-context enforcement layer with layer-
+disagreement tiebreaker and rejection-audit coverage, redaction
+posture with field-level scrubber rule and capture-status ×
+redaction-mode matrix) are codified in
+`docs/host-capability-substrate/ontology-registry.md` v0.3.1; this
+ADR cites that registry rather than re-litigating.
 
 ## Charter version
 
 Written against charter v1.3.2 and
-`docs/host-capability-substrate/ontology-registry.md` v0.3.0 (codified
+`docs/host-capability-substrate/ontology-registry.md` v0.3.1 (codified
 suffix discipline, version-field naming, authority discipline,
-cross-context enforcement layer, redaction posture).
+cross-context enforcement layer with layer-disagreement tiebreaker
+and rejection-audit coverage, redaction posture with field-level
+scrubber rule and capture-status × redaction-mode matrix).
 
 ## Context
 
@@ -46,21 +58,21 @@ receipts that distinguish "tool ran" from "capture happened" from
 "what mode applies."
 
 Revision 2 incorporates the post-merge findings and cross-cutting rules
-codified in registry v0.3.0:
+codified in registry v0.3.1:
 
 - `self-asserted` is now a registered authority class below
-  `sandbox-observation` (registry v0.3.0 §Self-assertion authority
+  `sandbox-observation` (registry v0.3.1 §Self-assertion authority
   class). Self-assertion observations no longer alias to `derived`,
   closing the kind/authority semantic overload.
 - Authority-class fields (`captured_by`, `observed_via`) are
-  kernel-set, not producer-supplied (registry v0.3.0
+  kernel-set, not producer-supplied (registry v0.3.1
   §Producer-vs-kernel-set authority fields).
 - Cross-context binding rejection lives at the three Ring 1 layers
-  named in registry v0.3.0 §Cross-context enforcement layer (mint
+  named in registry v0.3.1 §Cross-context enforcement layer (mint
   API + broker FSM re-check + gateway re-derive), not the schema
   layer.
 - `argv_redaction_mode` was a collision with the base `redaction_mode`;
-  per registry v0.3.0 §Redaction posture, the field is renamed to
+  per registry v0.3.1 §Redaction posture, the field is renamed to
   `argv_capture_mode` (capture-time discipline; orthogonal to base
   persistence-redaction).
 
@@ -93,7 +105,7 @@ doc-only and posture-only.
   matching the three subtypes.
 - Composes cleanly with ADR 0023's sandbox-authority constraints
   (charter inv. 8) and the new `self-asserted` authority class
-  (registry v0.3.0).
+  (registry v0.3.1).
 - Avoids Q-011 bucket-2 commitments that would imply per-receipt
   durable identity beyond what's needed.
 
@@ -126,7 +138,7 @@ for failed invocations.
 ### Authoring discipline (Ring 1 mint API)
 
 All three receipts are minted by Ring 1 services; producers supply
-observation data, not authority claims. Per registry v0.3.0
+observation data, not authority claims. Per registry v0.3.1
 §Authority discipline:
 
 - `Evidence.authority` is set by the kernel/mint API based on the
@@ -139,9 +151,19 @@ observation data, not authority claims. Per registry v0.3.0
   evidence.
 
 Cross-context binding rejection lives at the three Ring 1 layers
-named in registry v0.3.0 §Cross-context enforcement layer (mint API
+named in registry v0.3.1 §Cross-context enforcement layer (mint API
 + broker FSM re-check + gateway re-derive); schema validation is
 not an enforcement layer.
+
+**Mint-rejected `Decision` records participate in the audit hash
+chain** per registry v0.3.1 §Audit-chain coverage of rejections.
+When the mint API, broker FSM, or gateway rejects a payload
+submission for any of the three receipts, the rejection produces a
+typed `Decision` that is committed to the audit hash chain with
+`rejecting_layer` and `rejection_class` discriminators. Audit-chain
+coverage of rejections is a Ring 1 invariant inherited from the
+registry; this ADR does not opt out and does not need to re-name
+the requirement per-receipt.
 
 ### `ToolInvocationReceipt`
 
@@ -169,7 +191,7 @@ directly, with:
 invocation_id
 resolved_tool_id
 execution_context_id
-argv_capture_mode      enum: none | redacted | classified | reference_only
+argv_capture_mode      enum: none | redacted | classified | reference_only | mixed
 argv                   optional   // present only when argv_capture_mode = none
                                   // AND the resolved_tool's argv contract is
                                   // declared secret-free at the producer-attestation layer
@@ -187,7 +209,7 @@ parent linkage now lives in `subject_refs`
 (`subject_kind: "tool_invocation", relation: "parent"`).
 
 **`argv_capture_mode` rename.** Renamed from revision 1's
-`argv_redaction_mode` per registry v0.3.0 §Redaction posture (capture
+`argv_redaction_mode` per registry v0.3.1 §Redaction posture (capture
 mode is orthogonal to persistence redaction; the base
 `Evidence.redaction_mode` remains canonical for persisted-payload
 sanitization).
@@ -213,7 +235,29 @@ itself an audit-integrity violation, not silent acceptable behavior.
 The mint API requires producers to emit a closing receipt before
 session-end; broker FSM enforces.
 
-**Cross-context binding rules** (per registry v0.3.0
+**Producer-crash kernel watchdog** (per security review B-S2). When
+the producer process exits without emitting a closing
+`ToolInvocationReceipt` (e.g., SIGKILL, OOM, segfault), the broker
+FSM emits a synthetic `ToolInvocationReceipt` on the producer's
+behalf. The synthetic receipt carries:
+
+- `end_time: <process_exit_observed_at>` (kernel-observed),
+- `exit_code: <observed_or_null>`,
+- `termination_reason: killed` (when signal-terminated by the
+  kernel) or `unknown` (when the kernel cannot classify),
+- `Evidence.authority: host-observation` (the broker is
+  host-trusted),
+- `Evidence.producer: kernel_broker` (kernel-set; producer-supplied
+  values are rejected per registry v0.3.1 §Producer-vs-kernel-set
+  authority fields).
+
+The synthetic receipt is composed at the Ring 1 broker FSM, not at
+the agent harness. An attacker that crashes the producer cannot
+suppress receipt emission; the kernel watchdog ensures every
+initiated invocation produces a receipt, even when the producer is
+not in a position to emit one.
+
+**Cross-context binding rules** (per registry v0.3.1
 §Cross-context enforcement layer):
 
 - The receipt's `execution_context_id` must match the producer's
@@ -255,7 +299,7 @@ captured_at
 ```
 
 Note: `captured_by` (kernel_broker / agent_harness / sandbox_marker)
-was a flat payload field in revision 1. Per registry v0.3.0
+was a flat payload field in revision 1. Per registry v0.3.1
 §Producer-vs-kernel-set authority fields, the producer-context
 source is kernel-set at the Evidence base via `Evidence.producer`,
 not in payload.
@@ -285,19 +329,22 @@ payload sanitization. Permitted combinations:
 Producer payloads with mismatched `capture_status` × `redaction_mode`
 combinations are rejected at the mint API.
 
-**Excerpt length bounds** (per security review N1). Where excerpts
-are present (`stdout_redacted_excerpt`, `stderr_redacted_excerpt`),
-they are bounded by the producer at capture time. The exact byte cap
-and entropy-shape post-filter rules are canonical-policy-driven and
-land with the schema implementation PR; this ADR records the
-posture: excerpts exist to give a debugging hint; they must not
-become a side-channel for high-entropy material that the redactor
-might miss.
+**Excerpt length bounds** (per security review B-S4 + v1 N1).
+`stdout_redacted_excerpt` and `stderr_redacted_excerpt` are bounded
+at the ADR-acceptance layer at **`<= 1024 bytes` per excerpt**.
+Producers MUST truncate at this boundary at capture time; mint API
+rejects payloads with longer excerpts. The 1024-byte cap is large
+enough to give debugging context (a few lines of output) and small
+enough that a high-entropy needle has limited room to hide. The
+entropy-shape post-filter (which scans the truncated excerpt for
+secret-shaped content even after the producer's redactor ran) is
+canonical-policy-driven and lands with the schema implementation
+PR; the byte cap is binding from this ADR's acceptance.
 
 **Cross-context binding rules.** A `CommandCaptureReceipt` whose
 parent `tool_invocation` reference resolves to an invocation in a
 different `execution_context_id` fails composition at the mint API
-(registry v0.3.0 §Cross-context enforcement layer layer 1).
+(registry v0.3.1 §Cross-context enforcement layer layer 1).
 
 ### `ExecutionModeObservation`
 
@@ -324,7 +371,7 @@ mode is observed via real telemetry or self-asserted:
 ```text
 execution_context_id
 invocation_id          optional
-mode                   enum: normal | sandbox_observation | escalated |
+mode                   enum: normal | sandboxed | escalated |
                               isolated_clean_room | unknown
 escalation_kind        optional   // present when mode = escalated
                                   // values: privileged_user | broker_grant |
@@ -336,23 +383,26 @@ isolated_image_ref     optional   // classification: internal | external | unkno
 
 Note: `observed_via` (kernel_observation / sandbox_marker /
 host_telemetry / self_assertion) was a flat payload field in revision
-1. Per registry v0.3.0 §Producer-vs-kernel-set authority fields,
+1. Per registry v0.3.1 §Producer-vs-kernel-set authority fields,
 this is **kernel-set** on the `Evidence` base via `Evidence.authority`
 and `Evidence.producer`, not in payload.
 
-**Authority handling.** Per registry v0.3.0 §Authority discipline,
+**Authority handling.** Per registry v0.3.1 §Authority discipline,
 the kernel/mint API resolves `Evidence.authority` from the producer's
 `ExecutionContext` and the means of mode resolution:
 
 - Kernel telemetry source → `host-observation` authority (kernel is
   host-trusted).
 - Sandbox-marker source → `sandbox-observation` authority. The mode
-  itself can name `sandbox_observation`, but the evidence's authority
-  class follows inv. 8.
+  value `sandboxed` (renamed from v2's `sandbox_observation` to break
+  the lexical near-collision with the `sandbox-observation` authority
+  class per ontology review) names the runtime posture; the
+  authority class is derived independently from `observed_via` and
+  `Evidence.producer`, not from `mode`.
 - Host telemetry source → `host-observation` if the telemetry source
   is verified; `sandbox-observation` if observed inside a sandbox.
 - Producer self-assertion (no telemetry backing) → `self-asserted`
-  authority per registry v0.3.0 §Self-assertion authority class.
+  authority per registry v0.3.1 §Self-assertion authority class.
   Cannot be promoted; the evidence record's authority is below
   `sandbox-observation`.
 
@@ -377,6 +427,40 @@ in a different `execution_context_id` fails composition at the mint
 API. Self-assertion observations cannot satisfy a downstream
 operation that requires `host-observation` authority for the same
 context (per inv. 8 promotion rejection).
+
+**`mode: unknown` gateway behavior** (per security review A4 + v3
+analogue to ADR 0027 v2's `ref_state: unknown` BLOCK rule). The
+gateway's interpretation of `mode` values:
+
+- `normal`: gateway proceeds for operations whose policy allows
+  normal-mode execution.
+- `sandboxed`: gateway proceeds only when the operation's
+  `mutation_scope` is compatible with sandbox-bounded execution; per
+  inv. 8 sandbox observations cannot promote to host-authority for
+  forbidden-tier or high-mutation-scope operations.
+- `escalated`: gateway requires the matching `ApprovalGrant` for the
+  named `escalation_kind`.
+- `isolated_clean_room`: gateway proceeds for operations declared
+  isolation-acceptable in their capability manifest.
+- `unknown`: gateway BLOCKS the operation. Mode cannot be
+  proven; observations carrying `mode: unknown` cannot satisfy mode-
+  conditioned policy.
+
+**Cross-context parent-invocation typed inheritance evidence** (per
+security review A5 + charter v1.3.2 wave-3). When a child
+invocation's parent_invocation reference resolves to an invocation
+in a different `execution_context_id`, the cross-context parent
+linkage requires typed evidence: a candidate
+`ContextInheritanceObservation` (queued for stage-2 ontology work)
+that asserts the named target context inherits a specific dimension
+(env, sandbox scope, credential authority, etc.) from the parent
+context, with `Evidence.authority: host-observation` (the kernel is
+the only producer that can authoritatively assert cross-context
+inheritance). Sandbox-context children that reference host-context
+parents without a `ContextInheritanceObservation` covering the
+asserted dimension fail composition at the mint API. The named
+subtype `ContextInheritanceObservation` is the authority anchor for
+inv. 17's "intentional inheritance" carve-out.
 
 ### Cross-receipt composition
 
@@ -408,7 +492,7 @@ This ADR does not authorize:
   `packages/schemas/src/entities/evidence.ts`. That schema enum
   update lands with the schema implementation PR.
 - Adding `self-asserted` to `evidenceAuthoritySchema` (separate
-  schema-change PR; registry v0.3.0 records the rule).
+  schema-change PR; registry v0.3.1 records the rule).
 - Kernel broker semantics for `installed-runtime` authority on
   `ToolInvocationReceipt`. Anticipated future authority but not
   current posture; broker lands later.
@@ -428,10 +512,10 @@ This ADR does not authorize:
 - All three use `evidenceSchema` directly as typed payloads (Q-011
   bucket 1).
 - Authority-class fields (`captured_by`, `observed_via`) are removed
-  from producer payloads; kernel-set per registry v0.3.0
+  from producer payloads; kernel-set per registry v0.3.1
   §Producer-vs-kernel-set authority fields.
 - Self-assertion observations carry `self-asserted` authority per
-  registry v0.3.0 §Self-assertion authority class; cannot be
+  registry v0.3.1 §Self-assertion authority class; cannot be
   promoted; cannot satisfy host-observation gateway requirements.
 - `evidence_kind` for `ExecutionModeObservation` is `observation`
   for telemetry-backed observations and `derived` for self-asserted
@@ -457,7 +541,7 @@ This ADR does not authorize:
 - Failed/interrupted invocations are required to emit
   `ToolInvocationReceipt` records; absence is an audit-integrity
   violation enforced by the mint API and broker FSM.
-- Cross-context binding rejection lives at registry v0.3.0
+- Cross-context binding rejection lives at registry v0.3.1
   §Cross-context enforcement layer's three Ring 1 layers (mint API
   + broker FSM re-check + gateway re-derive).
 
@@ -490,7 +574,7 @@ This ADR does not authorize:
 - Raw capability names in `privileged_capabilities`; raw image refs
   in `isolated_image_ref`. Both leak deployment metadata.
 - Schema-layer cross-context binding enforcement; binding lives at
-  Ring 1 (registry v0.3.0).
+  Ring 1 (registry v0.3.1).
 
 ### Future amendments
 
@@ -500,7 +584,7 @@ This ADR does not authorize:
   fixtures.
 - Schema-change PR for `evidenceAuthoritySchema` adding
   `self-asserted` (separate from this ADR; landing path noted in
-  registry v0.3.0).
+  registry v0.3.1).
 - Q-008(b) anomalous-command-capture blocking thresholds: a follow-
   up ADR will name which `capture_status` / `termination_reason` /
   `mode` combinations block which downstream operations.
