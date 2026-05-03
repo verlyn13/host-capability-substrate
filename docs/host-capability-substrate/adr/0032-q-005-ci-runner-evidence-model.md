@@ -11,7 +11,7 @@ tags: [ci-runner, evidence-subtypes, citadel-opa, forbidden-families, status-che
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
@@ -21,6 +21,124 @@ proposed (v1)
 
 Written against charter v1.3.2 and
 `docs/host-capability-substrate/ontology-registry.md` v0.3.3.
+
+## Revision history
+
+- **v1** (2026-05-03, commit `4056b8d`): initial draft. Reviewers
+  surfaced 6 blocking findings (2 ontology, 4 security) plus
+  ~16 non-blocking concerns.
+- **v2** (2026-05-03, this revision): closes all 6 blockers and
+  folds 16 consolidated non-blocking observations.
+  - **Ontology O-B1.** Flattened forbidden-family names from
+    dotted notation (`forbidden_runner_public_fork_to_self_hosted`)
+    to `lower_snake_case` per registry §Sub-rule 9
+    (`forbidden_runner_public_fork_to_self_hosted`,
+    `forbidden_runner_generic_self_hosted_label`,
+    `forbidden_runner_macbook_always_on_ci`,
+    `forbidden_runner_tokens_in_state`,
+    `forbidden_runner_docker_socket_to_untrusted`).
+  - **Ontology O-B2.** Replaced bare `docker_socket_exposure: bool`
+    with discriminator `docker_socket_exposure_kind: "none" |
+    "host_workflow_only" | "all_workflows" | "unknown"` per
+    registry §Sub-rule 6 (matches ADR 0030 v2 `lock_state` 3-state
+    precedent for security-sensitive multi-state fields).
+  - **Security S-B1.** Added §`PolicyPlanReceipt` secret-bearing
+    content rule. `opentofu_plan_hash` is computed over the
+    *redacted* plan output; raw plan content never enters HCS
+    evidence storage. `redaction_mode` discipline + registry
+    v0.3.0 §Field-level scrubber rule applies to all string-typed
+    payload fields including `policy_ids` and `workflow_path`.
+  - **Security S-B2.** Declared `RunnerHostObservation.labels`
+    scrubber-eligible per registry v0.3.0 §Field-level scrubber
+    rule. Producer-supplied labels matching secret-shaped patterns
+    rejected at Layer 1 mint API. Same posture for
+    `WorkflowRunReceipt.workflow_path`.
+  - **Security S-B3.** Moved `runner_host_id` from kernel-set list
+    to **producer-asserted, kernel-verifiable** list. Citadel
+    mints `runner_host_id` (per Citadel-vs-HCS boundary); HCS
+    consumes it as producer-asserted, kernel-verifiable against
+    Citadel-emitted `PolicyPlanReceipt` and runner-registration
+    state. This avoids the ADR 0028 producer-class authority
+    confusion that registry v0.3.2 §Producer-vs-kernel-set was
+    written to prevent.
+  - **Security S-B4.** Added `registration_epoch` field on
+    `RunnerHostObservation` and a typed `runner_deregistration`
+    event/Decision class. Citadel-signaled runner-token rotation
+    or force-deregistration emits a `runner_deregistration`
+    Decision; HCS Layer 2/3 re-checks reject `RunnerHostObservation`
+    records whose `registration_epoch` no longer matches
+    Citadel state. Mirrors ADR 0019 v3 §Secret-referenced
+    sources label-upgrade chunk-invalidation pattern.
+  - **Ontology N3.** Renamed `repo_access_class` →
+    `repo_access_kind` and `network_egress_class` →
+    `network_egress_kind` per registry §Sub-rule 6 (`_class`
+    forbidden as a non-discriminator suffix; `_kind` is
+    canonical). `host_filesystem_access` retains no-suffix form
+    (it's a categorization, not a discriminator selecting
+    siblings).
+  - **Ontology N7.** Added explicit §`RunnerIsolationObservation`
+    flat-field composition framing: all five payload fields
+    (`job_environment_kind`, `workspace_cleanup_kind`,
+    `docker_socket_exposure_kind`, `network_egress_kind`,
+    `host_filesystem_access`) are independent dimensions of
+    isolation posture; no top-level discriminator selects which
+    subset is required. Matches `BoundaryObservation.observed_payload`
+    flat-fact pattern.
+  - **Architect F-1, F-2.** Acceptance forward-look explicitly
+    cites: (a) `runner_isolation` boundary-dimension promotion
+    proposed → accepted as a registry update PR gated on this
+    ADR's acceptance; (b) Q-006 stage-2/3 dependency on
+    `StatusCheckSourceObservation` receipt shape.
+  - **Policy (A).** Added one-line clarification distinguishing
+    forbidden-family rejection layer (registration / operation-shape
+    layer) from Decision-level `block` matrix layer (receipt-
+    consumption layer per ADR 0029 v2).
+  - **Policy (B).** Explained `forbidden_runner_tokens_in_state`
+    enforcement-layer asymmetry: token-at-rest is a structural
+    inv. 5 violation surfaced at policy-lint / capability-
+    registration time, not per-invocation.
+  - **Policy (C).** Tightened `runner_substrate_forbidden`
+    framing: forbidden-family rejections produce audit-chain
+    rejection-class entries (per registry v0.3.1 §Audit-chain
+    coverage of rejections), not ADR 0029 v2-style Decision-level
+    matrix states. The reason_kind is the audit-chain
+    discriminator at the rejecting layer, not a matrix cell.
+  - **Policy (D).** Added §`StatusCheckSourceObservation`
+    interim total-block rule: until Q-006 stage-2/3 ADR commits
+    the receipt shape, all self-hosted check-result consumption
+    rejects with `status_check_source_required`.
+  - **Policy (E).** Added §`ApprovalGrant.scope` per-class
+    extension sketch for runner operations:
+    `runner_registration` and `runner_deregistration` operation
+    classes bind `target_ref: { runner_host_id }` +
+    `execution_context_id`. Matches ADR 0031 v1 per-class
+    extension pattern.
+  - **Security N-1.** ResourceBudgetObservation side-channel
+    acknowledgment for future multi-tenant runner deployment.
+  - **Security N-2.** MacBook always-on cross-context binding
+    rule: even with `workflow_dispatch`, the dispatching
+    session's `ExecutionContext` must be human-driven, not
+    agent-driven; otherwise an agent rehydrates the same ambient-
+    credential exposure.
+  - **Security N-3.** StatusCheckSourceObservation App-permission-
+    surface drift bypass note: a legitimate App with bound
+    `expected_github_app_id` could publish a different check name
+    post-binding. Q-006 stage-2/3 commits the freshness re-check
+    rule that compares current App permission set against the
+    observation's.
+  - **Security N-4.** `WorkflowRunReceipt.runner_host_evidence_ref`
+    linked-observation inv. 8 discipline: cited
+    `RunnerHostObservation` with `Evidence.authority:
+    sandbox-observation` cannot promote `WorkflowRunReceipt` to
+    host-authoritative gating evidence.
+  - **Security N-5.** `PolicyPlanReceipt.repository_id`
+    clarification: IaC repo, NOT project repo. Remote OpenTofu
+    state backend may live in Citadel-managed remote storage;
+    HCS *evidence* of plan execution stays single-host per
+    inv. 10.
+  - **Security N-6.** Audit-chain inheritance restated for the
+    new Citadel-adjacent surface; runner-state Decision events
+    participate in audit hash chain per registry v0.3.1.
 
 ## Context
 
@@ -161,25 +279,72 @@ substrate, and access posture.
   schema PR adds to `evidenceSubjectKindSchema`).
 - Standard `Evidence` base fields per ADR 0023 (including
   `payload_schema_version` and `payload`).
-- Payload (illustrative): `runner_host_id`, `substrate_kind:
-  "github_hosted" | "self_hosted_proxmox" | "self_hosted_macbook"
-  | "self_hosted_other"`, `os`, `arch`, `labels` (array),
-  `repo_access_class: "public" | "private" | "fork_isolated"`,
-  `last_seen_at` (kernel-set freshness anchor).
+- Payload (illustrative): `runner_host_id` (Citadel-minted; see
+  Authority discipline below), `registration_epoch` (Citadel-
+  signaled; see §`runner_deregistration` event below),
+  `substrate_kind: "github_hosted" | "self_hosted_proxmox" |
+  "self_hosted_macbook" | "self_hosted_other"`, `os`, `arch`,
+  `labels` (array; scrubber-eligible — see §Scrubber-eligibility
+  below), `repo_access_kind: "public" | "private" |
+  "fork_isolated"`, `last_seen_at` (kernel-set freshness anchor).
 
 **Grain:** per-`runner_host_id`. A single host may produce many
 observations over time; freshness is determined by `last_seen_at`
 and the consuming operation's freshness window.
 
 **Authority discipline (registry v0.3.2):**
-- Kernel-set: `last_seen_at`, `runner_host_id` resolution.
-- Producer-asserted, kernel-verifiable: `substrate_kind`, `os`,
-  `arch`, `labels`, `repo_access_class`.
+- **Kernel-set**: `last_seen_at` (HCS-kernel freshness anchor).
+- **Producer-asserted, kernel-verifiable**: `runner_host_id`
+  (Citadel mints the identifier per the Citadel-vs-HCS
+  boundary; HCS consumes it as producer-asserted, kernel-
+  verifiable against Citadel-emitted `PolicyPlanReceipt` and
+  runner-registration state. HCS does NOT mint identifiers in
+  Citadel's authority domain. This avoids the ADR 0028 producer-
+  class authority confusion that registry v0.3.2 §Producer-vs-
+  kernel-set was written to prevent), `registration_epoch`
+  (Citadel-emitted; HCS verifies against current Citadel state
+  at Layer 2/3 re-check), `substrate_kind`, `os`, `arch`,
+  `labels`, `repo_access_kind`.
+
+**Scrubber-eligibility (charter inv. 5):** `labels` is
+declared scrubber-eligible per registry v0.3.0 §Field-level
+scrubber rule. GitHub Actions runner labels are operator-
+controlled strings that may encode environment hints or
+credential material (`prod-aws-account-12345`,
+`vault-token-rotation-enabled`). Producer-supplied labels
+matching secret-shaped patterns reject at Layer 1 mint API.
 
 **Cross-context binding (registry v0.3.0 §Cross-context
 enforcement layer):** Layer 1 enforces `runner_host_id`
 consistency with the requesting session's `ExecutionContext`;
-Layer 2 re-checks `last_seen_at` freshness; Layer 3 re-derives.
+Layer 2 re-checks `last_seen_at` freshness AND
+`registration_epoch` against current Citadel-signaled state;
+Layer 3 re-derives.
+
+**`runner_deregistration` event (closes audit-integrity gap):**
+Citadel-signaled runner-token rotation, force-deregistration,
+or runner removal emits a typed `runner_deregistration` event
+recorded as a typed Decision in the audit hash chain per
+registry v0.3.1 §Audit-chain coverage of rejections (extended
+to lifecycle events by inheritance). The Decision carries:
+- `agent_client_id` + `session_id` of the requesting principal
+  (typically a Citadel agent);
+- `runner_host_id` of the deregistered runner;
+- `prior_registration_epoch` and `new_registration_epoch` (or
+  `null` for terminal deregistration);
+- `deregistration_kind: "rotation" | "force_deregistration" |
+  "runner_removal"` discriminator per registry Sub-rule 6.
+
+After a `runner_deregistration` Decision is emitted, all stale
+`RunnerHostObservation` records whose `registration_epoch`
+matches the prior epoch are invalidated at Layer 2/3 re-check.
+Operations consuming such records reject with
+`Decision.reason_kind: runner_observation_stale_post_deregistration`
+(NEW reservation; see §`Decision.reason_kind` reservations below).
+This mirrors ADR 0019 v3 §Secret-referenced sources label-upgrade
+chunk-invalidation pattern: when the upstream authority signals
+a state change, derived evidence is invalidated atomically at
+the kernel boundary.
 
 #### `RunnerIsolationObservation`
 
@@ -193,19 +358,29 @@ This ADR promotes the dimension to accepted.
 - Payload (illustrative): `job_environment_kind: "host" |
   "container" | "disposable_vm"`, `workspace_cleanup_kind:
   "always_clean" | "checkout_clean_only" | "persistent"`,
-  `docker_socket_exposure: bool`, `network_egress_class:
+  `docker_socket_exposure_kind: "none" | "host_workflow_only"
+  | "all_workflows" | "unknown"`, `network_egress_kind:
   "internet_full" | "internet_restricted" | "vpn_only" |
-  "egress_blocked"`, `host_filesystem_access:
-  "isolated" | "shared_workspace" | "shared_host"`.
+  "egress_blocked"`, `host_filesystem_access: "isolated" |
+  "shared_workspace" | "shared_host"`.
+
+**Flat-field composition.** All five payload fields are
+independent dimensions of isolation posture; no top-level
+discriminator selects which subset is required. Matches
+`BoundaryObservation.observed_payload` flat-fact pattern. Each
+field is observed and reported per runner-lifecycle; the
+forbidden-family decisions compose across fields rather than
+selecting siblings.
 
 **Grain:** per-runner-lifecycle (the isolation posture for a
 single job execution context, not the host-level static config).
 
 **Authority discipline:** observation-class fields kernel-set;
 posture-class fields producer-asserted but kernel-verifiable.
-`docker_socket_exposure: true` is itself an HCS forbidden-family
-trigger when paired with untrusted code (see §Five HCS forbidden
-families below).
+`docker_socket_exposure_kind in {"host_workflow_only",
+"all_workflows"}` paired with untrusted code is itself an HCS
+forbidden-family trigger (see §Five HCS forbidden families
+below).
 
 **Boundary-dimension acceptance:** `runner_isolation` boundary
 dimension promotes from proposed → accepted with this ADR's
@@ -235,6 +410,22 @@ Typed receipt of a GitHub Actions workflow run's lifecycle.
 candidate, deferred to stage-2/stage-3) records individual
 *checks* within a run. Q-011 dedupe rule preserves the
 distinction.
+
+**Scrubber-eligibility:** `workflow_path` is declared scrubber-
+eligible per registry v0.3.0 §Field-level scrubber rule. A
+producer-asserted path matching secret-shaped patterns (e.g.,
+embedded credential references) rejects at Layer 1 mint API.
+
+**Linked-observation authority discipline (charter inv. 8):**
+when `runner_host_evidence_ref` cites a `RunnerHostObservation`,
+the cited observation's `Evidence.authority` cannot be
+`sandbox-observation` or `self-asserted` for the consuming
+`WorkflowRunReceipt` to be host-authoritative gating evidence.
+A receipt whose linked runner observation carries
+sandbox-observation authority cannot be promoted to gate
+authority per inv. 8 (sandbox-observation non-promotion). The
+broker FSM Layer 2 / gateway Layer 3 re-check enforces this
+inheritance.
 
 #### `CleanRoomSmokeReceipt`
 
@@ -301,13 +492,51 @@ infrastructure changes on a fresh plan-and-policy pass).
 - `evidence_kind: "receipt"`
 - `evidence_subject_kind: "policy_plan"` (NEW).
 - Payload (illustrative): `repository_id` (the IaC repo, NOT
-  the project repo using the runner),
+  the project repo using the runner; remote OpenTofu state
+  backend may live in Citadel-managed remote storage, but HCS
+  *evidence* of plan execution stays single-host per charter
+  inv. 10),
   `opentofu_plan_hash`, `conftest_outcome_kind: "pass" |
   "fail" | "warn"`, `policy_ids` (array of policy bundle
-  identifiers asserted to apply), `workspace_id_ref`,
+  identifiers asserted to apply; scrubber-eligible),
+  `workspace_id_ref`,
   `provider_versions` (map: provider name → version).
 
 **Grain:** per-(`repository_id`, `opentofu_plan_hash`).
+
+**Secret-bearing content rule (charter inv. 5):** OpenTofu plans
+routinely include resolved secret material (provider credentials
+interpolated into resource arguments, sensitive variables,
+base64-encoded user_data). The following rules apply at all
+three Ring 1 layers to prevent plan content from leaking into
+HCS evidence storage:
+
+- **`opentofu_plan_hash` provenance.** The hash is computed over
+  the *redacted* plan output. The producer's plan-redaction
+  step strips secret-shaped content before hashing; raw plan
+  content (with resolved secrets) never enters HCS evidence
+  storage. Producers that submit a hash computed over raw plan
+  content reject at Layer 1 mint API with
+  `Decision.reason_kind: secret_resolution_in_chunk` (mirrors
+  ADR 0019 v3 §Secret-referenced sources rule, applied to
+  PolicyPlanReceipt).
+- **`redaction_mode` discipline (registry v0.3.0).** Every
+  `PolicyPlanReceipt` carries `Evidence.redaction_mode != none`
+  when the source plan contains any secret-shaped content; the
+  registry v0.3.0 §Field-level scrubber rule applies to all
+  string-typed payload fields including `policy_ids`.
+- **Scrubber-eligibility.** `policy_ids` (array of policy bundle
+  identifiers, may encode environment hints) and any
+  `workflow_path` reference are declared scrubber-eligible.
+  Producer-supplied values matching secret-shaped patterns
+  reject at Layer 1 mint API.
+- **No raw plan content.** Producers may carry summary
+  identifiers (plan_hash, conftest_outcome_kind, policy_ids,
+  workspace_id_ref, provider_versions) but MUST NOT carry raw
+  plan output, plan-side stdout/stderr captures with secret
+  references, or any field that materializes resolved secret
+  values. The receipt's role is identification + outcome, not
+  reproduction of plan content.
 
 ### Citadel-vs-HCS policy boundary
 
@@ -371,7 +600,7 @@ refuse to *consume* a green check from a forbidden runner
 configuration; Citadel can block bad workflow YAML, but HCS owns
 the operation/approval boundary.
 
-#### `forbidden.runner.public_fork_to_self_hosted`
+#### `forbidden_runner_public_fork_to_self_hosted`
 
 Public-fork pull requests targeting self-hosted runners.
 
@@ -385,7 +614,7 @@ not GitHub-hosted (per `RunnerHostObservation.substrate_kind !=
 — untrusted PR code on self-hosted = host compromise) + inv. 16
 (evidence-first — block before rendering any GitHub mutation).
 
-#### `forbidden.runner.generic_self_hosted_label`
+#### `forbidden_runner_generic_self_hosted_label`
 
 Workflow YAML or operation citing a runner with `runs-on:
 self-hosted` only (no explicit group + label).
@@ -398,7 +627,7 @@ without explicit group + label in the consuming evidence
 inferred) — cannot audit which host/capability was intended
 without explicit labels.
 
-#### `forbidden.runner.macbook_always_on_ci`
+#### `forbidden_runner_macbook_always_on_ci`
 
 MacBook self-hosted runner used outside `workflow_dispatch` /
 manual gate.
@@ -407,29 +636,52 @@ manual gate.
 (`RunnerHostObservation.substrate_kind:
 "self_hosted_macbook"`) outside `workflow_dispatch` triggers.
 
+**Cross-context binding requirement.** Even when
+`workflow_dispatch` is used, the dispatching session's
+`ExecutionContext` must be human-driven, not agent-driven.
+Otherwise an agent that can call `github.workflow.dispatch.v1`
+rehydrates the same ambient-credential exposure the manual-gate
+rule was meant to prevent. The gateway enforces this by checking
+that the requesting session's `ExecutionContext.actor_kind ==
+"human"` (or equivalent canonical-policy field) for any
+`workflow_dispatch` operation against a MacBook substrate; agent-
+driven sessions are rejected with
+`Decision.reason_kind: runner_substrate_forbidden`.
+
 **Authority:** charter inv. 15 (ambient-credentials risk —
 MacBook hosts carry SSH keys, 1Password sessions, personal
 credentials) + ScopeCam motivating-failure family.
 
-#### `forbidden.runner.tokens_in_state`
+#### `forbidden_runner_tokens_in_state`
 
 Runner registration tokens stored in OpenTofu state.
 
-**HCS enforcement (policy):** rejects any operation that would
-materialize runner registration tokens at rest in state.
+**HCS enforcement (policy-lint / capability-registration layer):**
+rejects any operation that would materialize runner registration
+tokens at rest in state. Note: the enforcement layer here is
+*policy-lint / capability-registration*, NOT per-invocation
+gateway. Token-at-rest is a structural inv. 5 violation surfaced
+when an operation's capability declaration is registered (it
+never reaches per-invocation gateway evaluation because the
+capability registration itself is rejected). This asymmetry vs
+the other four families (which are gateway-layer per-invocation
+checks) is intentional: secret material at rest is a registration-
+layer violation, while the other four are operation-shape
+violations evaluated per-invocation.
 
 **Authority:** charter inv. 5 (secrets never at rest in Ring 0/1)
 + inv. 13 (deletion authority is not gitignore — state lifecycle
 ≠ token lifecycle).
 
-#### `forbidden.runner.docker_socket_to_untrusted`
+#### `forbidden_runner_docker_socket_to_untrusted`
 
 Docker socket exposed to untrusted code execution targets.
 
 **HCS enforcement (gateway):** rejects operations combining
-`RunnerIsolationObservation.docker_socket_exposure: true` with
-untrusted code execution target (e.g., fork PR or
-unverified-actor workflow dispatch).
+`RunnerIsolationObservation.docker_socket_exposure_kind in
+{"host_workflow_only", "all_workflows"}` with untrusted code
+execution target (e.g., fork PR or unverified-actor workflow
+dispatch).
 
 **Authority:** charter inv. 17 (execution context declared, not
 inferred — Docker socket = host root equivalent).
@@ -437,11 +689,35 @@ inferred — Docker socket = host root equivalent).
 #### Forbidden-family discipline
 
 All five families are non-escalable per charter inv. 6;
-`ApprovalGrant` cannot upgrade a forbidden-family rejection. The
-families are tier-orthogonal to ADR 0029 v2 §`block` vs forbidden-
-tier framing: a `worktree_mutation` operation invocation hitting
-a forbidden-runner cell rejects unconditionally regardless of the
-operation's tier.
+`ApprovalGrant` cannot upgrade a forbidden-family rejection.
+
+**Forbidden-family layer vs Decision-level matrix layer.**
+Forbidden-family rejection happens at the registration /
+operation-shape layer (or capability-registration layer for
+`forbidden_runner_tokens_in_state` per the asymmetry above);
+ADR 0029 v2 §`block` matrix cells happen at the receipt-
+consumption layer per-invocation. The two layers are distinct
+mechanisms, both non-escalable, but for different structural
+reasons:
+- **Forbidden-family layer**: the operation's *shape*
+  (substrate, isolation, target) violates a forbidden pattern
+  before any receipt is consumed.
+- **Decision-level matrix layer**: the operation's *consuming
+  receipt facts* (anomalous capture combinations × operation
+  classes) trigger a `block` cell.
+
+The families are tier-orthogonal to ADR 0029 v2 §`block` vs
+forbidden-tier framing: a `worktree_mutation` operation
+invocation hitting a forbidden-runner cell rejects
+unconditionally regardless of the operation's tier.
+
+**Forbidden-family rejection audit-chain entry.** Forbidden-
+family rejections produce typed audit-chain rejection-class
+entries per registry v0.3.1 §Audit-chain coverage of rejections;
+the `runner_substrate_forbidden` reason_kind is the audit-chain
+rejection-class discriminator at the rejecting layer (not an
+ADR 0029 v2 matrix Decision-level state). See §`Decision.reason_kind`
+reservations below.
 
 ### `StatusCheckSourceObservation` requirement
 
@@ -476,6 +752,64 @@ explicitly forbidden; an attacker registering a GitHub App
 publishing the same check name is the failure mode this rule
 closes.
 
+**Interim total-block rule.** Until Q-006 stage-2/3 ADR commits
+the `StatusCheckSourceObservation` receipt's full Zod schema,
+all self-hosted check-result consumption rejects unconditionally
+with `status_check_source_required`. Producers cannot mint a
+conformant `StatusCheckSourceObservation` until the shape is
+committed; therefore HCS gateway treats every self-hosted check-
+result consumption attempt as missing the required evidence and
+rejects. The rejection is not a temporary quality-of-life
+concern — it is a structural enforcement of charter inv. 16
+(external-control-plane evidence-first). Consumers that need
+self-hosted check results before Q-006 stage-2/3 must wait or
+use GitHub-hosted check results (which may have their own
+source-identity requirements once Q-006 stage-2/3 commits).
+
+**App-permission-surface drift.** A bypass remains for legitimate
+GitHub Apps with bound `expected_github_app_id`: post-binding,
+an App could publish a different check name than expected (App
+permission scopes typically allow publishing arbitrary check
+names within the repo). The pin via `expected_github_app_id` is
+correct but doesn't cover post-binding permission-surface drift.
+Q-006 stage-2/3 commits a freshness re-check rule that compares
+the current App permission set against the observation's
+expected permission set; this ADR names the gap so Q-006 can
+close it.
+
+### `ApprovalGrant.scope` per-class extension for runner operations
+
+ADR 0031 v1 §`ApprovalGrant.scope` per-class extension established
+the per-class extension pattern. Q-005 commits the per-class
+extension shape for runner operation classes (posture-only;
+schema source per `.agents/skills/hcs-schema-change` after
+acceptance):
+
+A `runner_registration` or `runner_deregistration` operation-
+class grant binds:
+- `operation_class: "runner_registration" | "runner_deregistration"`
+- `target_ref: { runner_host_id }` — per-runner-host grain
+  matching `RunnerHostObservation` grain. `runner_host_id` is
+  Citadel-minted (per §RunnerHostObservation Authority
+  discipline above); the grant binds the producer-asserted
+  identifier kernel-verifiable against current Citadel state.
+- `execution_context_id` — per registry v0.3.0 §Cross-context
+  enforcement layer.
+
+A grant scoped without `runner_host_id` is rejected at Layer 1
+mint API. A grant scoped to a different runner host than the
+operation's target rejects at Layer 3 gateway re-derive per
+inv. 6.
+
+**Scope-key disjointness.** Per ADR 0019 v3 §Scope-key
+disjointness rule and ADR 0031 v1 forward-look, the
+`runner_registration` and `runner_deregistration` per-class
+extension keys are disjoint from `worktree_mutation`,
+`destructive_git`, `merge_or_push`,
+`external_control_plane_mutation`, and other ADR 0029 v2 /
+ADR 0031 v1 per-class extensions. Canonical policy YAML
+rejects overlapping scope keys.
+
 ### Cross-context binding rules per Ring 1 layer
 
 Per registry v0.3.0 §Cross-context enforcement layer
@@ -489,7 +823,7 @@ layers:
   `boundary_dimension: "runner_isolation"` payload structure
   per `BoundaryObservation` envelope rules; Layer 2 re-checks
   isolation posture freshness; Layer 3 re-derives. Forbidden-
-  family triggers (e.g., `docker_socket_exposure: true` with
+  family triggers (e.g., `docker_socket_exposure_kind: "all_workflows"` with
   untrusted target) fire at Layer 3 per inv. 6.
 - **`WorkflowRunReceipt`**: Layer 1 enforces `repository_id`
   resolution + `workflow_run_id` uniqueness; Layer 2 re-checks
@@ -528,13 +862,16 @@ v0.3.2 §Producer-vs-kernel-set discipline:
 
 ### `Decision.reason_kind` reservations
 
-Five new rejection-class names reserved (posture-only; schema
+Six new rejection-class names reserved (posture-only; schema
 enum lands per `.agents/skills/hcs-schema-change`):
 
 - `runner_isolation_unverified` — operation cited a runner
   without paired `RunnerIsolationObservation`.
 - `runner_substrate_forbidden` — operation matched one of the
-  five HCS forbidden runner families above.
+  five HCS forbidden runner families above (audit-chain
+  rejection-class discriminator at the rejecting layer per
+  §Forbidden-family discipline; not an ADR 0029 v2 matrix
+  Decision-level state).
 - `status_check_source_required` — operation consumed a self-
   hosted check result without paired
   `StatusCheckSourceObservation` (sub-decision (d)).
@@ -545,13 +882,31 @@ enum lands per `.agents/skills/hcs-schema-change`):
   `PolicyPlanReceipt` with `conftest_outcome_kind: "fail"` for
   a `worktree_mutation` or `external_control_plane_mutation`
   class operation.
+- `runner_observation_stale_post_deregistration` — operation
+  consumed a `RunnerHostObservation` whose `registration_epoch`
+  no longer matches current Citadel-signaled state (after a
+  `runner_deregistration` event). Closes the audit-integrity
+  gap from ADR 0032 v1 review (Security S-B4).
 
-Per ADR 0029 v2 §`block` vs forbidden-tier framing, all five
-rejection classes are *Decision-level* (this-invocation rejects);
-none promotes the operation to forbidden tier. The five
-forbidden-runner *families* (above §Five HCS forbidden families)
-are tier-level forbidden, distinct from Decision-level rejection
-classes.
+Per ADR 0029 v2 §`block` vs forbidden-tier framing, the five
+non-forbidden-family rejection classes are *Decision-level*
+(this-invocation rejects); none promotes the operation to
+forbidden tier. The `runner_substrate_forbidden` reason_kind is
+a hybrid: it is the *audit-chain* rejection-class discriminator
+recorded when a forbidden-family rejection happens, but the
+underlying mechanism is forbidden-family rejection at the
+registration / operation-shape layer (per §Forbidden-family
+discipline above), not a Decision-level matrix state. The five
+forbidden-runner *families* are tier-level forbidden, distinct
+from Decision-level rejection classes; the `runner_substrate_forbidden`
+reason_kind is the typed name those rejections carry in the
+audit chain.
+
+Note: the secret-resolution-in-chunk rejection class for
+`PolicyPlanReceipt` plan-content provenance violations is
+`secret_resolution_in_chunk` — this name is shared with ADR
+0019 v3's `KnowledgeChunk` secret-resolution rule, mirroring
+the same charter inv. 5 violation across both surfaces.
 
 ### Out of scope
 
@@ -630,11 +985,11 @@ This ADR does not authorize:
   approval grants + forbidden-family enforcement. The two
   systems do not duplicate policy YAML.
 - Five HCS forbidden runner families committed (posture-only):
-  `forbidden.runner.public_fork_to_self_hosted`,
-  `forbidden.runner.generic_self_hosted_label`,
-  `forbidden.runner.macbook_always_on_ci`,
-  `forbidden.runner.tokens_in_state`,
-  `forbidden.runner.docker_socket_to_untrusted`. All five
+  `forbidden_runner_public_fork_to_self_hosted`,
+  `forbidden_runner_generic_self_hosted_label`,
+  `forbidden_runner_macbook_always_on_ci`,
+  `forbidden_runner_tokens_in_state`,
+  `forbidden_runner_docker_socket_to_untrusted`. All five
   non-escalable per charter inv. 6.
 - HCS gates self-hosted check results on a paired typed
   `StatusCheckSourceObservation` evidence record (commit_sha +
