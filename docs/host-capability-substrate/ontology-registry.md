@@ -3,9 +3,9 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.3.0
+version: 0.3.1
 last_updated: 2026-05-02
-tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, q-011]
+tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, audit-integrity, q-011]
 priority: high
 ---
 
@@ -157,6 +157,20 @@ Sub-rules:
    which sibling `_evidence_refs` array is required. Discriminator-and-array
    pairs are the recommended pattern when an OR-shape would otherwise
    collapse two ontologically distinct facts into one field.
+6. **`_kind` is the canonical discriminator suffix.** Discriminator fields
+   use `<thing>_kind` (e.g., `merge_proof_kind`, `pr_state_kind`,
+   `evidence_kind`). `_class` is *not* a codified discriminator suffix and
+   must not be used; future schemas using `_class` for a discriminator
+   role fail ontology review. The single existing exception is
+   `containment_class` from ADR 0022, which is itself part of an
+   umbrella-dimension entity name (boundary dimension), not a payload
+   discriminator.
+7. **Subject-kind enum values name the underlying subject, not the
+   evidence envelope.** When an `evidenceSubjectKindSchema` enum is
+   extended for a new subject (e.g., a tool invocation), the value names
+   the subject itself (`tool_invocation`), not the corresponding receipt
+   shape (`tool_invocation_receipt`). The receipt envelope is a separate
+   concern; the subject is the event/object being observed.
 
 ### Version-field naming
 
@@ -349,6 +363,38 @@ Defaults: layer 1 (mint API) for binding-time invariants; layer 2
 (broker re-check) for execution-time invariants; layer 3 (gateway) for
 forbidden-tier non-escalable rules per inv. 6.
 
+### Layer-disagreement tiebreaker
+
+When the three layers reach different conclusions about the same
+binding (mint API accepts, but the gateway re-derives a different
+binding at decision time, for example because policy or
+`ExecutionContext` changed between mint and execution), **the gateway
+wins**. Mint-time acceptance does not bind the gateway. The broker FSM
+is the intermediate enforcement point and rejects when its re-check
+reveals drift, but the gateway's re-derive is the authoritative
+non-escalable answer per inv. 6.
+
+### Audit-chain coverage of rejections
+
+Rejection at any of the three layers emits an audit event. Per charter
+inv. 4, audit integrity requires recording rejections, not just
+successes. The audit event carries:
+
+- `agent_client_id` (or `principal_id` for the requesting principal),
+- `session_id`,
+- the rejecting layer (`mint_api` | `broker_fsm` | `gateway`),
+- the rejection-class discriminator (e.g.,
+  `cross_context_target_mismatch`,
+  `force_protected_combination`,
+  `authority_class_promotion_attempt`),
+- the typed `Decision` record returned to the requester (per layer 1
+  mint-rejection rule).
+
+Audit-chain participation of rejection events is a Ring 1 invariant;
+producers do not opt out. ADRs proposing new evidence subtypes or
+proof composites do not need to re-name this requirement; it applies
+by inheritance from this section.
+
 ## Redaction posture
 
 ADR 0023's `Evidence` base contract names `redaction_mode` as the
@@ -398,6 +444,37 @@ The pattern for similar receipts: payload-level `<thing>_capture_mode`
 fields are permitted when they describe capture-time discipline;
 `redaction_mode` at the Evidence base level describes persistence-time
 discipline. The two compose, they don't substitute.
+
+### Field-level scrubber rule
+
+When `redaction_mode != none`, every string-typed payload field on the
+record must pass the same secret-shape scrubber the base contract
+applies. The redaction-mode classification at the record level does
+not exempt individual payload fields from scrubbing. A receipt with
+`redaction_mode: redacted` whose `last_fetch_outcome` field carries a
+URL with embedded basic-auth credentials is in violation of charter
+inv. 5 even though the record's redaction_mode is set correctly.
+
+ADRs proposing new evidence subtypes or proof composites must declare
+which payload fields the scrubber applies to. The scrubber's
+implementation is canonical-policy-driven; the rule that *every*
+string-typed payload field is scrubbed when `redaction_mode != none`
+is registry-canonical.
+
+### Capture-status × redaction-mode matrix
+
+Receipts that carry both a capture-time discriminator (`*_capture_mode`
+or equivalent) and the base `Evidence.redaction_mode` enforce a
+permitted-combination matrix at the mint API. The matrix codifies
+which combinations make semantic sense (e.g., a `capture_status:
+empty` receipt has nothing to redact at persistence time, so
+`redaction_mode: redacted` would be misleading and is rejected).
+
+The canonical matrix originated in ADR 0028 v2 §`CommandCaptureReceipt`
+§Capture-status × redaction-mode matrix and is generic to other
+receipt families with similar capture-vs-persistence layers. ADRs
+proposing new such receipts inherit the matrix discipline and must
+name any deviations explicitly.
 
 ## Boundary dimension registry
 
@@ -668,6 +745,7 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.1 | 2026-05-02 | Five additions surfaced during the post-merge re-review of ADR 0027 v2 + ADR 0028 v2. §Naming suffix discipline §Sub-rule 6 codifies `_kind` as the canonical discriminator suffix; `_class` is not codified and is forbidden as a discriminator suffix (one existing exception: `containment_class` from ADR 0022 as part of an umbrella-dimension entity name). §Sub-rule 7 codifies that subject-kind enum values name the underlying subject (e.g., `tool_invocation`), not the receipt envelope (`tool_invocation_receipt`). §Cross-context enforcement layer §Layer-disagreement tiebreaker names the gateway as authoritative when layers disagree; mint-time acceptance does not bind the gateway. §Cross-context enforcement layer §Audit-chain coverage of rejections codifies that rejections at any of the three layers emit audit events with named fields (rejecting layer + rejection-class discriminator + typed Decision record), per charter inv. 4. §Redaction posture §Field-level scrubber rule codifies that when `redaction_mode != none`, every string-typed payload field passes the secret-shape scrubber; record-level redaction does not exempt fields. §Redaction posture §Capture-status × redaction-mode matrix promotes the per-ADR matrix from ADR 0028 v2 to a generic registry sub-rule applicable to any receipt family with capture-vs-persistence layers. Used as a precondition for ADR 0027 v2 acceptance and ADR 0028 v3 revision. |
 | 0.3.0 | 2026-05-02 | Added three top-level discipline sections codifying cross-cutting rules surfaced during the post-merge review of ADR 0027 (Q-006 stage-1) and ADR 0028 (Q-008(a)). §Authority discipline names the explicit ten-class trust ladder, introduces the new `self-asserted` authority class below `sandbox-observation` for unverified producer claims (schema enum extension lands in a follow-up schema-change PR), and codifies the kernel-only rule for authority-class fields (`detected_by`, `captured_by`, `observed_via`); operational claims that are not authority-class remain producer-asserted but must be kernel-verifiable. §Cross-context enforcement layer names the canonical Ring 1 defense-in-depth: mint API + broker FSM re-check + gateway re-derive; Zod schema is structurally validating only, not an enforcement layer for cross-context binding. §Redaction posture codifies that `Evidence.redaction_mode` is the canonical persistence-redaction field; new evidence subtypes must not introduce parallel `<thing>_redaction_mode` payload fields whose semantics overlap; capture-mode vs persistence-redaction are orthogonal layers (e.g., ADR 0028 v2 renames `argv_redaction_mode` to `argv_capture_mode`). Used as a precondition for ADR 0027 v2 and ADR 0028 v2 acceptance. |
 | 0.2.1 | 2026-05-02 | Added the §Version-field naming subsection codifying the three canonical version fields (`schema_version`, `evidence_schema_version`, `payload_schema_version`) and Sub-rule 6 (no fourth version field without registry update). Resolves the BoundaryObservation/BranchDeletionProof asymmetry surfaced during ADR 0025 v2 review, where a composite without a domain payload had drifted to a redundant `proof_schema_version` field. Used as a precondition for ADR 0025 acceptance. |
 | 0.2.0 | 2026-05-02 | Added the §Naming suffix discipline section codifying Q-011 sub-decision (d) (approved 2026-05-01): closed `*Observation` / `*Receipt` / `*Proof` / no-suffix entity-name discipline, plus `<entity>_id` / `<thing>_ref` / `<thing>_evidence_refs` field-name discipline. Codifies the convention already in use across `packages/schemas/src/entities/` and `docs/host-capability-substrate/adr/`; resolves the `hcs-ontology-reviewer` finding that the suffix grammar was referenced but uncodified. Used as a precondition for ADR 0025 v2. |
