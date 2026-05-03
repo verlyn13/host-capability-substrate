@@ -3,9 +3,9 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.2.1
+version: 0.3.0
 last_updated: 2026-05-02
-tags: [ontology, registry, boundary-observation, evidence, naming-discipline, q-011]
+tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, q-011]
 priority: high
 ---
 
@@ -202,6 +202,202 @@ A new suffix or field-name convention requires:
   convention;
 - an `hcs-ontology-reviewer` pass before the first schema PR using the new
   convention lands.
+
+## Authority discipline
+
+Authority is the trust class of evidence. ADR 0023's `Evidence` base
+contract defines the authority enum (`evidenceAuthoritySchema` in
+`packages/schemas/src/common.ts`). Charter invariant 8 forbids promoting
+`sandbox-observation` to a stronger authority class; that rule extends
+across evidence subtype envelopes (per ADR 0022 inheritance) and proof
+composites (per ADR 0025 component-evidence binding).
+
+This section codifies two rules surfaced during the post-merge review of
+ADR 0027 and ADR 0028: the trust class for unverified producer claims,
+and which authority-class fields may live in producer payload versus
+the kernel/mint API.
+
+### Authority class ladder
+
+The current `evidenceAuthoritySchema` enum has ten values:
+
+```text
+project-local
+workspace-local
+user-global
+system
+derived
+sandbox-observation
+host-observation
+vendor-doc
+installed-runtime
+human-observed
+```
+
+Trust ordering (high to low, for promotion checks):
+
+```text
+host-observation > installed-runtime > vendor-doc > system >
+user-global > workspace-local > project-local > human-observed >
+derived > sandbox-observation
+```
+
+Per inv. 8, no class promotes to a higher class without a separate
+evidence record at the higher class.
+
+### `self-asserted` authority class (new; schema landing pending)
+
+A new class `self-asserted` lives below `sandbox-observation`. Producers
+that supply observation data without backing telemetry — typical case:
+an agent claiming "I am running in normal mode" with no kernel /
+sandbox / host telemetry — emit `self-asserted` authority. The class
+is below `sandbox-observation` because sandbox observations are real
+observations bounded by sandbox visibility, while self-assertion is a
+producer claim with no observation behind it.
+
+Updated trust ordering with `self-asserted` included:
+
+```text
+host-observation > installed-runtime > vendor-doc > system >
+user-global > workspace-local > project-local > human-observed >
+derived > sandbox-observation > self-asserted
+```
+
+`self-asserted` cannot be promoted to any higher class. Per inv. 8 and
+charter v1.3.2 wave-3's fabricated-evidence-envelope forbidden pattern,
+a separate evidence record at the higher class is required to substitute
+for the self-assertion.
+
+The actual `evidenceAuthoritySchema` enum extension lands in a separate
+schema-change PR per `.agents/skills/hcs-schema-change`. Until then, the
+class is registry-canonical and ADRs may forward-reference it.
+
+### Producer-vs-kernel-set authority fields
+
+Authority-class signals — fields whose value determines or strongly
+implies the evidence record's authority — are set by the kernel/mint
+API based on execution context, never by the producer. Producer-supplied
+authority-class fields are forbidden in evidence payloads.
+
+Examples surfaced during the ADR 0027 / ADR 0028 review cycle:
+
+- ADR 0027's `detected_by` (would have been:
+  `kernel_probe | host_telemetry | sandbox_marker`): kernel-set only.
+- ADR 0028's `captured_by` (would have been:
+  `agent_harness | kernel_broker | sandbox_marker`): kernel-set only.
+- ADR 0028's `observed_via` (would have been:
+  `kernel_observation | sandbox_marker | host_telemetry | self_assertion`):
+  kernel-set only.
+
+Operational claims that are not authority-class
+(`last_fetch_outcome`, `termination_reason`, `capture_status`,
+`ref_state`) may remain producer-asserted, but must be
+kernel-verifiable via separate evidence (transport receipts, process
+exit codes, syscall traces, etc.). The rule is: claims about *trust
+class* are kernel-set; claims about *operational state* are
+producer-asserted but verifiable.
+
+Adding a new authority-class field to a payload requires:
+
+1. A registry update naming it as kernel-set or documenting a
+   producer-claim + kernel-verification split with clear rationale.
+2. An `hcs-ontology-reviewer` pass before the schema PR using the new
+   field lands.
+
+## Cross-context enforcement layer
+
+Charter v1.3.2 wave-3 forbids cross-context evidence reuse: a
+`BoundaryObservation` whose primary target reference does not match the
+consuming `OperationShape`'s execution context fails composition. The
+same rule applies to evidence subtype envelopes and proof composites
+(per ADR 0025 component-evidence binding).
+
+This section codifies *where* cross-context binding rejection happens.
+The post-merge review of ADR 0027 and ADR 0028 surfaced that the
+forbidden-pattern language said "fails" without naming the enforcement
+layer.
+
+The enforcement is **defense-in-depth across three Ring 1 layers**:
+
+1. **Mint API.** When a Ring 1 service mints an evidence record (or a
+   proof composite), it rejects any input whose target references do
+   not resolve consistently with the requesting session's
+   `ExecutionContext`. This is the primary enforcement layer; producer
+   inputs that fail here are returned as typed mint-rejection
+   `Decision` records, not silent failures.
+
+2. **Broker FSM re-check.** When a broker consumes a proof composite
+   or evidence envelope at operation-execution time, it re-verifies
+   cross-context binding. A proof that was valid at mint time can
+   become invalid if the execution context has changed (per ADR 0025
+   v2's mint-time-and-execution-time re-check rule). The broker's
+   re-check catches policy drift between mint and execution.
+
+3. **Gateway re-derive.** The gateway re-derives the binding from
+   execution-context evidence at decision time. This is the
+   authoritative non-escalable layer per inv. 6.
+
+Schema (Zod) validation alone is **not** an enforcement layer for
+cross-context binding. Schema validates structure (required fields,
+enum membership, primitive types) but cannot validate that two
+references resolve consistently against host state. Cross-context
+binding is a Ring 1 invariant.
+
+ADRs that propose new evidence subtypes or proof composites must name
+which of the three layers each cross-context binding rule lives at.
+Defaults: layer 1 (mint API) for binding-time invariants; layer 2
+(broker re-check) for execution-time invariants; layer 3 (gateway) for
+forbidden-tier non-escalable rules per inv. 6.
+
+## Redaction posture
+
+ADR 0023's `Evidence` base contract names `redaction_mode` as the
+canonical redaction discipline for persisted evidence payloads. The
+enum (`evidenceRedactionModeSchema` in
+`packages/schemas/src/entities/evidence.ts`) has six values:
+`none | redacted | classified | hash_only | reference_only | mixed`.
+
+Per ADR 0023 §Decision: "Evidence payloads may contain redacted,
+classified, hashed, or reference-only data. They must not contain raw
+secret material."
+
+This section codifies two rules surfaced during the post-merge review
+of ADR 0028.
+
+### Persistence redaction is canonical
+
+`Evidence.redaction_mode` is the single canonical redaction-mode field
+on every evidence record. Persistence redaction describes how the
+record's payload was sanitized before storage. New evidence subtypes
+must not introduce a parallel `<thing>_redaction_mode` field at the
+payload level whose semantics overlap with the base `redaction_mode`.
+
+If a domain payload needs a redaction-related field whose semantics
+genuinely differ from persistence redaction, the field must:
+
+1. Use a name that does not contain `redaction_mode` (avoiding
+   semantic collision).
+2. Document the layer it operates at (capture-time vs persistence-time
+   vs transmission-time).
+3. Receive an `hcs-ontology-reviewer` pass before the schema PR using
+   the new field lands.
+
+### Capture-mode vs persistence-redaction
+
+ADR 0028 originally proposed `argv_redaction_mode` on
+`ToolInvocationReceipt`'s payload, with overlapping enum vocabulary
+against the base `redaction_mode`. The corrected name is
+`argv_capture_mode`: how argv was captured at tool invocation time
+(and how secret-shaped content was handled at capture). The base
+`redaction_mode` then describes how the receipt's payload (including
+the argv data) was sanitized before persistence. The two layers are
+orthogonal: capture is about what the producer observed; persistence
+redaction is about what the kernel/store committed to disk.
+
+The pattern for similar receipts: payload-level `<thing>_capture_mode`
+fields are permitted when they describe capture-time discipline;
+`redaction_mode` at the Evidence base level describes persistence-time
+discipline. The two compose, they don't substitute.
 
 ## Boundary dimension registry
 
@@ -472,6 +668,7 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.0 | 2026-05-02 | Added three top-level discipline sections codifying cross-cutting rules surfaced during the post-merge review of ADR 0027 (Q-006 stage-1) and ADR 0028 (Q-008(a)). §Authority discipline names the explicit ten-class trust ladder, introduces the new `self-asserted` authority class below `sandbox-observation` for unverified producer claims (schema enum extension lands in a follow-up schema-change PR), and codifies the kernel-only rule for authority-class fields (`detected_by`, `captured_by`, `observed_via`); operational claims that are not authority-class remain producer-asserted but must be kernel-verifiable. §Cross-context enforcement layer names the canonical Ring 1 defense-in-depth: mint API + broker FSM re-check + gateway re-derive; Zod schema is structurally validating only, not an enforcement layer for cross-context binding. §Redaction posture codifies that `Evidence.redaction_mode` is the canonical persistence-redaction field; new evidence subtypes must not introduce parallel `<thing>_redaction_mode` payload fields whose semantics overlap; capture-mode vs persistence-redaction are orthogonal layers (e.g., ADR 0028 v2 renames `argv_redaction_mode` to `argv_capture_mode`). Used as a precondition for ADR 0027 v2 and ADR 0028 v2 acceptance. |
 | 0.2.1 | 2026-05-02 | Added the §Version-field naming subsection codifying the three canonical version fields (`schema_version`, `evidence_schema_version`, `payload_schema_version`) and Sub-rule 6 (no fourth version field without registry update). Resolves the BoundaryObservation/BranchDeletionProof asymmetry surfaced during ADR 0025 v2 review, where a composite without a domain payload had drifted to a redundant `proof_schema_version` field. Used as a precondition for ADR 0025 acceptance. |
 | 0.2.0 | 2026-05-02 | Added the §Naming suffix discipline section codifying Q-011 sub-decision (d) (approved 2026-05-01): closed `*Observation` / `*Receipt` / `*Proof` / no-suffix entity-name discipline, plus `<entity>_id` / `<thing>_ref` / `<thing>_evidence_refs` field-name discipline. Codifies the convention already in use across `packages/schemas/src/entities/` and `docs/host-capability-substrate/adr/`; resolves the `hcs-ontology-reviewer` finding that the suffix grammar was referenced but uncodified. Used as a precondition for ADR 0025 v2. |
 | 0.1.0 | 2026-05-02 | Initial registry. Sixteen `boundary_dimension` candidates listed as proposed; Q-011 review grammar and registration rules captured. Created as the named registry for ADR 0022. |
