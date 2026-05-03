@@ -1,7 +1,7 @@
 ---
 adr_number: 0030
 title: Q-006 stage-2 source-control evidence subtypes
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [source-control, evidence-subtypes, git-worktree, pull-request, ancestry, q-006, phase-1]
@@ -11,11 +11,11 @@ tags: [source-control, evidence-subtypes, git-worktree, pull-request, ancestry, 
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
 
 ## Charter version
 
@@ -48,7 +48,7 @@ Written against charter v1.3.2 and
     layer (mint API / broker FSM / gateway) enforces each
     cross-context binding rule, per registry v0.3.0 §Cross-context
     enforcement layer requirement.
-  - **Ontology N4.** Renamed `absence_observed_at` →
+  - **Ontology N4.** Renamed `absence_window_observed_at` →
     `absence_observed_at` (no `_window_` precedent in registry;
     window semantics belong to the consumer's freshness check).
   - **Policy N-01.** `worktree_clean_acknowledgment` scope now
@@ -75,6 +75,28 @@ Written against charter v1.3.2 and
   - **Architect NB-1.** `repository_id` resolution rule now cites
     ADR 0027 v2 directly (the canonical resolution rule lives there)
     rather than via ADR 0025 v2.
+- **Acceptance** (2026-05-03): all four reviewer subagents
+  (`hcs-architect`, `hcs-ontology-reviewer`, `hcs-policy-reviewer`,
+  `hcs-security-reviewer`) returned READY-FOR-ACCEPTANCE on v2 with
+  no new blocking findings. Two cosmetic mechanical tweaks applied
+  at acceptance: (1) revision-history glitch on Ontology N4 line
+  fixed (was a self-loop `absence_observed_at → absence_observed_at`;
+  now correctly reads `absence_window_observed_at →
+  absence_observed_at`); (2) stray `provider_id: "github"` reference
+  in §Out of scope renamed to `provider_kind: "github"` per the B1
+  v1→v2 fix. Multiple forward-looking concerns deferred to schema
+  PR / regression corpus / future amendment per
+  `.agents/skills/hcs-schema-change`: (i) registry update PR adding
+  the six subject-kind enum values per registry Sub-rule 7; (ii)
+  reopen §`GitWorktreeObservation` worktree-ownership composition
+  rules under Q-008(d) once Q-003 settles; (iii) schema PR
+  enumerating `Decision.reason_kind` and amending ADR 0029 v2's
+  acceptance forward-look #3 to include the six new values from
+  this ADR; (iv) future amendment for `provider_observed_via`
+  chain-of-trust via `credential_source_evidence_ref`; (v)
+  regression corpus expansion (multi-worktree non-transferability,
+  cross-context inventory, stale-absence at gateway, scrubber
+  smoke, content-leak schema-boundary rejection).
 
 ## Context
 
@@ -677,7 +699,7 @@ This ADR does not authorize:
   governs gateway behavior; canonical numeric thresholds and
   per-cell refinements land in `tiers.yaml` once HCS Milestone 2
   ships.
-- Provider-specific receipts beyond GitHub. `provider_id: "github"`
+- Provider-specific receipts beyond GitHub. `provider_kind: "github"`
   is the only currently-supported provider value; other providers
   (GitLab, Bitbucket) follow under separate ADRs if and when
   needed.
