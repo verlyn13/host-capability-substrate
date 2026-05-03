@@ -11,7 +11,7 @@ tags: [source-control, evidence-subtypes, git-worktree, pull-request, ancestry, 
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
@@ -21,6 +21,60 @@ proposed (v1)
 
 Written against charter v1.3.2 and
 `docs/host-capability-substrate/ontology-registry.md` v0.3.3.
+
+## Revision history
+
+- **v1** (2026-05-03, commit `34d0c23`): initial draft. Reviewers
+  surfaced 2 blocking findings (both ontology) plus 17 non-blocking
+  concerns across all four reviewers.
+- **v2** (2026-05-03, this revision): closes both blockers and folds
+  ten consolidated non-blocking observations.
+  - **B1 closed.** Renamed `provider_id` → `provider_kind` on
+    `PullRequestReceipt` and `PullRequestAbsenceReceipt` per
+    registry §Field-name suffixes Sub-rule 6 (`_id` reserved for
+    typed FK to a Ring 0 entity; this is a discriminator value).
+  - **B2 closed.** Renamed `GitBranchAncestryObservation`'s third
+    sibling field from `vacuous_evidence` to `empty_branch_evidence`
+    to match ADR 0025 v2's `empty_branch_evidence_refs` consumption-
+    side naming. The `ancestry_kind == "vacuous"` discriminator
+    value remains aligned with ADR 0025 v2's `merge_proof_kind ==
+    "vacuous"`; only the sibling field name is harmonized.
+  - **Ontology N1.** §Cross-cutting rules now explicitly names the
+    three-way authority-class signal split (local-Git
+    `observed_via`, provider-side `provider_observed_via`,
+    query-shaped `query_observed_via`) as the canonical pattern for
+    future receipts in this family.
+  - **Ontology N3.** Each receipt section now names which Ring 1
+    layer (mint API / broker FSM / gateway) enforces each
+    cross-context binding rule, per registry v0.3.0 §Cross-context
+    enforcement layer requirement.
+  - **Ontology N4.** Renamed `absence_observed_at` →
+    `absence_observed_at` (no `_window_` precedent in registry;
+    window semantics belong to the consumer's freshness check).
+  - **Policy N-01.** `worktree_clean_acknowledgment` scope now
+    explicitly binds `worktree_path` (per-worktree grain, not
+    per-repo); inherits `destructive_git` per-class extension from
+    ADR 0029 v2 §`ApprovalGrant.scope` shape sketch.
+  - **Policy N-02.** `pr_absence_acknowledgment` now explicitly
+    binds the specific stale `evidence_id`; non-transferable across
+    different (also-stale) absence receipts.
+  - **Policy N-03.** `dirty_state_blocks_destructive_op` rejection-
+    class framing made explicit as Decision-level (not forbidden-
+    tier promotion) per ADR 0029 v2 §`block` vs forbidden-tier
+    framing.
+  - **Security: PR content scope.** Explicit "PR titles, bodies,
+    review comments out of scope" sentence on `PullRequestReceipt`.
+  - **Security: scrubber declaration.** `worktree_path` on
+    `GitWorktreeObservation` and `GitDirtyStateObservation`
+    declared scrubber-eligible per registry v0.3.0 §Field-level
+    scrubber rule.
+  - **Security: inventory cross-context.** `GitWorktreeInventory
+    Observation` rule added: referenced `worktree_observations`
+    must share the inventory's `execution_context_id`; mismatched
+    references rejected at Layer 1 mint API.
+  - **Architect NB-1.** `repository_id` resolution rule now cites
+    ADR 0027 v2 directly (the canonical resolution rule lives there)
+    rather than via ADR 0025 v2.
 
 ## Context
 
@@ -148,7 +202,8 @@ Observation of a single Git worktree's state at a point in time.
 
 - `repository_id` — the `GitRepositoryObservation`-resolved repository
   identity (kernel-set; agent-supplied `repository_id` rejected at
-  mint API per ADR 0025 v2 precedent)
+  mint API per ADR 0027 v2 §`GitRepositoryObservation` first-commit-SHA
+  rooted resolution rule, also cited by ADR 0025 v2)
 - `worktree_path` — absolute path of the worktree (producer-asserted,
   kernel-verifiable via filesystem stat)
 - `worktree_kind: "primary" | "linked"` — discriminator per registry
@@ -177,6 +232,12 @@ kernel-verifiable; identity fields (`lease_id`, `owning_session_id`,
 `last_lease_check_at`) are kernel-set. Producer-supplied
 identity-field values rejected at the mint API per registry v0.3.2.
 
+**Scrubber-eligibility:** `worktree_path` is declared
+scrubber-eligible per registry v0.3.0 §Field-level scrubber rule.
+When `redaction_mode != none`, the secret-shape scrubber applies
+to `worktree_path` (paths under user-home or temp directories may
+incidentally contain secret-shaped substrings).
+
 **Worktree-ownership composition:** the `lease_id` and
 `owning_session_id` fields are committed at this stage; the
 *composition rules* with `WorkspaceContext` / `Lease` / Q-003
@@ -203,8 +264,14 @@ multi-worktree branches.
   (`refs/heads/<name>`)
 - `worktree_observations` — array of `GitWorktreeObservation`
   evidence references per `evidenceRefSchema`. Each entry must
-  have `attached_branch_ref == this.branch_ref`. Empty array is a
-  valid positive-zero-worktree inventory.
+  have `attached_branch_ref == this.branch_ref`. Each referenced
+  `GitWorktreeObservation` must share the inventory's
+  `execution_context_id`; cross-context worktree references are
+  rejected at Layer 1 mint API per registry v0.3.0 §Cross-context
+  enforcement layer (prevents an inventory from "borrowing"
+  worktree observations minted under a different execution context
+  to fabricate a corroborating set). Empty array is a valid
+  positive-zero-worktree inventory.
 - `inventory_completeness_kind: "complete" | "partial_with_reason"`
   — discriminator per registry Sub-rule 6. `complete` requires
   that the inventory was observed via `git worktree list` (or
@@ -258,13 +325,17 @@ from a base ref, (b) patch-equivalent to a base ref, or (c) vacuous
   "patch_equivalence"`. Carries patch-equivalence proof shape
   (e.g., squash-merge / rebase-merge identification, target commit
   SHAs that materially equal the candidate's commits).
-- `vacuous_evidence` — present iff `ancestry_kind == "vacuous"`.
+- `empty_branch_evidence` — present iff `ancestry_kind == "vacuous"`.
   Records that the candidate has no commits beyond its merge base
   with the base ref (positive empty-branch evidence per ADR 0025 v2).
+  Sibling field name aligns with ADR 0025 v2's
+  `empty_branch_evidence_refs` consumption-side naming. The
+  `ancestry_kind == "vacuous"` discriminator value remains aligned
+  with ADR 0025 v2's `merge_proof_kind == "vacuous"`.
 
 **Discriminator-and-sibling pattern:** per registry Sub-rule 5,
 `ancestry_kind` selects which one of `ancestry_evidence` /
-`patch_equivalence_evidence` / `vacuous_evidence` is populated.
+`patch_equivalence_evidence` / `empty_branch_evidence` is populated.
 Multiple populated sibling fields → mint-API rejection at Layer 1.
 
 **Authority:** the underlying `git merge-base`, `git log`,
@@ -313,6 +384,10 @@ must be clean or the dirty state must be explicitly acknowledged).
 Multiple worktrees within one repository have independent dirty
 states.
 
+**Scrubber-eligibility:** `worktree_path` is declared
+scrubber-eligible per registry v0.3.0 §Field-level scrubber rule
+(same rule as `GitWorktreeObservation.worktree_path`).
+
 ### `PullRequestReceipt`
 
 Typed receipt of a Pull Request's existence and current state.
@@ -328,7 +403,7 @@ merged, closed_unmerged}`.
 **Domain payload fields:**
 
 - `repository_id`
-- `provider_id: "github"` — discriminator per registry Sub-rule 6
+- `provider_kind: "github"` — discriminator per registry Sub-rule 6
   (other providers added when supported)
 - `pr_number` — provider-side PR identifier
 - `pr_state_kind: "open" | "merged" | "closed_unmerged"` —
@@ -353,6 +428,15 @@ REST) carry `host-observation`; `gh` CLI / GitHub MCP indirections
 carry `derived` authority unless the producer can demonstrate
 direct API origin.
 
+**PR content out of scope.** `PullRequestReceipt`'s payload does
+NOT carry PR titles, bodies, descriptions, review comments, review
+states, or any other free-form content. Those remain on the
+provider side and are referenced indirectly only through `pr_number`.
+Producer-supplied free-form PR content rejected at the schema
+boundary; this prevents secret-bearing PR descriptions from
+leaking into the receipt payload via accidental "helpful"
+inclusion.
+
 ### `PullRequestAbsenceReceipt`
 
 Typed positive-absence receipt for "no PR exists for this branch
@@ -368,11 +452,11 @@ when `pr_state_kind == "absent"`.
 **Domain payload fields:**
 
 - `repository_id`
-- `provider_id: "github"`
+- `provider_kind: "github"`
 - `head_ref` — the branch ref being checked (`refs/heads/<name>`)
 - `base_ref` — the target branch the absence is being asserted
   against (typically `refs/heads/main`)
-- `absence_window_observed_at` — timestamp the producer observed
+- `absence_observed_at` — timestamp the producer observed
   the absence; binds the freshness claim
 - `query_observed_via: "github_api_v3_pr_search" |
   "github_api_v4_pull_requests" | "gh_pr_list" |
@@ -385,7 +469,7 @@ itself an observation that must be produced, dated, and
 authority-tagged; an absent record is structurally undefined and
 does not satisfy `BranchDeletionProof.pr_state_kind == "absent"`.
 
-**Freshness binding:** `absence_window_observed_at` is the
+**Freshness binding:** `absence_observed_at` is the
 canonical freshness anchor. `BranchDeletionProof` consumption at
 the gateway re-checks the absence against current state per
 registry v0.3.2 §Cross-context enforcement layer Layer 3
@@ -397,8 +481,25 @@ re-derive.
 **Authority discipline (registry v0.3.2 §Producer-vs-kernel-set
 authority fields):**
 
-- Authority-class signals (`observed_via`, `provider_observed_via`,
-  `query_observed_via`) are kernel-set; producer-supplied values
+- Authority-class signals are kernel-set across a three-way naming
+  split that this ADR codifies as the canonical pattern for
+  source-control receipts:
+  - **Local-Git observations** use bare `observed_via` (e.g.,
+    `git_worktree_list`, `git_status_porcelain`); the receipt
+    observes local Git state directly.
+  - **Provider-side state observations** use
+    `provider_observed_via` (e.g., `github_api_v3`, `github_api_v4`,
+    `gh_cli`, `github_mcp`); the receipt observes provider-side
+    state through some credential pathway.
+  - **Provider-side query observations** use `query_observed_via`
+    (e.g., `github_api_v3_pr_search`,
+    `github_api_v4_pull_requests`, `gh_pr_list`,
+    `github_mcp_pr_search`); the receipt asserts a positive-
+    absence claim that required a query at the provider.
+  Future source-control receipts in this family must pick one of
+  the three patterns; introducing a fourth field name requires an
+  `hcs-ontology-reviewer` pass.
+- Producer-supplied values for any authority-class signal field
   rejected at mint API.
 - Identity fields (`lease_id`, `owning_session_id`,
   `last_lease_check_at`) are kernel-set.
@@ -411,17 +512,65 @@ authority fields):**
 **Cross-context binding (registry v0.3.0 §Cross-context
 enforcement layer):**
 
+Per registry v0.3.0 requirement, ADRs proposing new evidence
+subtypes name which Ring 1 layer enforces each binding rule. The
+per-receipt assignments for ADR 0030's six receipts:
+
+- **`GitWorktreeObservation`**: Layer 1 (mint API) enforces
+  `repository_id` consistency with `ExecutionContext`,
+  `worktree_path` filesystem-stat verification (kernel-side), and
+  `lease_id` / `owning_session_id` kernel-set rejection of
+  producer-supplied values. Layer 2 (broker FSM) re-checks
+  `attached_branch_ref` and `head_commit_sha` freshness against
+  `git rev-parse` telemetry at operation-execution time (catches
+  drift between mint and execution). Layer 3 (gateway) re-derives
+  the worktree-to-lease binding at decision time.
+- **`GitWorktreeInventoryObservation`**: Layer 1 enforces
+  `repository_id` + `branch_ref` consistency. Layer 1 also
+  enforces that referenced `worktree_observations` share the
+  inventory's `execution_context_id` (cross-context inventory
+  references are rejected). Layer 2 re-checks
+  `inventory_completeness_kind` and `worktree_observations` array
+  freshness via `git worktree list` re-execution. Layer 3
+  re-derives.
+- **`GitBranchAncestryObservation`**: Layer 1 enforces structural
+  validity (`ancestry_kind` discriminator matches exactly one
+  populated sibling proof field). Layer 2 re-checks ancestry via
+  `git merge-base` / `git log` re-execution at operation time.
+  Layer 3 re-derives.
+- **`GitDirtyStateObservation`**: Layer 1 enforces
+  `repository_id` + `worktree_path` consistency. Layer 2 re-checks
+  `dirty_state_kind` via `git status --porcelain` re-execution
+  (the gap between mint and execution is the most likely failure
+  window). Layer 3 re-derives.
+- **`PullRequestReceipt`**: Layer 1 enforces structural validity
+  (provider-side identifier shape, `pr_state_kind` ↔ optional-
+  field consistency). Layer 2 re-checks PR state via provider
+  re-query at operation time (catches PR-state drift between mint
+  and execution; emits `pr_state_drift` if the state changed).
+  Layer 3 re-derives at decision time per inv. 6.
+- **`PullRequestAbsenceReceipt`**: Layer 1 enforces structural
+  validity. Layer 2 re-checks the absence claim at the provider at
+  operation time (the claim's freshness anchor is
+  `absence_observed_at`). **Layer 3 enforces the freshness
+  binding**: a stale absence proof fails re-derive. Cross-context
+  cross-execution_context_id reuse is rejected at Layer 1 even
+  when timestamps look fresh; absence claims do not transfer
+  across execution contexts.
+
 - Every receipt carries `execution_context_id`.
 - Mint API rejects records whose primary target reference
   (typically `repository_id`) does not resolve consistently with
   the requesting session's `ExecutionContext`.
-- Broker FSM and gateway re-check at Layers 2 and 3.
 
 **Anomalous-capture composition (ADR 0029 v2):**
 
 - All six receipts may surface in `Decision.reason_kind` rejection
-  classes per ADR 0029 v2 closed-list discipline. New rejection
-  classes proposed (posture-only; schema enum lands per
+  classes per ADR 0029 v2 closed-list discipline. Per ADR 0029 v2
+  §`block` vs forbidden-tier framing, all six new rejection
+  classes are *Decision-level* (this-invocation rejects); none
+  promote the operation to forbidden tier. New rejection classes
+  proposed (posture-only; schema enum lands per
   `.agents/skills/hcs-schema-change`):
   - `worktree_attachment_drift` — observed
     `attached_branch_ref` differs from the consuming proof's
@@ -434,21 +583,36 @@ enforcement layer):**
     doesn't match the discriminator
   - `dirty_state_blocks_destructive_op` — `dirty_state_kind !=
     "clean"` consumed by a destructive Git operation without
-    explicit acknowledgment grant
+    explicit acknowledgment grant. Decision-level rejection;
+    does not promote `destructive_git` operation class to
+    forbidden tier.
   - `pr_state_drift` — `pr_state_kind` observed differs from
     the consuming proof's expectation, or freshness window
     expired
-  - `pr_absence_stale` — `absence_window_observed_at` outside
+  - `pr_absence_stale` — `absence_observed_at` outside
     the consuming proof's freshness window
 
 **`Decision.required_grant_kind` reservations:**
 
 - `worktree_clean_acknowledgment` — typed grant scope binding to
-  acknowledge a non-clean worktree for a destructive op
-  (composes with ADR 0029 v2 §`ApprovalGrant.scope` shape sketch
-  per-class extensions)
+  acknowledge a non-clean worktree for a destructive op. **Scope
+  binding**: inherits ADR 0029 v2 §`ApprovalGrant.scope` shape
+  sketch `destructive_git` per-class extension (commit SHA +
+  first-commit-SHA `repository_id`) and **additionally binds
+  `worktree_path`** (per-worktree grain matching
+  `GitDirtyStateObservation`'s grain). A grant scoped to a
+  repository without `worktree_path` is rejected at the mint API;
+  per-worktree grants are not transferable across worktrees in
+  the same repository.
 - `pr_absence_acknowledgment` — typed grant for proceeding under
-  a stale absence proof
+  a stale absence proof. **Scope binding**: binds to the specific
+  stale `evidence_id` (matching ADR 0029 v2's typed
+  self-assertion-acknowledgment grant pattern). A different
+  (also-stale) `pull_request_absence` receipt against the same
+  branch does not transfer; a fresh absence proof at the gateway
+  re-derive cycle invalidates the grant. The grant is not a
+  freshness-window extension; it acknowledges the specific stale
+  observation only.
 
 These reservations are posture-only; canonical names land in
 `tiers.yaml` once HCS Milestone 2 ships.
@@ -531,29 +695,57 @@ This ADR does not authorize:
 - `GitBranchAncestryObservation` carries an internal `ancestry_kind`
   discriminator that matches `BranchDeletionProof.merge_proof_kind`
   (ADR 0025 v2); single observation type with three sibling proof
-  fields per registry Sub-rule 5.
+  fields per registry Sub-rule 5. Sibling field names are
+  `ancestry_evidence`, `patch_equivalence_evidence`, and
+  `empty_branch_evidence` (the third name harmonized with ADR 0025
+  v2's `empty_branch_evidence_refs` consumption-side naming).
 - `PullRequestReceipt` (`pr_state_kind: open | merged |
   closed_unmerged`) and `PullRequestAbsenceReceipt` (positive
   absence) are split per registry §Naming suffix discipline
   Sub-rule 2.
+- `provider_kind: "github"` is the canonical provider discriminator
+  on PR receipts; `provider_id` would be a Ring 0 typed FK
+  (`<entity>_id` reserved per registry §Field-name suffixes) and
+  is structurally wrong for a discriminator.
 - `GitWorktreeInventoryObservation` is per-(repository_id,
-  branch_ref) pair, matching `GitRemoteObservation` grain.
+  branch_ref) pair, matching `GitRemoteObservation` grain. Each
+  referenced worktree observation must share the inventory's
+  `execution_context_id`; cross-context references rejected at
+  Layer 1 mint API.
 - `GitDirtyStateObservation` is per-worktree (per `worktree_path`),
   not per-repository.
 - `GitWorktreeObservation` carries `lease_id`,
   `owning_session_id`, `last_lease_check_at` field shape; Q-008(d)
   commits the *composition* with `WorkspaceContext` / `Lease` /
   Q-003 coordination facts.
-- Authority-class signals (`observed_via`, `provider_observed_via`,
-  `query_observed_via`) are kernel-set per registry v0.3.2.
+- Authority-class signals follow the three-way naming convention
+  this ADR codifies: `observed_via` (local-Git),
+  `provider_observed_via` (provider-side state),
+  `query_observed_via` (provider-side query / absence). All three
+  are kernel-set per registry v0.3.2; future receipts in this
+  family pick from these three field names.
+- `worktree_path` on `GitWorktreeObservation` and
+  `GitDirtyStateObservation` is scrubber-eligible per registry
+  v0.3.0 §Field-level scrubber rule.
+- `PullRequestReceipt` does NOT carry PR titles, bodies,
+  descriptions, or other free-form content; provider-side content
+  is referenced indirectly only through `pr_number`.
+- Cross-context binding rules per receipt are explicit per Ring 1
+  layer (mint API / broker FSM / gateway) per registry v0.3.0
+  requirement; see §Cross-cutting rules §Cross-context binding.
 - Six new `Decision.reason_kind` rejection-class names reserved
-  (posture-only): `worktree_attachment_drift`,
-  `worktree_inventory_partial`, `ancestry_proof_invalid`,
-  `dirty_state_blocks_destructive_op`, `pr_state_drift`,
-  `pr_absence_stale`.
+  (posture-only) — all *Decision-level* per ADR 0029 v2 §`block`
+  vs forbidden-tier framing (do not promote operation to forbidden
+  tier): `worktree_attachment_drift`, `worktree_inventory_partial`,
+  `ancestry_proof_invalid`, `dirty_state_blocks_destructive_op`,
+  `pr_state_drift`, `pr_absence_stale`.
 - Two new `Decision.required_grant_kind` names reserved
-  (posture-only): `worktree_clean_acknowledgment`,
-  `pr_absence_acknowledgment`.
+  (posture-only) with explicit scope-binding shapes:
+  `worktree_clean_acknowledgment` (binds `destructive_git`
+  per-class extension + `worktree_path` for per-worktree grain);
+  `pr_absence_acknowledgment` (binds the specific stale
+  `evidence_id`; non-transferable across different absence
+  receipts).
 - The six receipt subject-kind enum values
   (`git_worktree`, `git_worktree_inventory`,
   `git_branch_ancestry`, `git_dirty_state`, `pull_request`,
