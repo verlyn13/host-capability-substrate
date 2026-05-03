@@ -1,8 +1,9 @@
 ---
 adr_number: 0028
 title: Q-008(a) execution-mode receipts (ToolInvocation, CommandCapture, ExecutionMode)
-status: proposed
+status: accepted
 date: 2026-05-02
+accepted_on: 2026-05-03
 revision: 4
 charter_version: 1.3.2
 tags: [execution-mode, tool-invocation, command-capture, evidence-subtype, q-008, phase-1]
@@ -12,7 +13,7 @@ tags: [execution-mode, tool-invocation, command-capture, evidence-subtype, q-008
 
 ## Status
 
-proposed (revision 4)
+accepted (revision 4)
 
 ## Date
 
@@ -56,6 +57,25 @@ redaction-mode matrix, `_kind` and `_mode` discriminator suffix
 discipline) are codified in
 `docs/host-capability-substrate/ontology-registry.md` v0.3.2; this
 ADR cites that registry rather than re-litigating.
+
+Accepted 2026-05-03 after the v4 re-review (`hcs-architect`,
+`hcs-ontology-reviewer`, `hcs-security-reviewer`) returned no
+blocking objections. Three mechanical tweaks applied at acceptance:
+
+- §Watchdog exec-path coverage scope extended to explicitly fold
+  broker-mediated children that fork-and-detach via classic
+  double-fork daemonization into the daemon-out-of-scope class
+  (architect N1; future Phase-2 work may bind `kqueue NOTE_FORK |
+  NOTE_TRACK` to follow descendants).
+- §`mode: unknown` gateway behavior block extended with a sentence
+  noting mode-agnostic operations remain subject to inv. 7
+  mutation_scope policy rules — "mode-agnostic is not
+  mutation-scope-agnostic" (architect N2).
+- Same block extended with a sentence specifying that mode-agnostic
+  status is policy-declared in canonical policy, never
+  producer-asserted, to prevent a producer from marking its own
+  operation mode-agnostic to bypass mode-conditioned gateway checks
+  (security N-S6).
 
 ## Charter version
 
@@ -309,7 +329,13 @@ Exec paths the broker FSM cannot observe directly:
   session).
 - daemon-spawned children that escape the agent's process tree (rare;
   out of scope for Phase 1 broker work; future ADR if a class of
-  failure surfaces).
+  failure surfaces). This out-of-scope class explicitly includes
+  broker-mediated children that fork-and-detach via classic
+  double-fork daemonization (the broker holds the direct child's
+  pid via kqueue but loses visibility on the grandchild after the
+  child exits); future Phase-2 watchdog work may bind
+  `kqueue NOTE_FORK | NOTE_TRACK` to follow descendants, but the v4
+  contract is explicit-pid-only.
 
 The watchdog mechanism + agent-harness session-close pairing +
 daemon-out-of-scope deferral together cover the audit-integrity
@@ -543,7 +569,14 @@ For **mode-agnostic operations** (operations whose policy does not
 name an expected mode at all): the gateway does not consult mode.
 Mode is not a precondition for these operations. Per inv. 6,
 forbidden-tier operations remain non-escalable regardless of mode;
-mode-agnostic does not relax the forbidden-tier rule.
+mode-agnostic does not relax the forbidden-tier rule. Mode-agnostic
+operations also remain subject to inv. 7's mutation_scope policy
+rules; mode-agnostic is not mutation-scope-agnostic. Mode-agnostic
+status is **policy-declared in canonical policy** (per
+`system-config/policies/host-capability-substrate/tiers.yaml`), never
+producer-asserted; a producer that emits an `ExecutionModeObservation`
+cannot mark its own operation mode-agnostic to bypass mode-conditioned
+gateway checks.
 
 **Cross-context parent-invocation typed inheritance evidence** (per
 security review A5 + charter v1.3.2 wave-3). When a child
