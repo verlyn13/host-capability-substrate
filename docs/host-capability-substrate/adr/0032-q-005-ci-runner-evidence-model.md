@@ -1,7 +1,7 @@
 ---
 adr_number: 0032
 title: Q-005 CI runner compatibility boundary and evidence model
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [ci-runner, evidence-subtypes, citadel-opa, forbidden-families, status-check-source, q-005, q-006, phase-1]
@@ -11,11 +11,89 @@ tags: [ci-runner, evidence-subtypes, citadel-opa, forbidden-families, status-che
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
+
+## Acceptance note
+
+All four reviewer subagents (`hcs-architect`, `hcs-ontology-reviewer`,
+`hcs-policy-reviewer`, `hcs-security-reviewer`) returned READY-FOR-
+ACCEPTANCE on v2 (commit `1ce7a80`) with no new blocking findings.
+The two-revision review cycle closed all 6 v1 blockers (2 ontology,
+4 security) and folded 22 non-blocking observations across all four
+reviewers (16 from v1 + 6 new defense-in-depth observations from v2
+re-review).
+
+Five mechanical tweaks folded at acceptance:
+
+1. **`secret_resolution_in_chunk` surface disambiguation (Security N-7).**
+   Rejection events for `secret_resolution_in_chunk` co-record
+   `evidence_subject_kind` (`policy_plan` for ADR 0032,
+   `knowledge_chunk` for ADR 0019 v3). Audit-chain consumers can
+   distinguish surface-of-origin via the subject-kind co-record;
+   the shared `reason_kind` is correct on inv. 5 grounds.
+2. **`ExecutionContext.actor_kind` reservation language (Security N-8).**
+   The MacBook always-on cross-context binding rule references a
+   future `ExecutionContext.actor_kind == "human"` field whose
+   schema is not yet committed in any accepted ADR. Until a Q-* row
+   commits the `actor_kind` field, the gateway applies an interim
+   total-block on MacBook substrate `workflow_dispatch` operations
+   (parallel to the §StatusCheckSourceObservation interim total-
+   block rule). Schema commitment for `ExecutionContext.actor_kind`
+   tracked as a follow-up Q-* candidate.
+3. **`runner_deregistration` acting-principal attribution (Security
+   N-10).** The `runner_deregistration` Decision's `agent_client_id`
+   + `session_id` fields name the Citadel agent (acting principal)
+   that signaled the deregistration; the deregistered runner
+   identity is `runner_host_id`. The acting/subject distinction is
+   explicit per inv. 4 attribution discipline; no schema change
+   required.
+4. **`policy_ids` scrubber framing (Security N-11).** The
+   `policy_ids` scrubber-eligibility declaration is belt-and-
+   suspenders relative to registry v0.3.0's "every string-typed
+   payload field is scrubbed when `redaction_mode != none`" rule.
+   Explicit declaration documents intent and prevents drift if a
+   future schema PR mistakenly skips a field; canonical scrubbing
+   remains gated on `redaction_mode != none`.
+5. **Forbidden-family registration-layer rejection class (Security
+   N-12).** The `runner_substrate_forbidden` reason_kind covers
+   gateway-layer forbidden-family rejection. A separate
+   `runner_capability_registration_forbidden` reason_kind reserved
+   (posture-only) for registration-layer rejection of capabilities
+   that declare token-at-rest or other structural forbidden-runner
+   patterns. The registration-layer rejection has different
+   attribution semantics (capability author + registration session)
+   than gateway-layer rejection (operation invoker + invocation
+   session); preserving the distinction prevents audit-chain
+   ambiguity.
+
+Six forward-looking concerns deferred to schema PR / Milestone 2 /
+follow-up ADRs (no further ADR-level mechanical tweaks):
+
+- Schema PR per `.agents/skills/hcs-schema-change` for the six
+  evidence subtypes + seven `Decision.reason_kind` reservations
+  (six original + one added at acceptance) + one
+  `Decision.required_grant_kind` reservation pending.
+- `evidenceSubjectKindSchema` enum extension for the six new
+  subject-kind values.
+- `runner_isolation` boundary-dimension promotion proposed →
+  accepted in `ontology-registry.md` (registry update PR after
+  this ADR's acceptance).
+- Q-006 stage-2/3 ADR commits `StatusCheckSourceObservation`
+  receipt shape (precondition for HCS gateway implementation of
+  sub-decision (d) enforcement).
+- `ExecutionContext.actor_kind` field commitment (follow-up Q-*
+  row; gating the MacBook always-on cross-context human-driven
+  binding rule).
+- Canonical policy YAML at Milestone 2 commits the five
+  forbidden-runner family rule entries; the
+  `Decision.reason_kind` enum extension; the
+  `StatusCheckSourceObservation` consumption rule; per-substrate-
+  kind freshness windows; Citadel-HCS coordination ADR if
+  cross-system schema drift becomes a friction point.
 
 ## Charter version
 
@@ -648,6 +726,19 @@ that the requesting session's `ExecutionContext.actor_kind ==
 driven sessions are rejected with
 `Decision.reason_kind: runner_substrate_forbidden`.
 
+**Interim total-block (until `ExecutionContext.actor_kind`
+schema commits).** The `ExecutionContext.actor_kind` field is
+not yet specified in any accepted ADR; field commitment is
+tracked as a follow-up Q-* candidate. Until the field is
+committed, the gateway applies an interim total-block on
+MacBook substrate `workflow_dispatch` operations regardless of
+session origin (parallel to the §`StatusCheckSourceObservation`
+interim total-block rule). The interim rule is structural inv.
+15 enforcement, not a quality-of-life concern; agent-driven
+sessions cannot bypass via the `actor_kind` field's absence
+because the field's absence triggers total-block, not
+permissive defaults.
+
 **Authority:** charter inv. 15 (ambient-credentials risk —
 MacBook hosts carry SSH keys, 1Password sessions, personal
 credentials) + ScopeCam motivating-failure family.
@@ -887,6 +978,15 @@ enum lands per `.agents/skills/hcs-schema-change`):
   no longer matches current Citadel-signaled state (after a
   `runner_deregistration` event). Closes the audit-integrity
   gap from ADR 0032 v1 review (Security S-B4).
+- `runner_capability_registration_forbidden` — capability
+  registration declared a structural forbidden-runner pattern
+  (typically token-at-rest per
+  `forbidden_runner_tokens_in_state`). Distinct from
+  `runner_substrate_forbidden` (gateway-layer per-invocation):
+  this rejection class is registration-layer; attribution
+  records the capability author + registration session, NOT
+  the operation invoker. Closes the cross-surface ambiguity
+  from ADR 0032 v2 review (Security N-12).
 
 Per ADR 0029 v2 §`block` vs forbidden-tier framing, the five
 non-forbidden-family rejection classes are *Decision-level*
