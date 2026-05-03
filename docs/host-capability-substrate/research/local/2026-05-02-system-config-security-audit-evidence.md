@@ -3,7 +3,7 @@ title: System-config security audit — evidence for HCS design
 category: research
 component: host_capability_substrate
 status: active
-version: 0.1.1
+version: 0.1.2
 last_updated: 2026-05-02
 tags:
   - boundary-observation
@@ -602,6 +602,33 @@ Cloudflare API or dashboard. This is exactly the precedent ADR 0015's
 distinguish provider-side declared policy from workstation-side observed
 behavior.
 
+**Authoritative-side scope split (a stronger invariant-16 example).**
+Late-cycle input from the `cloudflare-dns` project (a sibling repo at
+`~/Repos/local/cloudflare-dns/`) refines this finding. The
+"authoritative side" for the `homezerotrust` org is itself partitioned:
+
+- A Pulumi-managed surface (39 resources) covers Gateway DNS policies,
+  device profiles (kids/adults/headless/default), managed networks,
+  WARP enrollment Access app, and the Gateway DNS location. Live state
+  is in `cloudflare-dns/state.json`, jq-queryable.
+- A dashboard-only surface, *not in Pulumi*, covers the Secure Web
+  Gateway proxy toggle (Traffic Settings → Network) and two legacy
+  unmanaged policies ("Cert Pinning" precedence 0, "Block Malware"
+  precedence 9000).
+
+This is itself useful boundary evidence for invariant 16: even within a
+single external control plane, "authoritative" is not a single-authority
+class. Producer authority for the Pulumi-managed subset is the Pulumi
+state file plus the Cloudflare API; producer authority for the dashboard
+toggle is the human admin's dashboard session. A `BoundaryObservation`
+that asserts "Gateway HTTP enforcement is on" must source from the
+dashboard, not from Pulumi state, because Pulumi does not own that
+toggle. Per the registry's "narrowest matching dimension" rule, the
+candidate decomposition is: `egress_policy` payload sourced from Pulumi
+state for DNS-side policies, `egress_policy` payload sourced from the
+dashboard for the proxy toggle, and `egress_observed` payload sourced
+from `cdn-cgi/trace` plus a home-Gateway DoH probe.
+
 **Closest existing `boundary_dimension`s.**
 
 - `egress_policy` — declared/configured network egress for a surface.
@@ -1011,5 +1038,6 @@ additions.
 
 | Version | Date | Change |
 |---|---|---|
+| 0.1.2 | 2026-05-02 | Added "Authoritative-side scope split" sub-section to F9 after late-cycle input from the `cloudflare-dns` sibling repo. Clarifies that the "authoritative side" of the `homezerotrust` Zero Trust org is itself partitioned into a Pulumi-managed surface (39 resources, state in `cloudflare-dns/state.json`) and a dashboard-only surface (Secure Web Gateway proxy toggle plus 2 legacy unmanaged policies). This refines the invariant-16 example: even within a single external control plane, "authoritative" decomposes into multiple producer-authority classes that must be modeled as separate `BoundaryObservation` records. No new boundary_dimension proposed; the candidate decomposition uses existing `egress_policy` and `egress_observed` with payload-source distinctions. |
 | 0.1.1 | 2026-05-02 | Corrected after cross-check against repo state. Self-referential first move reframed: the plist template uses a `{{JUST_BIN}}` token (correct), and `scripts/install/install-launchd-measure.sh` already follows invariant 11; the actual invariant-14 violation is in the install script's `resolve_just()` function preferring `mise which just` (versioned path) over the version-agnostic shim. Charter v1.3.1 attribution split into boundary-enforcement bullet vs forbidden pattern. ADR 0022 section reference replaced with accurate "linked-observations pattern" phrasing. Phase 1/3/4 vocabulary explicitly mapped to HCS PLAN.md milestones at the top of §Recommendations. ADR 0025 (accepted), ADR 0027 (proposed, review pending), and ADR 0028 (proposed, review pending) cross-references added in F6 and References. No content removed. |
 | 0.1.0 | 2026-05-02 | Initial. Translates the 2026-05-02 system-config security audit and revised hardening plan v0.2.0 into HCS evidence terms: per-finding mapping to charter invariants, `BoundaryObservation` envelope rows, gaps in current registry/matrix coverage, and Phase 1/3/4 sequencing notes including a self-referential first move (fix the HCS measure agent's mise pin and `launchctl` syntax). No schema, registry, or policy changes proposed; this document is evidence input. |
