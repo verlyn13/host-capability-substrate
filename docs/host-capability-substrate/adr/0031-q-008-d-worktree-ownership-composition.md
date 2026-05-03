@@ -1,7 +1,7 @@
 ---
 adr_number: 0031
 title: Q-008(d) worktree-ownership composition
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [worktree, lease, workspace-context, coordination-fact, q-008, q-003, phase-1]
@@ -11,11 +11,103 @@ tags: [worktree, lease, workspace-context, coordination-fact, q-008, q-003, phas
 
 ## Status
 
-proposed (v1)
+accepted (v1 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
+
+## Acceptance note
+
+All four reviewer subagents (`hcs-architect`, `hcs-ontology-reviewer`,
+`hcs-policy-reviewer`, `hcs-security-reviewer`) returned READY-FOR-
+ACCEPTANCE on v1 with no blocking findings — the cleanest first-round
+outcome among Phase 1 ADRs. Twelve mechanical tweaks were folded at
+acceptance to tighten security posture and close non-blocking
+observations:
+
+1. **Force-break separation of duties (Policy-a + Security-A).**
+   Layer 1 mint API rejects force-break grants whose minter is the
+   target lease's `held_by_session_id`. Phase 1 interim posture: force-
+   break grants require human approval at the dashboard layer (not
+   agent-mintable); canonical policy at Milestone 2 commits per-class
+   verifier-class privileges.
+2. **`worktree_path` canonicalization (Security-D).** Layer 1 mint
+   API rejects non-canonical worktree paths (paths containing `..`
+   traversal segments or unresolved symlinks). Canonicalization
+   precedes the uniqueness check; two paths that resolve to the same
+   physical worktree cannot create two distinct Lease records.
+3. **Sandbox-derived lease rejection (Security-F).** Layer 1 mint API
+   rejects `Lease` acquire with `lease_kind: "worktree"` when the
+   requesting session's `ExecutionContext.sandbox != "none"`. Closes
+   the charter inv. 8 composition gap (sandbox-observation cannot
+   promote to host-authoritative ownership).
+4. **Release authority explicit (Security-H).** Layer 1 mint API
+   rejects release attempts unless `requesting_session_id ==
+   held_by_session_id`. Non-holders cannot release leases except via
+   the typed force-break-glass grant path.
+5. **`valid_until` interim cap (Security-E).** Until Milestone 2
+   canonical policy commits per-`lease_kind` maximum windows, Layer 1
+   mint API rejects `Lease` records with `valid_until` more than 24
+   hours past `acquired_at`. Interim ceiling prevents adversarial
+   long-window assertions.
+6. **TOCTOU acquire (Security-G).** Layer 1 acquire is implemented
+   as an atomic insert with a unique constraint on
+   `(repository_id, canonical_worktree_path, lease_state == "active")`,
+   not a check-then-insert. Concurrent acquire attempts on the same
+   target produce exactly one success and one
+   `worktree_lease_held_by_other_session` rejection.
+7. **Audit lineage preservation (Security-B).** The acquire and
+   force-break Decision events together preserve full holder lineage
+   via `evidence_refs` to the prior `Lease` record's audit-chain
+   entries; ownership history is reconstructable from the Decision
+   chain, not from the Lease record's mutated identity fields alone.
+8. **Cross-context consistency tightened (Security-C).** Layer 1
+   mint API rejects `Lease` acquire when
+   `WorkspaceContext.execution_context_id !=
+   Session.execution_context_id`. The "consistency" framing from v1
+   is replaced with this explicit equality rule.
+9. **Backward-compat WorkspaceContext default-block (Architect-NB-1).**
+   Legacy `WorkspaceContext` records without the new `worktree_path`
+   field default-block any `worktree_mutation` operation per §Closed-
+   list fail-mode discipline (mirrors ADR 0029 v2 tightening default).
+   Existing contexts must add the field before resuming worktree
+   mutations.
+10. **`coordination_fact_worktree_drift` body definition
+    (Architect-NB-2).** The rejection class fires at Layer 2 (broker
+    FSM re-check) or Layer 3 (gateway re-derive) when a worktree
+    `CoordinationFact`'s `evidence_refs` no longer corroborate live
+    Lease state — e.g., the cited `Lease` has transitioned to
+    `expired` / `released` / `force_broken` between the
+    `CoordinationFact`'s mint and the gate's consumption.
+11. **Cardinality-not-duplicated forward-look (Policy-b).** Future
+    amendments §Out of scope clarification: the WorkspaceContext one-
+    to-one cardinality is a kernel mint-API invariant; canonical
+    policy YAML must NOT redundantly enforce it.
+12. **`lease_kind` scope-key disjointness forward-look (Policy-c).**
+    Future ADRs that introduce additional `worktree_mutation`-class-
+    style operation classes (e.g., `credential_audience_mutation`,
+    `external_target_mutation`) and bind `lease_id` in their
+    `ApprovalGrant.scope` per-class extensions must reference
+    `lease_kind` to disambiguate; canonical policy YAML rejects
+    overlapping scope keys per ADR 0019 v3 §Scope-key disjointness
+    rule (extended by analogy).
+
+Eight forward-looking concerns deferred to schema PR / Milestone 2 /
+regression corpus / future ADRs (no further ADR-level mechanical
+tweaks): Q-008(d)-followup ADR (WorkspaceContext switch mid-session
+behavior); schema PR per `.agents/skills/hcs-schema-change` for
+`Lease` field additions / `WorkspaceContext.worktree_path` /
+`CoordinationFact subject_kind: "worktree"` shape; `§Predicate-kind
+vocabulary` registry update PR with `leased_to` / `attached_to` /
+`held_by` (precondition); canonical policy at Milestone 2 (per-
+`lease_kind` windows, per-class force-break authority, verifier-class
+privileges, backward-compat tightening for WorkspaceContext); charter
+v1.4.0 candidate codifying "worktree mutations require typed lease +
+dirty-state + matrix-pass"; regression corpus expansion with the 8
+suggested traps from policy + security reviews; `Lease` force-break
+audit chain reconstruction test; multi-worktree WorkspaceContext
+revisit when an incident motivates.
 
 ## Charter version
 
@@ -137,8 +229,19 @@ The one-to-one rule is enforced at Layer 1 mint API: a
 previously implicit). Producer-supplied `WorkspaceContext` records
 without a `worktree_path` are accepted at the mint API for
 backward compatibility with existing contexts that pre-date this
-ADR; canonical policy at Milestone 2 may tighten this rule once
-all downstream contexts have the field.
+ADR.
+
+**Backward-compat default-block.** Legacy `WorkspaceContext`
+records that lack `worktree_path` default-BLOCK any
+`worktree_mutation` operation per the §Closed-list fail-mode
+discipline (mirrors ADR 0029 v2 tightening default for unrecognized
+combinations against destructive operation classes). Operations
+against legacy contexts reject with `Decision.reason_kind:
+worktree_not_in_workspace_context` until the consuming session
+adds the `worktree_path` field. Read-only and agent-internal-state
+operation classes proceed against legacy contexts. Canonical policy
+at Milestone 2 may further tighten the rule once all downstream
+contexts have migrated.
 
 The `worktree_path` on `WorkspaceContext` is paired with a
 `repository_id` (typed FK to `GitRepositoryObservation`-resolved
@@ -169,7 +272,11 @@ stage; the actual Zod schema lands per
   attribution.
 - `acquired_at` — kernel-set timestamp.
 - `valid_until` — producer-asserted; canonical policy at Milestone
-  2 may impose per-`lease_kind` maximum window.
+  2 may impose per-`lease_kind` maximum window. **Phase 1 interim
+  cap**: until canonical policy lands, Layer 1 mint API rejects
+  any `Lease` record whose `valid_until` is more than 24 hours past
+  `acquired_at`. The 24-hour ceiling prevents adversarial long-
+  window assertions during the interim posture.
 - `released_at` — kernel-set timestamp; null until release event.
 - `lease_state: "active" | "expired" | "released" |
   "force_broken"` — discriminator per registry Sub-rule 6;
@@ -196,6 +303,25 @@ stage; the actual Zod schema lands per
   `WorkspaceContext` resolution for `workspace_context_id`).
 - `lease_state` is kernel-set; transitions are typed Decision
   events (see §Lease lifecycle below).
+
+**`worktree_path` canonicalization (Layer 1 mint API):** Layer 1
+canonicalizes `worktree_path` (resolves `..` traversal segments,
+resolves symlinks to their canonical filesystem identity) before
+the uniqueness check on `(repository_id, worktree_path,
+lease_state == "active")`. Non-canonical paths are rejected at
+mint API; two producer-asserted paths that resolve to the same
+physical worktree cannot create two distinct Lease records.
+
+**Sandbox-derived lease rejection (charter inv. 8):** Layer 1
+mint API rejects `Lease` acquire with `lease_kind: "worktree"`
+when the requesting session's `ExecutionContext.sandbox != "none"`.
+Worktree leases mediate destructive host mutations; allowing a
+sandbox-execution session to acquire one would promote a sandbox-
+observation authority to a host-authoritative side effect (the
+lease itself), violating the charter inv. 8 sandbox-promotion
+rule. Sandbox-execution sessions can acquire other `lease_kind`
+values per their canonical-policy rules; only `worktree` leases
+are blocked.
 
 ### `CoordinationFact` shape for worktree ownership
 
@@ -280,6 +406,19 @@ API. A grant scoped to a different `worktree_path` than the
 operation's target is rejected at Layer 3 gateway re-derive per
 inv. 6.
 
+**`lease_kind` scope-key disjointness forward-look.** Future ADRs
+that introduce additional lease-binding operation classes (e.g.,
+`credential_audience_mutation`, `external_target_mutation`) and
+include `lease_id` in their `ApprovalGrant.scope` per-class
+extensions must reference `lease_kind` to disambiguate target.
+Canonical policy YAML rejects overlapping scope keys per ADR
+0019 v3 §Scope-key disjointness rule (extended by analogy from
+promotion-grant scope keys to operation-class scope keys). A
+`worktree_mutation` grant cannot satisfy a
+`credential_audience_mutation` operation even if both bind a
+`lease_id`; the kind-discriminated reference shape prevents
+cross-class grant reuse.
+
 ### Conflict resolution patterns
 
 **1. Multiple sessions claiming same worktree.** Layer 1 mint API
@@ -289,6 +428,15 @@ already has an `active` `lease_state` for a different
 `Decision.reason_kind: worktree_lease_held_by_other_session`. The
 existing lease's holder retains ownership; the second-session
 attempt does not implicitly displace it.
+
+**TOCTOU at acquire.** The Layer 1 uniqueness check is implemented
+as an atomic insert with a unique constraint on `(repository_id,
+canonical_worktree_path, lease_state == "active")`, not a check-
+then-insert pattern. Concurrent acquire attempts on the same
+target produce exactly one success and one
+`worktree_lease_held_by_other_session` rejection. Schema PR
+implementation must respect this atomicity; check-then-insert
+implementations are non-conformant.
 
 **2. Lease expiry mid-mutation.** A `Lease` whose `valid_until`
 passes during operation execution is detected at Layer 2 broker
@@ -316,6 +464,29 @@ binds the specific stuck `lease_id`; consumption flips
 `force_break_grant_id`. A new lease can then be acquired by the
 requesting session.
 
+**Force-break separation of duties (closes self-displacement
+escalation).** Layer 1 mint API rejects force-break grants whose
+minter is the target lease's `held_by_session_id`. A session
+holding a stuck lease cannot mint its own force-break grant; the
+holder + minter asymmetry is structurally enforced (parallels
+ADR 0019 v3 producer-equals-verifier prohibition for promotion
+grants). **Phase 1 interim posture**: force-break grants require
+human approval at the dashboard layer, not agent-mintable, until
+Milestone 2 canonical policy commits per-class verifier-class
+privileges. The interim rule prevents an agent from minting force-
+break grants against legitimate active leases held by other
+sessions to take over a worktree.
+
+**Force-break audit lineage preservation.** The acquire and
+force-break Decision events together preserve full holder
+lineage. The acquire Decision recorded the prior holder's
+`held_by_session_id` + `held_by_agent_client_id` + `acquired_at`
+fields; the force-break Decision records the new holder's
+identity + the consumed `force_break_grant_id` + a reference back
+to the prior acquire Decision via `evidence_refs`. Ownership
+history is reconstructable from the Decision chain, not from the
+Lease record's mutated identity fields alone.
+
 **5. Operation against worktree not in WorkspaceContext.** A
 mutation operation whose target `(repository_id, worktree_path)`
 does not match the session's current `WorkspaceContext.worktree_path`
@@ -324,6 +495,28 @@ with `Decision.reason_kind: worktree_not_in_workspace_context`.
 This closes the failure mode where a session leases worktree A,
 switches its `WorkspaceContext` to worktree B, then attempts a
 mutation against A without re-establishing context.
+
+**6. Release authority.** Layer 1 mint API rejects `Lease`
+release attempts unless `requesting_session_id ==
+held_by_session_id`. Only the holding session may release its
+own lease via the explicit release path; non-holders that need
+to take over a stuck lease must use the force-break-glass grant
+pattern (pattern 4). The kernel-set holder identity is
+authoritative; producer-asserted release attempts from non-
+holders are rejected.
+
+**7. CoordinationFact drift detection.** `Decision.reason_kind:
+coordination_fact_worktree_drift` fires at Layer 2 (broker FSM
+re-check) or Layer 3 (gateway re-derive) when a worktree
+`CoordinationFact`'s `evidence_refs` no longer corroborate live
+Lease state. Specifically: the cited `Lease` has transitioned to
+`expired`, `released`, or `force_broken` between the
+`CoordinationFact`'s mint and the gate's consumption; OR the
+cited `GitWorktreeObservation`'s `lease_id` field no longer
+matches the `CoordinationFact.object.lease_id`. The drift
+detection prevents stale ownership facts from authorizing
+operations against a worktree whose ownership has changed since
+the fact was promoted.
 
 ### Lease lifecycle (typed Decision events)
 
@@ -337,17 +530,27 @@ typed `Decision` in the audit chain:
   `session_id`, `transition_layer: mint_api`,
   `lease_id`, `transition_kind: acquire`, `acquired_at`).
 - **Release** (`lease_state: active → released`): explicit
-  release by the holding session; sets `released_at`. Decision
-  with `transition_kind: release`.
+  release by the holding session; sets `released_at`. Layer 1
+  mint API rejects release attempts unless
+  `requesting_session_id == held_by_session_id` (only the holder
+  can release; non-holders use force-break-glass). Decision with
+  `transition_kind: release`.
 - **Expiry** (`lease_state: active → expired`): kernel-detected
   at Layer 2 broker FSM re-check or Layer 3 gateway re-derive
   when `valid_until` passes. Sets `released_at` to
   `valid_until`. Decision with `transition_kind: expiry`.
 - **Force-break** (`lease_state: active → force_broken`):
   consumption of a `worktree_lease_force_break_acknowledgment`
-  grant by the requesting (NOT the original) session. Sets
-  `force_break_grant_id`. Decision with `transition_kind:
-  force_break`.
+  grant by the requesting (NOT the original) session. Layer 1
+  mint API rejects force-break grants whose minter is the target
+  lease's `held_by_session_id` (separation of duties; mirrors
+  ADR 0019 v3 producer-equals-verifier prohibition). **Phase 1
+  interim**: force-break grants require human approval at the
+  dashboard layer, not agent-mintable, until Milestone 2
+  canonical policy commits per-class verifier-class privileges.
+  Sets `force_break_grant_id`. Decision with `transition_kind:
+  force_break` and `evidence_refs` to the prior acquire
+  Decision (preserves holder lineage).
 
 All four transitions participate in the audit hash chain per
 charter inv. 4 + registry v0.3.1 §Audit-chain coverage of
@@ -358,12 +561,20 @@ rejections (extended to lease lifecycle events by inheritance).
 Per registry v0.3.0 §Cross-context enforcement layer requirement:
 
 - **`Lease` (when `lease_kind: "worktree"`)**: Layer 1 enforces
-  `(repository_id, worktree_path)` uniqueness against
-  `lease_state: active` records; rejects double-lease attempts.
-  Layer 1 also enforces `workspace_context_id` consistency with
-  the requesting session's `ExecutionContext`. Layer 2 re-checks
-  `valid_until` and `lease_state` at operation-execution time.
-  Layer 3 re-derives at decision time per inv. 6.
+  `(repository_id, canonical_worktree_path)` uniqueness against
+  `lease_state: active` records via atomic insert with unique
+  constraint; rejects double-lease attempts (pattern 1).
+  Layer 1 also enforces explicit cross-context equality:
+  `WorkspaceContext.execution_context_id ==
+  Session.execution_context_id` of the requesting session;
+  mismatched contexts rejected. Layer 1 rejects
+  sandbox-execution sessions for `lease_kind: "worktree"`
+  acquire (charter inv. 8). Layer 2 re-checks `valid_until` and
+  `lease_state` at operation-execution time; lease expiry
+  mid-mutation surfaces `worktree_lease_expired_during_mutation`.
+  Layer 3 re-derives at decision time per inv. 6;
+  CoordinationFact drift surfaces
+  `coordination_fact_worktree_drift`.
 - **`CoordinationFact` (subject_kind: "worktree")**: Layer 1
   enforces `evidence_refs` consistency (the cited
   `GitWorktreeObservation` and `Lease` must share
@@ -534,10 +745,17 @@ This ADR does not authorize:
   worktree-specific values plus the eleven from ADR 0019 v3
   plus the prior values from ADR 0029 v2 / ADR 0030 v2.
 - Canonical policy YAML at Milestone 2: per-`lease_kind` maximum
-  windows; per-class force-break-glass authority (which
-  authority class can mint the grant); verifier-class
-  privileges; backward-compatibility tightening for
-  `WorkspaceContext.worktree_path`.
+  windows (replaces Phase 1 24-hour interim cap); per-class
+  force-break-glass authority (which authority class can mint
+  the grant; replaces Phase 1 dashboard-only interim posture);
+  verifier-class privileges; backward-compatibility tightening
+  for `WorkspaceContext.worktree_path`. **Cardinality is not
+  duplicated**: the `WorkspaceContext` one-to-one cardinality
+  with worktree is a kernel mint-API invariant; canonical policy
+  YAML must NOT redundantly enforce it. Same posture for the
+  TOCTOU atomic-insert rule and the `worktree_path`
+  canonicalization rule — both are kernel invariants, not policy
+  YAML content.
 - Q-008(d)-followup: ADR addressing what happens when a
   WorkspaceContext switches its worktree mid-session (does the
   prior Lease auto-release? require explicit release?). Phase
