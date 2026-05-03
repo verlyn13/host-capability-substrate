@@ -3,9 +3,9 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.3.2
-last_updated: 2026-05-02
-tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, audit-integrity, q-011]
+version: 0.3.3
+last_updated: 2026-05-03
+tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, audit-integrity, enum-value-casing, q-011]
 priority: high
 ---
 
@@ -159,12 +159,21 @@ Sub-rules:
    collapse two ontologically distinct facts into one field.
 6. **`_kind` is the canonical discriminator suffix.** Discriminator fields
    use `<thing>_kind` (e.g., `merge_proof_kind`, `pr_state_kind`,
-   `evidence_kind`). `_class` is *not* a codified discriminator suffix and
-   must not be used; future schemas using `_class` for a discriminator
-   role fail ontology review. The single existing exception is
-   `containment_class` from ADR 0022, which is itself part of an
-   umbrella-dimension entity name (boundary dimension), not a payload
-   discriminator.
+   `evidence_kind`, `reason_kind`, `required_grant_kind`). `_class` and
+   `_code` are *not* codified discriminator suffixes and must not be
+   used; future schemas using `_class` or `_code` for a discriminator
+   role fail ontology review.
+
+   The single existing exception is `containment_class` from ADR 0022,
+   which is itself part of an umbrella-dimension entity name (boundary
+   dimension), not a payload discriminator. No corresponding exception
+   exists for `_code`.
+
+   Discriminator fields on `Decision` and `ApprovalGrant` follow the
+   same rule: rejection-class discriminators are `reason_kind` (not
+   `reason_code`); required-grant-class discriminators are
+   `required_grant_kind` (not `required_grant_class`). This codifies
+   the surface surfaced during the post-merge review of ADR 0029 v1.
 7. **Subject-kind enum values name the underlying subject, not the
    evidence envelope.** When an `evidenceSubjectKindSchema` enum is
    extended for a new subject (e.g., a tool invocation), the value names
@@ -191,6 +200,33 @@ Sub-rules:
    already names the central concept; the field name is bare. This is
    the existing precedent for `boundary_dimension` on
    `BoundaryObservation` and `merge_proof_kind` on `BranchDeletionProof`.
+9. **Stable enum values use `lower_snake_case`.** Enum values that
+   appear in canonical policy YAML, schema enums, audit-chain records,
+   and `Decision.reason_kind` / `Decision.required_grant_kind` use
+   `lower_snake_case`. Mixed-case forms (`PascalCase`, `camelCase`,
+   `kebab-case`) are forbidden for new enum values. Numeric prefixes
+   (`1_first_state`) are permitted only when ordering is part of the
+   value's meaning and the ordering must be stable across versions.
+
+   Examples (compliant): `empty_apparent_success`, `capture_failure`,
+   `abnormal_termination`, `mode_unknown`, `destructive_git`,
+   `read_only_diagnostic`, `approval_required`, `block`, `warn`,
+   `cross_context_target_mismatch`.
+
+   Existing exceptions are grandfathered and not extended:
+
+   - `evidenceAuthoritySchema` enum values use `kebab-case`
+     (`project-local`, `workspace-local`, `user-global`, `system`,
+     `derived`, `sandbox-observation`, `host-observation`,
+     `vendor-doc`, `installed-runtime`, `human-observed`,
+     `self-asserted`). The casing predates this rule; new authority
+     classes added to that enum may continue to use `kebab-case` for
+     enum-internal consistency, but no other enum may adopt
+     `kebab-case`.
+
+   New enum values added to any other Ring 0 enum require
+   `lower_snake_case`; an `hcs-ontology-reviewer` pass before the
+   schema PR using the new value lands enforces the rule.
 
 ### Version-field naming
 
@@ -793,6 +829,7 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.3 | 2026-05-03 | Two additions surfaced during the post-merge review of ADR 0029 v1 (Q-008(b) anomalous-capture blocking thresholds). §Naming suffix discipline §Sub-rule 6 amended to forbid `_code` as a discriminator suffix in addition to the existing `_class` rejection; rejection-class fields on `Decision` and required-grant-class fields on `ApprovalGrant` are `reason_kind` and `required_grant_kind` respectively (not `reason_code` / `required_grant_class`). §Sub-rule 9 codifies enum-value casing: stable enum values that appear in canonical policy YAML, schema enums, audit-chain records, and Decision/ApprovalGrant kind discriminators use `lower_snake_case`; mixed-case forms (`PascalCase`, `camelCase`, `kebab-case`) are forbidden for new enum values. The existing `evidenceAuthoritySchema` `kebab-case` exception is grandfathered for that enum only; no other enum may adopt `kebab-case`. Used as a precondition for ADR 0029 v2 revision. |
 | 0.3.2 | 2026-05-02 | Two additions surfaced during the post-merge re-review of ADR 0028 v3. §Naming suffix discipline §Sub-rule 8 codifies `_mode` as the canonical suffix for orthogonal-layer discriminators (capture-vs-persistence layers; e.g., `argv_capture_mode`); `_kind` (Sub-rule 6) remains canonical for receipt-family discriminators. Bare-noun discriminators (`mode`, `capture_status`, `observation_state`, `boundary_dimension`) are permitted when they are the receipt's central concept rather than an orthogonal-layer modifier. §Authority discipline §Producer-vs-kernel-set authority fields amended to enumerate `Evidence.producer` as kernel-set when its value names a kernel-trusted producer class; the kernel-only allowlist is `kernel_broker`, `kernel_telemetry`, `mint_api`. Producer-supplied values naming a kernel-trusted class are rejected at the mint API; agent-side / sandbox-observer values remain producer-asserted but kernel-verifiable. A follow-up schema-change PR tightens `Evidence.producer` from `z.string().min(1).optional()` to a kind-tagged shape. Used as a precondition for ADR 0028 v4 revision. |
 | 0.3.1 | 2026-05-02 | Five additions surfaced during the post-merge re-review of ADR 0027 v2 + ADR 0028 v2. §Naming suffix discipline §Sub-rule 6 codifies `_kind` as the canonical discriminator suffix; `_class` is not codified and is forbidden as a discriminator suffix (one existing exception: `containment_class` from ADR 0022 as part of an umbrella-dimension entity name). §Sub-rule 7 codifies that subject-kind enum values name the underlying subject (e.g., `tool_invocation`), not the receipt envelope (`tool_invocation_receipt`). §Cross-context enforcement layer §Layer-disagreement tiebreaker names the gateway as authoritative when layers disagree; mint-time acceptance does not bind the gateway. §Cross-context enforcement layer §Audit-chain coverage of rejections codifies that rejections at any of the three layers emit audit events with named fields (rejecting layer + rejection-class discriminator + typed Decision record), per charter inv. 4. §Redaction posture §Field-level scrubber rule codifies that when `redaction_mode != none`, every string-typed payload field passes the secret-shape scrubber; record-level redaction does not exempt fields. §Redaction posture §Capture-status × redaction-mode matrix promotes the per-ADR matrix from ADR 0028 v2 to a generic registry sub-rule applicable to any receipt family with capture-vs-persistence layers. Used as a precondition for ADR 0027 v2 acceptance and ADR 0028 v3 revision. |
 | 0.3.0 | 2026-05-02 | Added three top-level discipline sections codifying cross-cutting rules surfaced during the post-merge review of ADR 0027 (Q-006 stage-1) and ADR 0028 (Q-008(a)). §Authority discipline names the explicit ten-class trust ladder, introduces the new `self-asserted` authority class below `sandbox-observation` for unverified producer claims (schema enum extension lands in a follow-up schema-change PR), and codifies the kernel-only rule for authority-class fields (`detected_by`, `captured_by`, `observed_via`); operational claims that are not authority-class remain producer-asserted but must be kernel-verifiable. §Cross-context enforcement layer names the canonical Ring 1 defense-in-depth: mint API + broker FSM re-check + gateway re-derive; Zod schema is structurally validating only, not an enforcement layer for cross-context binding. §Redaction posture codifies that `Evidence.redaction_mode` is the canonical persistence-redaction field; new evidence subtypes must not introduce parallel `<thing>_redaction_mode` payload fields whose semantics overlap; capture-mode vs persistence-redaction are orthogonal layers (e.g., ADR 0028 v2 renames `argv_redaction_mode` to `argv_capture_mode`). Used as a precondition for ADR 0027 v2 and ADR 0028 v2 acceptance. |
