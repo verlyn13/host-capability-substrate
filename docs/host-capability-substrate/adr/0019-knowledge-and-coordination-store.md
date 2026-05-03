@@ -11,7 +11,7 @@ tags: [coordination, shared-state, retrieval, rag, knowledge-store, q-003, phase
 
 ## Status
 
-proposed (v2)
+proposed (v3)
 
 ## Date
 
@@ -92,6 +92,43 @@ Written against charter v1.3.2 and
   - **Security N-5.** Cite charter inv. 10 deployment boundary
     explicitly (single-host posture; runtime state under
     `~/Library/Application Support/host-capability-substrate/`).
+- **v3** (2026-05-03, this revision): closes 2 new security
+  blockers introduced by v2's §Secret-referenced sources design
+  + folds 4 security non-blocking observations + adds ontology
+  registry reservation note.
+  - **Security S-1.** Added re-indexing label-recheck rule:
+    when `KnowledgeSource.content_hash` changes, the indexer
+    recomputes `security_label` against the new content; chunks
+    derived from the prior content_hash are marked stale and
+    re-derived against the new content + new label.
+  - **Security S-2.** Added label-upgrade chunk-invalidation
+    rule: when `security_label` is upgraded to
+    `secret_referenced` (e.g., indexer detected new `op://`
+    content), all child chunks with non-null `embedding_ref`
+    are purged or re-minted with `embedding_ref: null`.
+    Closes the inv. 5 + inv. 8 composition gap.
+  - **Security N-1.** Made explicit that §Verifier visibility-
+    authority rule scopes read-authority to the minting session
+    only, not transitively across the verifier's session graph
+    (prevents verifier-session-aggregation escalation surface).
+  - **Security N-2.** Added `promoted_at` to the §Promotion
+    audit-record completeness field list (now seven fields, not
+    six). Audit consumers reconstructing promotion timelines
+    need the timestamp.
+  - **Security N-3.** Tightened §Chunks display-only rule to
+    forbid all paths where chunk content reaches typed records
+    consumed by gates, including prompt-rendering paths an LLM
+    might parse into operations.
+  - **Security N-4.** Added explicit deployment-binding for
+    `embedding_ref`: resolves only to on-host vector storage
+    under `$HCS_STATE_DIR`; remote/hosted backends require ADR
+    amendment.
+  - **Ontology NB-1.** Added §Predicate-kind registry
+    reservation note: ADR 0019 reserves the registry section
+    name `§Predicate-kind vocabulary` paralleling §Boundary
+    dimension registry; the registry entry lands in a separate
+    registry update PR before the schema PR using
+    `predicate_kind` is opened.
 
 ## Context
 
@@ -340,6 +377,35 @@ layers:
   at Layer 1 mint API regardless of the parent source's
   security_label, because secret material in a chunk is itself
   a charter inv. 5 violation.
+- **Re-indexing label-recheck.** When a `KnowledgeSource`'s
+  `content_hash` changes (the source's content shifts because
+  the underlying file/doc was edited), the indexer recomputes
+  `security_label` against the new content. The prior
+  `KnowledgeChunk` records are marked stale (their `text_hash`
+  no longer matches the source's current `content_hash` per
+  the existing Layer 2 freshness re-check) and re-derived
+  against the new content, with the new `security_label`
+  applied to the new chunks. Stale chunks are purged from the
+  retrieval index at re-derive time; pre-purge retrieval
+  results are not gate-eligible per inv. 18 candidate.
+- **Label-upgrade chunk-invalidation.** When a
+  `KnowledgeSource.security_label` is upgraded to
+  `secret_referenced` (whether via a re-index detecting newly
+  added `op://` content, a manual policy reclassification, or
+  any other path), **all existing child `KnowledgeChunk`
+  records with non-null `embedding_ref` are purged from the
+  retrieval index and re-minted with `embedding_ref: null`**.
+  The kernel-side indexer enforces this at Layer 1 at the
+  moment the label upgrade is committed; chunks minted before
+  the upgrade with non-null embeddings cannot persist past
+  the upgrade. Without this rule, secret-bearing embeddings
+  would persist after correct re-classification, creating an
+  inv. 5 + inv. 8 composition gap (the source's authority is
+  correctly tightened, but the derived embedding leaks back).
+  Label downgrades (e.g., `secret_referenced` → `internal`
+  because the `op://` references were removed) do NOT
+  retroactively re-embed prior chunks; downgrade requires a
+  full re-index pass from fresh content.
 
 #### `KnowledgeChunk`
 
@@ -356,7 +422,15 @@ A derived chunk from a `KnowledgeSource`.
 - `token_count` — token count under the canonical tokenizer.
 - `embedding_ref` — reference to the embedding vector (storage
   shape deferred to follow-up ADR; the field is here for future-
-  binding).
+  binding). **Deployment binding (charter inv. 10):**
+  `embedding_ref` resolves only to on-host vector storage under
+  `$HCS_STATE_DIR` (defaulting to
+  `~/Library/Application Support/host-capability-substrate/`).
+  Remote / hosted vector backends (e.g., Pinecone, Weaviate
+  cloud, hosted pgvector) require a separate ADR amendment per
+  charter change-policy. Multi-host deployment with on-host
+  pgvector remains queued for the multi-host ADR named in
+  §Future amendments.
 - `chunk_kind: "prose" | "code" | "schema_block" | "table" |
   "audit_record"` — discriminator per registry Sub-rule 6.
 - `metadata` — open-record for indexing-side metadata; secret-
@@ -376,11 +450,25 @@ treats a chunk as gate authority is a charter violation.
 **Chunks are display-only.** Chunk content (text, code blocks,
 schema fragments) may be rendered for human review through Ring
 2 dashboard / MCP surfaces. Chunk-to-command rendering is
-forbidden: an adapter that materializes a chunk's text into a
-tool input (`OperationShape`, `ApprovalGrant.scope`, etc.) bypasses
-the typed-evidence path and is a charter inv. 1 / inv. 2
-violation. All command paths consume typed `OperationShape`
-records, never raw chunk text.
+forbidden: **no chunk content may reach any path that produces
+typed records consumed by gates.** This includes:
+
+- direct chunk-to-`OperationShape` materialization (an adapter
+  copying chunk text into operation arguments);
+- chunk-to-`ApprovalGrant.scope` injection;
+- chunk-to-prompt rendering where an LLM might parse the chunk
+  into a tool call, operation request, or grant scope (the
+  indirection through an LLM does not break the rule — the
+  chunk reached the gate-record-producing pipeline);
+- any rendering that produces a typed input to a Ring 1 mint
+  API call.
+
+Allowed rendering surfaces: dashboard display to a human
+reviewer; MCP `Resources` payloads explicitly tagged as
+display-only; transcript inclusion for human inspection.
+Charter inv. 1 / inv. 2 violations are the failure mode this
+rule prevents; the typed-evidence pathway (mint API → Ring 0
+record → gate consumption) is the only path.
 
 #### `CoordinationFact`
 
@@ -412,7 +500,15 @@ A typed gateable assertion about cross-session/cross-repo state.
   `gate_token`, `phase_lock`, `release_phase`, `scope_assertion`).
   Until the registry entry lands, schema-side `predicate_kind`
   enum is empty and `CoordinationFact` cannot be minted; this
-  ADR commits the shape, not the vocabulary.
+  ADR commits the shape, not the vocabulary. **Registry section
+  name reserved.** ADR 0019 reserves the registry section name
+  `§Predicate-kind vocabulary` (paralleling
+  `ontology-registry.md` §Boundary dimension registry from ADR
+  0022) for the follow-up registry update PR. Per registry
+  §Adding a new suffix or convention, the registry update lands
+  before any schema PR using `predicate_kind`. The follow-up
+  registry update PR is a precondition for `CoordinationFact`
+  schema implementation per `.agents/skills/hcs-schema-change`.
 - `object_kind: "status_block" | "dependency" | "gate_token" |
   "scoped_assertion"` — discriminator per registry Sub-rule 6.
 - `object` — structured object whose shape is selected by
@@ -582,10 +678,19 @@ session lacks read authority over any Evidence record cited in:
 
 Read authority is determined by the verifier session's
 `ExecutionContext` and `subject_refs` scope at the time the
-promotion grant is minted. A verifier rubber-stamping records
-they could not have meaningfully verified is the escalation
-hole this rule closes. The Decision rejection class is
-`Decision.reason_kind: coordination_promotion_visibility_unauthorized`.
+promotion grant is minted. **The scope is single-session: read
+authority is evaluated against the minting session only, not
+transitively across the verifier's session graph or aggregated
+across the verifier's other concurrent sessions.** This
+prevents verifier-session-aggregation as a privilege-escalation
+surface (a verifier with read authority over E1 in session A
+and E2 in session B cannot mint a promotion grant in session A
+that requires read authority over both unless session A
+independently has read authority over both). A verifier
+rubber-stamping records they could not have meaningfully
+verified is the escalation hole this rule closes. The Decision
+rejection class is `Decision.reason_kind:
+coordination_promotion_visibility_unauthorized`.
 
 This rule composes with the §Chain promotion rule on
 `DerivedSummary`: if a transitive `derived_from` reference
@@ -612,8 +717,9 @@ self-assertion-acknowledgment grant pattern.
 **Promotion audit-record completeness (closes inv. 4 audit gap):**
 
 Every successful promotion event emits a typed `Decision`
-record carrying the following fields, mirroring registry v0.3.1
-§Audit-chain coverage of rejections rejection-event shape:
+record carrying the following seven fields, mirroring registry
+v0.3.1 §Audit-chain coverage of rejections rejection-event
+shape:
 
 - `agent_client_id` — verifier's agent client identity.
 - `session_id` — verifier's session identity.
@@ -627,6 +733,12 @@ record carrying the following fields, mirroring registry v0.3.1
   references to the verification Evidence records the verifier
   cited.
 - `promotion_grant_id` — the grant ID consumed.
+- `promoted_at` — kernel-set timestamp of the
+  `allowed_for_gate: false → true` flip. Audit consumers
+  reconstructing promotion timelines (e.g., "what was promoted
+  in the past hour?") need this timestamp explicitly in the
+  audit record; it must not require joining to the underlying
+  `CoordinationFact` / `DerivedSummary` row.
 
 This rule extends registry v0.3.1's rejection-event shape to
 promotion-success events. Promotion is a higher-impact event
@@ -976,9 +1088,35 @@ This ADR does not authorize:
   inversion side-channel): `KnowledgeChunk.embedding_ref` is
   null when parent source's `security_label ==
   "secret_referenced"`; embedding job refuses to vectorize.
-- Chunks are display-only (charter inv. 1 / inv. 2): chunk-to-
-  command rendering forbidden; all command paths consume typed
-  `OperationShape` records, never raw chunk text.
+  **Re-indexing label-recheck rule**: when source `content_hash`
+  changes, indexer recomputes `security_label`; prior chunks
+  marked stale and re-derived. **Label-upgrade chunk-
+  invalidation rule**: when source `security_label` is upgraded
+  to `secret_referenced`, all child chunks with non-null
+  `embedding_ref` are purged or re-minted with `embedding_ref:
+  null`. Closes inv. 5 + inv. 8 composition gap.
+- Chunks are display-only (charter inv. 1 / inv. 2): no chunk
+  content may reach any path that produces typed records
+  consumed by gates, including direct rendering, prompt
+  rendering, or any indirection through an LLM. Allowed
+  surfaces: dashboard display to a human reviewer; MCP
+  Resources tagged display-only; transcript inclusion for human
+  inspection.
+- `KnowledgeChunk.embedding_ref` deployment-binding (charter
+  inv. 10): resolves only to on-host vector storage under
+  `$HCS_STATE_DIR`; remote/hosted backends require ADR amendment.
+- §Verifier visibility-authority single-session scope: read
+  authority evaluated against minting session only, not
+  transitively across verifier's session graph. Closes
+  verifier-session-aggregation escalation surface.
+- §Promotion audit-record completeness commits seven explicit
+  fields: `agent_client_id`, `session_id`, `promotion_layer`,
+  `candidate_evidence_id`, `verification_evidence_refs`,
+  `promotion_grant_id`, `promoted_at`.
+- ADR 0019 reserves the registry section name `§Predicate-kind
+  vocabulary` paralleling §Boundary dimension registry; the
+  registry update PR is a precondition for `CoordinationFact`
+  schema implementation.
 - Authority-class signals follow registry v0.3.2 §Producer-vs-
   kernel-set discipline. `valid_until` on `CoordinationFact` is
   producer-asserted at mint time, kernel-shortenable at
