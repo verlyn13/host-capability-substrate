@@ -1,7 +1,7 @@
 ---
 adr_number: 0019
 title: HCS knowledge and coordination store
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [coordination, shared-state, retrieval, rag, knowledge-store, q-003, phase-1]
@@ -11,11 +11,11 @@ tags: [coordination, shared-state, retrieval, rag, knowledge-store, q-003, phase
 
 ## Status
 
-proposed (v3)
+accepted (v3 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
 
 ## Charter version
 
@@ -129,6 +129,40 @@ Written against charter v1.3.2 and
     dimension registry; the registry entry lands in a separate
     registry update PR before the schema PR using
     `predicate_kind` is opened.
+- **Acceptance** (2026-05-03): all four reviewer subagents
+  (`hcs-architect`, `hcs-ontology-reviewer`, `hcs-policy-reviewer`,
+  `hcs-security-reviewer`) returned READY-FOR-ACCEPTANCE on v3
+  with no new blocking findings and no mechanical tweaks at
+  acceptance. Eight forward-looking concerns deferred to
+  downstream work per `.agents/skills/hcs-schema-change` and
+  Milestone 2 / Milestone 4: (i) graph-walk Ring 1 service
+  design (chain-promotion + visibility-authority traversal
+  fusion at the mint API; recursion depth + cycle detection
+  rules for `derived_from` chains); (ii) kernel-side stale-
+  marking + purge transitions for S-1 / S-2 (consistent with
+  `embedding_ref` already kernel-set per registry v0.3.2);
+  (iii) `chunk_state` discriminator ontology review if a future
+  schema PR materializes staleness as a typed field; (iv)
+  canonical policy at Milestone 2 specifies producer-equals-
+  verifier separation-of-duties enforcement, verifier-class
+  privileges per fact-class scope, re-index frequency bounds,
+  verifier-class for manual reclassification, retention /
+  observability for S-2-purged chunks, and canonical names for
+  the `*_unrecognized_failure` placeholder rejection classes;
+  (v) registry update PR adding `§Predicate-kind vocabulary`
+  paralleling `§Boundary dimension registry` (precondition for
+  CoordinationFact schema implementation); (vi) regression
+  corpus expansion: re-index attack patterns, concurrent
+  retrieval during purge, cross-session verifier identity,
+  downgrade asymmetry, multi-entity chain promotion, prompt-
+  rendering escape attempts; (vii) future ADRs queued:
+  `CoordinationFact` ↔ `Lease` interaction-edge composition,
+  `DerivedSummary` recursion depth + cycle detection, multi-
+  host (Postgres/pgvector), `provider_observed_via` chain-of-
+  trust via `credential_source_evidence_ref`, embedding model
+  commitment, dashboard views, MCP surface; (viii) charter
+  inv. 18 amendment lands per change-policy in a separate
+  charter-edit PR.
 
 ## Context
 
