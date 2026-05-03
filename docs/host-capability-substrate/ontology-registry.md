@@ -3,7 +3,7 @@ title: HCS Ontology Registry
 category: reference
 component: host_capability_substrate
 status: partial
-version: 0.3.1
+version: 0.3.2
 last_updated: 2026-05-02
 tags: [ontology, registry, boundary-observation, evidence, naming-discipline, authority-discipline, cross-context-binding, audit-integrity, q-011]
 priority: high
@@ -171,6 +171,26 @@ Sub-rules:
    the subject itself (`tool_invocation`), not the corresponding receipt
    shape (`tool_invocation_receipt`). The receipt envelope is a separate
    concern; the subject is the event/object being observed.
+8. **`_mode` is the canonical suffix for orthogonal-layer
+   discriminators.** `_kind` (Sub-rule 6) discriminates within a single
+   receipt-family axis (which sibling `_evidence_refs` array applies,
+   which subtype variant). `_mode` discriminates across orthogonal
+   layers — for example, capture-time vs persistence-time treatment
+   of the same content. Pattern: `<thing>_<layer>_mode` (e.g.,
+   `argv_capture_mode`, `argv_persistence_mode` if both layers carry
+   per-payload discipline). The base `Evidence.redaction_mode` is the
+   single persistence-layer mode field; per §Redaction posture, payload
+   subtypes must not introduce a parallel `<thing>_redaction_mode`
+   shadow. New `_mode` field names require an ontology-reviewer pass.
+
+   Bare-noun discriminators (e.g., `mode`, `capture_status`,
+   `observation_state`) are permitted when they are the receipt's
+   *central* discriminator — the substantive concept the receipt
+   exists to record — rather than an orthogonal-layer modifier on a
+   payload field. The receipt name itself (`ExecutionModeObservation`)
+   already names the central concept; the field name is bare. This is
+   the existing precedent for `boundary_dimension` on
+   `BoundaryObservation` and `merge_proof_kind` on `BranchDeletionProof`.
 
 ### Version-field naming
 
@@ -302,6 +322,34 @@ Examples surfaced during the ADR 0027 / ADR 0028 review cycle:
 - ADR 0028's `observed_via` (would have been:
   `kernel_observation | sandbox_marker | host_telemetry | self_assertion`):
   kernel-set only.
+
+**`Evidence.producer` is kernel-set when its value names a
+kernel-trusted producer class.** Per the post-merge re-review of
+ADR 0028 v3, the existing `Evidence.producer` field
+(`packages/schemas/src/entities/evidence.ts`,
+`z.string().min(1).optional()`) is producer-supplied free-form by
+schema. Producer-supplied values that name a *kernel-trusted producer
+class* are forbidden. The kernel-only value allowlist is:
+
+- `kernel_broker` — the Ring 1 broker FSM (per ADR 0028 v3+
+  producer-crash watchdog).
+- `kernel_telemetry` — direct kernel telemetry sources (kqueue,
+  ptrace, host process telemetry).
+- `mint_api` — Ring 1 mint API setting producer when minting
+  synthetic or derived records.
+
+Producer-supplied values naming an agent-side or
+sandbox-observer class (e.g., `agent_harness`,
+`sandbox_observer`, `producer_self`, or any tool-specific name)
+remain producer-asserted but must be kernel-verifiable.
+
+Schema-side enforcement: a follow-up schema-change PR tightens
+`Evidence.producer` from free-form `z.string().min(1).optional()` to
+a kind-tagged shape distinguishing kernel-set values (validated against
+the allowlist) from producer-asserted values. Until that PR lands,
+the registry-canonical rule is: producer-supplied
+`producer: "kernel_broker"` (or any other allowlist value) is rejected
+at the mint API per §Cross-context enforcement layer layer 1.
 
 Operational claims that are not authority-class
 (`last_fetch_outcome`, `termination_reason`, `capture_status`,
@@ -745,6 +793,7 @@ Changes to this registry follow the schema-change workflow at
 
 | Version | Date | Change |
 |---------|------|--------|
+| 0.3.2 | 2026-05-02 | Two additions surfaced during the post-merge re-review of ADR 0028 v3. §Naming suffix discipline §Sub-rule 8 codifies `_mode` as the canonical suffix for orthogonal-layer discriminators (capture-vs-persistence layers; e.g., `argv_capture_mode`); `_kind` (Sub-rule 6) remains canonical for receipt-family discriminators. Bare-noun discriminators (`mode`, `capture_status`, `observation_state`, `boundary_dimension`) are permitted when they are the receipt's central concept rather than an orthogonal-layer modifier. §Authority discipline §Producer-vs-kernel-set authority fields amended to enumerate `Evidence.producer` as kernel-set when its value names a kernel-trusted producer class; the kernel-only allowlist is `kernel_broker`, `kernel_telemetry`, `mint_api`. Producer-supplied values naming a kernel-trusted class are rejected at the mint API; agent-side / sandbox-observer values remain producer-asserted but kernel-verifiable. A follow-up schema-change PR tightens `Evidence.producer` from `z.string().min(1).optional()` to a kind-tagged shape. Used as a precondition for ADR 0028 v4 revision. |
 | 0.3.1 | 2026-05-02 | Five additions surfaced during the post-merge re-review of ADR 0027 v2 + ADR 0028 v2. §Naming suffix discipline §Sub-rule 6 codifies `_kind` as the canonical discriminator suffix; `_class` is not codified and is forbidden as a discriminator suffix (one existing exception: `containment_class` from ADR 0022 as part of an umbrella-dimension entity name). §Sub-rule 7 codifies that subject-kind enum values name the underlying subject (e.g., `tool_invocation`), not the receipt envelope (`tool_invocation_receipt`). §Cross-context enforcement layer §Layer-disagreement tiebreaker names the gateway as authoritative when layers disagree; mint-time acceptance does not bind the gateway. §Cross-context enforcement layer §Audit-chain coverage of rejections codifies that rejections at any of the three layers emit audit events with named fields (rejecting layer + rejection-class discriminator + typed Decision record), per charter inv. 4. §Redaction posture §Field-level scrubber rule codifies that when `redaction_mode != none`, every string-typed payload field passes the secret-shape scrubber; record-level redaction does not exempt fields. §Redaction posture §Capture-status × redaction-mode matrix promotes the per-ADR matrix from ADR 0028 v2 to a generic registry sub-rule applicable to any receipt family with capture-vs-persistence layers. Used as a precondition for ADR 0027 v2 acceptance and ADR 0028 v3 revision. |
 | 0.3.0 | 2026-05-02 | Added three top-level discipline sections codifying cross-cutting rules surfaced during the post-merge review of ADR 0027 (Q-006 stage-1) and ADR 0028 (Q-008(a)). §Authority discipline names the explicit ten-class trust ladder, introduces the new `self-asserted` authority class below `sandbox-observation` for unverified producer claims (schema enum extension lands in a follow-up schema-change PR), and codifies the kernel-only rule for authority-class fields (`detected_by`, `captured_by`, `observed_via`); operational claims that are not authority-class remain producer-asserted but must be kernel-verifiable. §Cross-context enforcement layer names the canonical Ring 1 defense-in-depth: mint API + broker FSM re-check + gateway re-derive; Zod schema is structurally validating only, not an enforcement layer for cross-context binding. §Redaction posture codifies that `Evidence.redaction_mode` is the canonical persistence-redaction field; new evidence subtypes must not introduce parallel `<thing>_redaction_mode` payload fields whose semantics overlap; capture-mode vs persistence-redaction are orthogonal layers (e.g., ADR 0028 v2 renames `argv_redaction_mode` to `argv_capture_mode`). Used as a precondition for ADR 0027 v2 and ADR 0028 v2 acceptance. |
 | 0.2.1 | 2026-05-02 | Added the §Version-field naming subsection codifying the three canonical version fields (`schema_version`, `evidence_schema_version`, `payload_schema_version`) and Sub-rule 6 (no fourth version field without registry update). Resolves the BoundaryObservation/BranchDeletionProof asymmetry surfaced during ADR 0025 v2 review, where a composite without a domain payload had drifted to a redundant `proof_schema_version` field. Used as a precondition for ADR 0025 acceptance. |
