@@ -20,10 +20,25 @@ LAUNCHAGENTS="$HOME/Library/LaunchAgents"
 TARGET="$LAUNCHAGENTS/${LABEL}.plist"
 LOG_DIR="$HOME/Library/Logs/host-capability-substrate"
 
-# Resolve just binary (prefer mise if available).
+# Resolve just binary. Prefer the version-agnostic mise shim
+# (~/.local/share/mise/shims/just) — the shim re-resolves to the
+# active version on every invocation, so it survives `mise upgrade just`.
+# `mise which just` returns a versioned install path
+# (~/.local/share/mise/installs/just/<version>/just) that becomes
+# invalid on the next mise upgrade; fall back to it only if the shim
+# is missing, with a warning. Per audit-evidence v0.1.2 F6 +
+# self-referential first move; charter invariant 14 (config-spec
+# claims require observed-runtime authority).
 resolve_just() {
+  local shim="$HOME/.local/share/mise/shims/just"
+  if [ -x "$shim" ]; then
+    echo "$shim"
+    return 0
+  fi
   if command -v mise >/dev/null 2>&1; then
     if mise which just >/dev/null 2>&1; then
+      echo "warning: mise shim missing ($shim); using versioned path." >&2
+      echo "warning: that path will break on 'mise upgrade just'; run 'mise reshim' to install the shim." >&2
       mise which just
       return 0
     fi
@@ -32,7 +47,7 @@ resolve_just() {
     command -v just
     return 0
   fi
-  echo "error: just binary not found in PATH or via mise" >&2
+  echo "error: just binary not found via mise shim, mise, or PATH" >&2
   return 1
 }
 
