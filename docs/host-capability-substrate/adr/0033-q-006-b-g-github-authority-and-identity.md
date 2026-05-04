@@ -11,7 +11,7 @@ tags: [github-authority, identity-reconciliation, mcp-credential-split, ruleset-
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
@@ -21,6 +21,127 @@ proposed (v1)
 
 Written against charter v1.3.2 and
 `docs/host-capability-substrate/ontology-registry.md` v0.3.3.
+
+## Revision history
+
+- **v1** (2026-05-03, commit `c2a2d63`): initial draft. Reviewers
+  surfaced 8 blocking findings (1 architect, 3 policy, 4 security)
+  + 1 borderline ontology + ~15 non-blocking observations.
+- **v2** (2026-05-03, this revision): closes all 8 blockers + the
+  ontology borderline + folds 11 non-blocking observations.
+  - **Architect A-B1.** Reclassified `GitHubMutationAuthority`.
+    It is NOT a Q-011 review-grammar bucket member (the registry
+    defines exactly three buckets: evidence subtype, standalone
+    Ring 0 entity, proof composite). It is an **inline value
+    type** carried as a structured field on operation-shape
+    evidence and on `ApprovalGrant.scope`. The ADR no longer
+    cites a Q-011 bucket for this value type.
+  - **Policy P-B1 + Security S-B3 (combined).** Made
+    `ApprovalGrant.scope.expected_authority_kind` **kernel-set**
+    at grant-mint time (derived from the consuming operation's
+    matrix-cell minimum). Added separate
+    `observed_authority_kind` field **kernel-set** at Layer 3
+    gateway re-derive from the actual invocation's
+    `GitHubMutationAuthority` evidence. Mismatch rejects with
+    `github_mutation_authority_unverified`. Producer-supplied
+    values for either field rejected at Layer 1 mint API.
+  - **Policy P-B2.** Closed system-config admin escalation hole.
+    Mutations against `system-config` policy paths
+    (`policies/host-capability-substrate/**`) require BOTH
+    `github_app`/`oidc` authority AND a typed `ApprovalGrant`
+    with `operation_class: external_control_plane_mutation`,
+    regardless of GitHub-side ruleset state. The ApprovalGrant
+    covers HCS Decision-level human authority; the ruleset
+    covers GitHub-side enforcement; both required.
+  - **Policy P-B3.** MCP read/mutation split interim grant
+    scope now binds `mcp_server_kind` (renamed from v1's
+    `mcp_server_kind` per ontology borderline B1). A grant for
+    `github` provider PR mutation is NOT consumable by a
+    different MCP server instance claiming `github` provider;
+    grant scope binds the specific MCP server kind whose
+    credential audience was observed at mint time.
+  - **Security S-B1.** Declared
+    `GitHubMutationAuthority.pat_keyring_account` scrubber-
+    eligible per registry v0.3.0 §Field-level scrubber rule.
+    `gh` keyring account names commonly encode org/host
+    fingerprints (`github.com-nash-group`); audit-chain
+    co-recording would otherwise create a stable cross-session
+    correlator.
+  - **Security S-B2.** Constrained
+    `MCPCredentialAudienceObservation.credential_scope_summary`
+    from free-form text to a parsed `array<scope_token>` shape
+    where `scope_token` is a closed enum. Free-form summary
+    rejected at Layer 1 mint API. Closes the secret-shaped-
+    string paste vector.
+  - **Security S-B4.** Added inv. 8 sandbox-promotion rejection
+    rule on `RepositoryIdentityReconciliation`: a record whose
+    `Evidence.authority` is `sandbox-observation` or
+    `self-asserted` cannot be promoted to host-authoritative
+    gate evidence (mirrors ADR 0032 v2 Security N-4 pattern for
+    `WorkflowRunReceipt.runner_host_evidence_ref`).
+  - **Ontology borderline B1.** Renamed `mcp_server_kind` →
+    `mcp_server_kind` throughout. The field is a closed enum
+    discriminator per registry §Sub-rule 6, NOT a typed FK to a
+    Ring 0 entity (MCP servers are not standalone Ring 0
+    entities at this stage). Future schema work may introduce a
+    standalone `MCPServer` entity with `mcp_server_id` typed FK;
+    until then, `mcp_server_kind` is canonical.
+  - **Architect N1.** RulesetObservation + BranchProtectionObservation
+    conflict resolution clarified: each rule axis evaluates
+    independently and the **union of restrictions** applies.
+    Replaces v1's "more restrictive of the two" envelope-pick
+    framing (which was ambiguous for orthogonal axes).
+  - **Architect N2.** §RepositoryIdentityReconciliation Layer 2
+    broker FSM re-check now explicitly produces a NEW
+    reconciliation evidence record bound to the execution-time
+    `execution_context_id`, not a re-validated mint-time record.
+    Avoids cross-context evidence reuse risk per charter v1.3.2
+    wave-3.
+  - **Architect N3.** Clarified that ADR 0032 v2's
+    §StatusCheckSourceObservation interim total-block lifts on
+    **schema PR landing**, not on this ADR's acceptance.
+  - **Ontology N1.** `StatusCheckSourceObservation` mutually-
+    inclusive constraint (`expected_github_app_id` OR
+    `expected_workflow_path`) noted as Zod `.refine()` pattern;
+    schema PR applies the refine, not a discriminated union.
+  - **Ontology N7.** Renamed
+    `MCPCredentialAudienceObservation.query_observed_via`
+    → `query_observed_via` per ADR 0030 v2 three-way
+    authority-class signal naming convention. Field captures
+    query-side authority (`gh_token_list`, GitHub API
+    permissions probe, MCP introspection); query-shape signal
+    matches `query_observed_via` slot exactly.
+  - **Ontology N8.** Aligned `last_verified_at`
+    (MCPCredentialAudienceObservation) → `provider_verified_at`
+    matching `StatusCheckSourceObservation` naming. Both fields
+    are kernel-set freshness anchors for provider re-query;
+    same name simplifies audit-chain queries.
+  - **Security: valid_until interim cap.**
+    `StatusCheckSourceObservation.valid_until` interim hard cap
+    of 24 hours at Layer 1 mint API until Milestone 2 canonical
+    policy commits per-`repository_id` maxima. Mirrors ADR
+    0031 v1 Lease `valid_until` interim cap pattern.
+  - **Security: plane_disagreement audit attribution.** §Audit-
+    chain coverage for `RepositoryIdentityReconciliation`
+    rejections records `plane_disagreements` array,
+    `agent_client_id`, `session_id`, rejecting layer. Audit-
+    event reconstruction is deterministic.
+  - **Security: App uninstall case.** §App-permission-surface
+    drift handling explicitly covers App uninstallation: 404 on
+    provider re-query rejects with
+    `status_check_source_app_drift` (not silent success on
+    cached state).
+  - **Security: cross-org reconciliation.** §Cross-context
+    binding rules add: a `RepositoryIdentityReconciliation`
+    whose `remote_url_canonical` resolves to a different
+    organization than `WorkspaceContext.org_id` rejects at
+    Layer 1 mint API. Closes the cross-org bypass gap. Single-
+    org per `WorkspaceContext` remains the Phase 1 default.
+  - **Architect N5.** Added §`Decision.reason_kind`
+    accumulating-cohort note: ADRs 0029 v2 / 0030 v2 / 0032 v2 /
+    0033 v2 collectively reserve ~25 rejection-class names
+    (posture-only); a registry-side enum-cohort document will
+    consolidate these in a follow-up registry update PR.
 
 ## Context
 
@@ -127,10 +248,15 @@ Authority classes (closed enum, lower_snake_case per registry
 - `unknown` — authority class undetermined (gates close-list
   fail-mode applies; see §Closed-list fail-mode below).
 
-**`GitHubMutationAuthority` value type (Q-011 bucket 2 — value
-type, not standalone entity).** Carried as a structured field on
-operation-shape evidence consuming GitHub mutation receipts.
-Field shape (illustrative; schema PR commits):
+**`GitHubMutationAuthority` inline value type.** This is **not**
+a Q-011 review-grammar bucket member; the registry defines
+exactly three buckets (evidence subtype, standalone Ring 0
+entity, proof composite) and `GitHubMutationAuthority` lacks the
+durable lifecycle that defines bucket 2 (standalone Ring 0
+entity). It is an **inline structured field** carried on
+operation-shape evidence consuming GitHub mutation receipts and
+on `ApprovalGrant.scope`. Field shape (illustrative; schema PR
+commits):
 
 - `authority_kind` (discriminator from the closed enum above).
 - `github_app_id` — present iff `authority_kind == "github_app"`;
@@ -141,6 +267,15 @@ Field shape (illustrative; schema PR commits):
   "actions_token"`; the workflow file that minted the token.
 - `pat_keyring_account` — present iff `authority_kind ==
   "human_pat"`; the `gh` keyring account identifier.
+  **Scrubber-eligible per registry v0.3.0 §Field-level scrubber
+  rule** (charter inv. 5). `gh` keyring account names commonly
+  encode org/host fingerprints (e.g., `github.com-nash-group`);
+  audit-chain co-recording with `repository_id` +
+  `execution_context_id` would otherwise create a stable
+  cross-session correlator. Receipts carrying this field SHOULD
+  set `Evidence.redaction_mode != none` at mint time; producers
+  emitting `pat_keyring_account` without redaction posture face
+  Layer 1 mint API rejection.
 
 **Mutation-class × authority-class matrix (posture):**
 
@@ -224,10 +359,21 @@ GitHub and HCS observes both.
 **Composition with `BranchProtectionObservation`.** Both
 evidence subtypes can coexist for the same `(repository_id,
 target_pattern)` pair when GitHub configuration uses both classic
-branch protection and the modern Rulesets API. Consuming
-operations cite whichever shape covers the protected target;
-gateway re-derive at Layer 3 evaluates the more restrictive of
-the two when both apply.
+branch protection and the modern Rulesets API. **Conflict
+resolution: union of restrictions.** Each rule axis evaluates
+independently, and the union of restrictions across the two
+shapes applies — not an envelope-pick of "more restrictive."
+Examples:
+- Classic protection requires linear history; Ruleset does not
+  → linear history required.
+- Ruleset adds CODEOWNERS coverage; classic protection does not
+  → CODEOWNERS coverage required.
+- Classic protection requires 1 review; Ruleset requires 2
+  reviews → 2 reviews required (per-axis maximum).
+
+Gateway re-derive at Layer 3 evaluates the union; consuming
+operations cite whichever shape's evidence_refs cover the
+relevant axes.
 
 ### Sub-decision (d) — Repository identity reconciliation
 
@@ -293,16 +439,44 @@ check per registry v0.3.2 §Cross-context enforcement layer),
 NOT only at mint time. Local state (SSH config edits, `gh auth
 switch`, credential rotation) can drift between mint and
 execution; the broker FSM re-runs the cross-plane check before
-Layer 3 gateway re-derive. Stale reconciliation evidence
+Layer 3 gateway re-derive. The Layer 2 re-check **produces a
+NEW `RepositoryIdentityReconciliation` evidence record** bound
+to the execution-time `execution_context_id` (NOT a re-validated
+mint-time record), avoiding cross-context evidence reuse risk
+per charter v1.3.2 wave-3. Stale reconciliation evidence
 rejects with `Decision.reason_kind: repository_identity_mismatch`.
+
+**Sandbox-promotion rejection (charter inv. 8).** A
+`RepositoryIdentityReconciliation` whose `Evidence.authority`
+is `sandbox-observation` or `self-asserted` cannot be promoted
+to host-authoritative gate evidence. Broker FSM Layer 2 /
+gateway Layer 3 re-check enforces this discipline, mirroring
+ADR 0032 v2 Security N-4 pattern for
+`WorkflowRunReceipt.runner_host_evidence_ref`. A sandbox-
+execution session producing `all_planes_consistent` does not
+satisfy operation gates for sensitive-mutation classes; the
+broker FSM rejects with `repository_identity_mismatch` augmented
+by the sandbox-authority signal. Closes Security S-B4.
 
 **Composition with operation gates.** Operations against
 sensitive-mutation classes (`destructive_git`, `merge_or_push`,
 `external_control_plane_mutation` per ADR 0029 v2) require a
 fresh `RepositoryIdentityReconciliation` evidence_ref with
-`reconciliation_verdict_kind: "all_planes_consistent"`.
-`plane_disagreement` outcomes block these classes regardless of
-matrix cell state.
+`reconciliation_verdict_kind: "all_planes_consistent"` AND
+`Evidence.authority` NOT in {`sandbox-observation`,
+`self-asserted`}. `plane_disagreement` outcomes block these
+classes regardless of matrix cell state — `plane_disagreement`
+is a **gate-level rejection prior to matrix-cell evaluation**;
+it does not introduce new combinations into the ADR 0029 v2
+closed taxonomy.
+
+**Audit-chain attribution on plane_disagreement.** Per registry
+v0.3.1 §Audit-chain coverage of rejections,
+`repository_identity_mismatch` rejection events emitted on
+`plane_disagreement` records carry: `agent_client_id`,
+`session_id`, the rejecting Ring 1 layer, AND the
+`plane_disagreements` array naming which planes diverged.
+Audit-event reconstruction is deterministic.
 
 ### Sub-decision (e) — GitHub MCP read vs mutation auth split
 
@@ -336,27 +510,32 @@ bucket 1).**
 - `evidence_subject_kind: "mcp_credential_audience"` (NEW)
 - Standard `Evidence` base fields per ADR 0023.
 - Payload (illustrative):
-  - `mcp_server_name: "github_mcp"` — discriminator (canonical
+  - `mcp_server_kind: "github_mcp"` — discriminator (canonical
     enum landing per `.agents/skills/hcs-schema-change`).
   - `credential_audience_kind: "read_only" | "mutation" |
     "unscoped"` discriminator.
-  - `credential_scope_summary` — human-readable scope summary
-    (e.g., `"contents:read,pull_requests:read"`); NOT a
-    parsed permission set, just the configured scope label.
+  - `credential_scope_tokens` — array of closed-enum scope
+    tokens (e.g., `["contents:read", "pull_requests:read",
+    "metadata:read"]`). Each token is a closed enum value
+    (canonical token list lands per `.agents/skills/hcs-schema-change`).
+    Free-form text rejected at Layer 1 mint API. Renamed from
+    v1's free-form `credential_scope_summary` per Security
+    S-B2 closure: free-form text was a paste vector for
+    resolved token bytes / `op://` values.
   - `credential_source_evidence_ref` — typed `evidenceRefSchema`
     to a `CredentialSource` record naming the underlying
     credential.
-  - `last_verified_at` — kernel-set freshness anchor; produced
+  - `provider_verified_at` — kernel-set freshness anchor; produced
     by `gh auth status` / GitHub API permissions probe.
-  - `scope_verification_method: "gh_token_list" |
+  - `query_observed_via: "gh_token_list" |
     "github_api_permissions" | "mcp_introspection" | "unknown"`
     — kernel-set per registry v0.3.2 (authority-class signal).
 
-**Grain:** per-(`mcp_server_name`, `credential_audience_kind`).
+**Grain:** per-(`mcp_server_kind`, `credential_audience_kind`).
 
-**Authority discipline.** `last_verified_at` and
-`scope_verification_method` kernel-set;
-`credential_audience_kind` and `credential_scope_summary`
+**Authority discipline.** `provider_verified_at` and
+`query_observed_via` kernel-set;
+`credential_audience_kind` and `credential_scope_tokens`
 producer-asserted but kernel-verifiable.
 
 **Composition with operation gates.** Operations dispatching to
@@ -442,6 +621,10 @@ stage-1+2 pattern.
   - `valid_until` — required; consumer-side freshness window.
     Producer-asserted at mint; canonical policy at Milestone 2
     may impose a per-`repository_id` maximum window.
+    **Phase 1 interim hard cap of 24 hours at Layer 1 mint API**
+    (mirrors ADR 0031 v1 Lease `valid_until` interim cap
+    pattern); producers asserting `valid_until` more than 24
+    hours past `concluded_at` rejected at mint.
   - `source_kind: "actions_workflow" | "github_app" |
     "third_party_service" | "native"` discriminator (matches
     ADR 0032 v2 `StatusCheckSourceObservation` requirement).
@@ -482,9 +665,24 @@ names). The Layer 2/3 re-check rule enforces:
   set still allows publishing checks (not revoked).
 - Drift on (c) rejects with
   `Decision.reason_kind: status_check_source_app_drift`.
+- **App uninstall case**: when the App is uninstalled, the
+  provider re-query returns 404 on the App-installation
+  endpoint. This rejects with `status_check_source_app_drift`,
+  not silent success on cached state. The receipt's stored
+  state is invalidated at Layer 2 and rejected at Layer 3.
 
 This closes the App-permission-surface drift bypass ADR 0032
 v2 Security N-3 named.
+
+**ADR 0032 v2 interim total-block lift trigger.** ADR 0032 v2
+applies an interim total-block on self-hosted check-result
+consumption until the `StatusCheckSourceObservation` receipt
+shape lands. The interim block lifts on **schema PR landing**
+(per `.agents/skills/hcs-schema-change`), NOT on this ADR's
+acceptance. ADR 0033 acceptance commits the receipt shape
+(posture); the schema PR commits the receipt's Zod source.
+Until the schema PR lands, the interim total-block remains in
+effect.
 
 ### Cross-cutting rules
 
@@ -494,8 +692,8 @@ Authority-class signals across the five new evidence subtypes
 follow registry v0.3.2 §Producer-vs-kernel-set discipline:
 
 - **Kernel-set**: `provider_observed_via` /
-  `provider_verified_at` / `last_verified_at` /
-  `scope_verification_method` (all `*_observed_via`-shape
+  `provider_verified_at` /
+  `query_observed_via` (all `*_observed_via`-shape
   authority-class signals); `repository_id` resolution per
   ADR 0027 v2; freshness anchors and timestamps.
 - **Producer-asserted, kernel-verifiable**: ruleset state,
@@ -521,13 +719,23 @@ layers:
   changes rejected at Layer 3 if they exceed the consuming
   operation's tolerance.
 - **`RepositoryIdentityReconciliation`**: Layer 1 enforces
-  `repository_id` consistency. Layer 2 re-runs the cross-plane
-  check at operation-execution time (the layer that closes the
-  drift gap per inv. 17); rejects with
-  `repository_identity_mismatch` if any plane disagrees. Layer
-  3 re-derives at decision time.
+  `repository_id` consistency. Layer 1 ALSO enforces
+  cross-organization rejection: a record whose
+  `remote_url_canonical` resolves to a different organization
+  than `WorkspaceContext.org_id` rejects at Layer 1 mint API
+  with `Decision.reason_kind: repository_identity_mismatch`
+  (single-org per `WorkspaceContext` is the Phase 1 default).
+  Layer 1 ALSO enforces `Evidence.authority` rejection for
+  `sandbox-observation` and `self-asserted` per the §Sandbox-
+  promotion rejection rule above. Layer 2 re-runs the cross-
+  plane check at operation-execution time (the layer that
+  closes the drift gap per inv. 17); produces a NEW
+  reconciliation record bound to the execution-time
+  `execution_context_id` (not a re-validated mint-time record);
+  rejects with `repository_identity_mismatch` if any plane
+  disagrees. Layer 3 re-derives at decision time.
 - **`MCPCredentialAudienceObservation`**: Layer 1 enforces
-  `mcp_server_name` registration + `credential_source_evidence_ref`
+  `mcp_server_kind` registration + `credential_source_evidence_ref`
   resolution; Layer 2 re-checks `credential_audience_kind`
   against current MCP server token introspection; Layer 3
   rejects mismatched-audience operation invocations.
@@ -579,12 +787,42 @@ forward-look, GitHub-mutation operations bind:
   per-(provider, target) grain; for GitHub, `provider_id =
   "github"` and `provider_target_id` names the repository, PR,
   or branch being mutated.
-- `expected_authority_kind` — required field for agentic
-  invocations; one of `"github_app" | "oidc"`. Producer-
-  supplied `"human_pat"` or `"actions_token"` rejected at
-  Layer 1 unless the operation class explicitly permits.
+- `expected_authority_kind` — **kernel-set** at grant-mint
+  time per registry v0.3.2 §Producer-vs-kernel-set authority
+  fields. The kernel derives the value from the consuming
+  operation's matrix-cell minimum (sub-decision (b) matrix).
+  Producer-supplied values rejected at Layer 1 mint API.
+  This closes the v1 escalation surface where a producer
+  could claim `"github_app"` while presenting a `human_pat`.
+- `observed_authority_kind` — **kernel-set** at Layer 3
+  gateway re-derive time. Derived from the actual
+  invocation's `GitHubMutationAuthority` evidence (the
+  introspected credential class via `gh auth status` token-
+  class probe, GitHub API permissions probe, or App
+  installation token introspection). Mismatch with
+  `expected_authority_kind` rejects with `Decision.reason_kind:
+  github_mutation_authority_unverified`.
+- `mcp_server_kind` — required when the mutation is
+  dispatched through a GitHub MCP server (per sub-decision
+  (e)). Binds the grant to a specific MCP server kind so a
+  grant minted for `github_mcp` cannot be consumed by a
+  different MCP server claiming `github` provider. Closes
+  Policy P-B3.
 - `execution_context_id` — per registry v0.3.0 §Cross-context
   enforcement layer.
+
+**`system-config` policy-path mutation rule (closes Policy
+P-B2 escalation hole):** mutations targeting
+`system-config` policy paths (`policies/host-capability-substrate/**`)
+require BOTH the matrix-minimum authority class AND a typed
+`ApprovalGrant` of this per-class extension shape, regardless
+of GitHub-side ruleset state. The ApprovalGrant covers HCS
+Decision-level human authority; the ruleset (sub-decision (c)
+baseline rows 6–8) covers GitHub-side enforcement; both are
+required. A `github_app` with admin permission token alone
+cannot mutate canonical policy YAML — the ApprovalGrant is
+the HCS Decision authority and is independent of GitHub-side
+review approval.
 
 Scope-key disjointness preserved per ADR 0019 v3: GitHub-
 mutation grants do not overlap with `worktree_mutation`,
@@ -666,7 +904,7 @@ This ADR does not authorize:
   Layer 2 broker FSM re-check at operation-execution time per
   inv. 17.
 - `MCPCredentialAudienceObservation` evidence subtype committed
-  (Q-011 bucket 1): per-(`mcp_server_name`,
+  (Q-011 bucket 1): per-(`mcp_server_kind`,
   `credential_audience_kind`) grain; binds MCP server +
   credential audience for split-credential gating.
 - Q-006(f) confirmed satisfied by ADR 0025 v2 BranchDeletionProof;
@@ -740,7 +978,7 @@ This ADR does not authorize:
   authority-class matrix entries; ruleset baseline ID
   references for HCS / system-config; per-`repository_id`
   freshness window for `StatusCheckSourceObservation`;
-  per-`mcp_server_name` audience-class enforcement; specific
+  per-`mcp_server_kind` audience-class enforcement; specific
   GitHub App installation identifiers for system-config
   agentic operations.
 - ADR 0026 substrate hook architecture (gated on stage-1
