@@ -1,8 +1,8 @@
 ---
 adr_number: 0035
 title: Q-007(g) QualityGate standalone Ring 0 entity
-status: proposed
-date: 2026-05-03
+status: accepted
+date: 2026-05-04
 charter_version: 1.3.2
 tags: [quality-gate, ring-0-entity, q-007, phase-1]
 ---
@@ -11,11 +11,77 @@ tags: [quality-gate, ring-0-entity, q-007, phase-1]
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03 (v1) / 2026-05-04 (v2)
+2026-05-03 (v1) / 2026-05-04 (v2 + acceptance)
+
+## Acceptance note
+
+All four reviewer subagents (`hcs-architect`, `hcs-ontology-reviewer`,
+`hcs-policy-reviewer`, `hcs-security-reviewer`) returned READY-FOR-
+ACCEPTANCE on v2 (commit `8791a5a`). The two-revision review cycle
+closed:
+
+- 3 v1 blockers (all security; laundering-attack vectors)
+- 14 v1 non-blocking observations folded
+- 3 v2 mechanical tweaks at acceptance for doc-ergonomics polish
+
+Three mechanical tweaks at acceptance:
+
+1. **Architect non-blocking**: explicit "Meta-gate aggregation is
+   a Ring 1 kernel-set computation; Ring 0 stores only the
+   resulting state and `evidence_refs` chain" sentence added to
+   §Authority discipline body. Substance was present elsewhere
+   (§Cross-context binding rules, §`mutation_class` section);
+   revision history promised the verbatim sentence.
+2. **Policy P-N1 + P-N2**: §Future amendments expanded to commit
+   per-(producer, target_subject_ref, gate_kind) denial-rate
+   ceiling AND per-`gate_kind` evidence-rotation materiality rule
+   to canonical policy YAML at Milestone 2. Bounds the post-denial
+   mint path and ensures fresh evidence is materially relevant.
+3. **Security non-blocking**: explicit Layer 1 atomicity note
+   added to §Duplicate-target rule. Concurrent mint requests for
+   the same `(target_subject_ref, gate_kind, execution_context_id)`
+   triple are serialized via SQLite WAL transaction + unique
+   constraint where `gate_state IN ('provisional', 'proven')`.
+
+Six forward-looking concerns deferred to schema PR / Milestone 2 /
+follow-up ADRs:
+
+- Schema PR per `.agents/skills/hcs-schema-change` for `QualityGate`
+  standalone entity + six new `Decision.reason_kind` reservations
+  (`gate_provisional`, `gate_denied`, `gate_expired`,
+  `gate_evidence_insufficient`, `gate_target_already_active`,
+  `gate_evidence_stale_reuse`) + one
+  `Decision.required_grant_kind` reservation
+  (`gate_evidence_acknowledgment`) + `ApprovalGrant.scope`
+  per-class extension binding `gate_id` + `execution_context_id`.
+- Registry update PR adding `gate_kind` (six values:
+  `identity_binding`, `credential_shadow`, `signing_identity`,
+  `filesystem_trust`, `tool_provenance`, `mutation_class`),
+  `gate_state` (four values: `provisional`, `proven`,
+  `expired`, `denied`), and `quality_gate`
+  `evidence_subject_kind` enum extensions.
+- Canonical policy YAML at Milestone 2: per-(gate_kind,
+  operation_class) composition rules; per-`gate_kind`
+  `valid_until` window maxima; verifier-class privileges for
+  `gate_evidence_acknowledgment` grants; matrix entries for
+  `mutation_class` meta-gate composition;
+  per-(producer, target_subject_ref, gate_kind) denial-rate
+  ceiling; per-`gate_kind` evidence-rotation materiality rule;
+  cross-authority composition rule as explicit predicate.
+- Q-006 stage-3 ADR commits `CommitSigningReceipt` (referenced by
+  `signing_identity` gate; until that ADR lands, the gate
+  remains `provisional` and gate-consuming operations gate on
+  the matrix per ADR 0034 v2).
+- Separate dashboard ADR commits `/quality-gates` view React
+  component implementation (per ADR 0034 v2 §Sub-decision (e)
+  view-shape commitment).
+- Charter v1.4.0 amendment PR for invariant 19 text (per ADR 0034
+  v2 §Sub-decision (f) candidate). May land alongside inv. 18
+  (Q-003) in a single wave or stand alone.
 
 ## Charter version
 
@@ -261,6 +327,16 @@ duplicate-target rule blocking. Combined with
 closes the duplicate-target acknowledgment-flooding attack
 where N denied-gates with identical targets could be acquired
 + N separate acknowledgment grants.
+
+**Layer 1 atomicity.** The duplicate-target check is enforced
+transactionally / serialized at Layer 1 mint API: concurrent
+mint requests for the same `(target_subject_ref, gate_kind,
+execution_context_id)` triple are serialized; exactly one
+succeeds, the others reject with `gate_target_already_active`.
+Implementation enforces atomicity via SQLite WAL transaction
++ unique constraint on the triple where `gate_state IN
+('provisional', 'proven')`. (Implicit in kernel-set
+discipline; made explicit per Security N-1 closure.)
 
 **Re-mint evidence-rotation rule (closes Security S-B3
 proven→expired→re-mint laundering loop).** When re-minting a
@@ -557,6 +633,16 @@ Per registry v0.3.2 §Producer-vs-kernel-set:
   state at mint time), `evidence_refs` (FK refs validated at
   Layer 1 + Layer 2/3 re-check).
 
+**Meta-gate aggregation is a Ring 1 kernel-set computation;
+Ring 0 stores only the resulting state and `evidence_refs`
+chain.** The `mutation_class` meta-gate's composition rule
+(all four sub-gates must be `proven`) is evaluated by Ring 1
+mint API + broker FSM; the aggregated state is persisted as
+the meta-gate's own `gate_state` field. Sub-gate-to-meta-gate
+linkage is via `evidence_refs` of subject_kind `quality_gate`
+in the meta-gate's Ring 0 record. Mirrors ADR 0019 v3 / ADR
+0031 v1 Ring 1 computation vs Ring 0 persistence boundary.
+
 #### Cross-context binding rules per Ring 1 layer
 
 Per registry v0.3.0 §Cross-context enforcement layer:
@@ -818,7 +904,18 @@ This ADR does not authorize:
   operation_class) composition rules; per-`gate_kind`
   `valid_until` window maxima; verifier-class privileges for
   `gate_evidence_acknowledgment` grants; matrix entries for
-  `mutation_class` meta-gate composition.
+  `mutation_class` meta-gate composition;
+  per-(producer, target_subject_ref, gate_kind) **denial-rate
+  ceiling** to bound rapid mint-deny-mint patterns (per Policy
+  P-N1 forward-look at v2 acceptance — substance is bounded
+  by single-use grant semantics, but the post-denial mint path
+  deserves explicit policy attention before YAML lands);
+  per-`gate_kind` **evidence-rotation materiality rule** per
+  Policy P-N2 (the §Re-mint evidence-rotation rule blocks
+  subset-only re-mint via `evidence_id` set comparison; policy
+  must enforce that the fresh evidence is *materially relevant*
+  to the gate_kind's composition rules, not just
+  set-difference-nonempty).
 - Q-006 stage-3 ADR commits `CommitSigningReceipt` (referenced
   by `signing_identity` gate; until that ADR lands, the gate
   remains `provisional`).
