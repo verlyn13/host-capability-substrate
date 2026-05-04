@@ -11,16 +11,95 @@ tags: [quality-gate, ring-0-entity, q-007, phase-1]
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
-2026-05-03
+2026-05-03 (v1) / 2026-05-04 (v2)
 
 ## Charter version
 
 Written against charter v1.3.2 and
 `docs/host-capability-substrate/ontology-registry.md` v0.3.3.
+
+## Revision history
+
+- **v1** (2026-05-03, commit `0cda597`): initial draft. Reviewers
+  surfaced 3 blocking findings (all security; laundering-attack
+  vectors) + ~14 non-blocking observations.
+- **v2** (2026-05-04, this revision): closes 3 security blockers
+  + folds 7 non-blocking observations.
+  - **Security S-B1.** Generalized cross-authority gate
+    composition rule. v1 scoped the rule only to
+    `mutation_class` meta-gate aggregation; v2 generalizes:
+    **any consumer (gate or operation) MUST reject
+    `evidence_refs` whose transitive chain touches
+    `Evidence.authority` in `{sandbox-observation,
+    self-asserted}`**. The rule applies to all six gate_kinds
+    (not just mutation_class) and to operation
+    `evidence_refs` consuming `quality_gate` subject-kind
+    records. Closes the sandbox-laundering surface where a
+    sandbox session mints a gate (provisional per inv. 8) and
+    a host session cites it via evidence_refs.
+  - **Security S-B2.** Acknowledgment-flooding defense.
+    Added Layer 1 mint API rule: at most one `proven` or
+    `provisional` gate per `(target_subject_ref, gate_kind,
+    execution_context_id)` triple at any time. Producers
+    minting a duplicate gate against an existing
+    proven/provisional target reject with
+    `gate_target_already_active` (NEW reason_kind). Denied
+    gates do NOT count toward the active-quota; producers may
+    re-mint after a denial. Combined with `gate_evidence_acknowledgment`
+    grant single-use semantics, this closes the
+    duplicate-target acknowledgment-flooding attack.
+  - **Security S-B3.** Proven→expired→re-mint laundering
+    loop defense. Added Layer 1 mint API rule: re-minting a
+    gate against the same `target_subject_ref` after a
+    previous gate transitioned `expired` requires the new
+    gate's `evidence_refs` set to NOT be a subset of the
+    expired gate's `evidence_refs` set. The new gate must
+    cite genuinely fresh evidence (different
+    `evidence_refs.evidence_id` values, not just fresher
+    `valid_until` on the same observation chain). Subset-
+    only re-mint rejects with `gate_evidence_stale_reuse`
+    (NEW reason_kind). Forces evidence rotation to maintain
+    `proven` state.
+  - **Architect non-blocking 1.** Layer-disagreement
+    tiebreaker citation pinned to registry v0.3.3 (was
+    v0.3.2 in v1; both registries carry the rule, but the
+    ADR header pins v0.3.3 so the citation should match).
+  - **Architect non-blocking 2.** Added §Cross-cutting rules
+    explicit three-lifecycle separation note: `Lease` (ADR
+    0031 v1) governs temporal-extent ownership; `CoordinationFact`
+    (ADR 0019 v3) governs authored-claim verification;
+    `QualityGate` (this ADR) governs evidence-aggregated
+    typed gates. The three address orthogonal concerns; no
+    composition risk because each has distinct identity,
+    state lifecycle, and consumption pattern.
+  - **Architect non-blocking 3.** Made meta-gate Ring 1
+    aggregation explicit in §Authority discipline:
+    "**Meta-gate aggregation is a Ring 1 kernel-set
+    computation**; Ring 0 stores only the resulting state and
+    `evidence_refs` chain." Mirrors ADR 0019 v3 / ADR 0031 v1
+    Ring 1 vs Ring 0 boundary discipline.
+  - **Policy non-blocking 4.** Added §Future amendments note:
+    cross-authority composition rule lands in canonical
+    policy YAML at Milestone 2 as explicit composition-rule
+    predicate (not just inherited inv. 8 framing). Avoids
+    drift risk where adapter authors might re-litigate the
+    rule per gate_kind.
+  - **Security non-blocking 1.** Made meta-gate audit
+    attribution explicit. The typed Decision on
+    `mutation_class` denial carries a `failing_sub_gate_id`
+    field naming which sub-gate failed; audit consumers can
+    trace failure paths without traversing the full
+    `evidence_refs` chain.
+  - **Security non-blocking 4.** Enumerated typed Decision
+    record fields for gate state transitions: `gate_id`,
+    `prior_state`, `new_state`, `transition_reason`
+    discriminator, `evidence_refs_at_transition`,
+    `transition_timestamp`. Hardens forensic reconstruction
+    of gate history.
 
 ## Context
 
@@ -167,6 +246,37 @@ CoordinationFact promotion).
   retained in audit chain for forensics. (Re-mint is a
   separate mint event, NOT a lifecycle transition on the
   existing gate.)
+
+**Duplicate-target rule (closes Security S-B2 acknowledgment-
+flooding).** At most one gate per `(target_subject_ref,
+gate_kind, execution_context_id)` triple may simultaneously
+hold state `proven` OR `provisional`. Layer 1 mint API
+rejects a duplicate-target mint with `Decision.reason_kind:
+gate_target_already_active` (NEW reservation; see
+§`Decision.reason_kind` reservations below). `denied` and
+`expired` gates do NOT count toward the active-quota;
+producers may re-mint after a denial or expiry without the
+duplicate-target rule blocking. Combined with
+`gate_evidence_acknowledgment` grant single-use semantics, this
+closes the duplicate-target acknowledgment-flooding attack
+where N denied-gates with identical targets could be acquired
++ N separate acknowledgment grants.
+
+**Re-mint evidence-rotation rule (closes Security S-B3
+proven→expired→re-mint laundering loop).** When re-minting a
+gate against the same `target_subject_ref` after a previous
+gate transitioned `expired`, the new gate's `evidence_refs`
+set MUST NOT be a subset of the expired gate's `evidence_refs`
+set. The new gate must cite **genuinely fresh evidence**
+(different `evidence_id` values, not just fresher
+`valid_until` timestamps on the same observation chain).
+Subset-only re-mint rejects with `Decision.reason_kind:
+gate_evidence_stale_reuse` (NEW reservation). Forces evidence
+rotation to maintain `proven` state; prevents producers from
+cycling proven → expired → re-mint with marginal-but-
+acceptable evidence to avoid hitting `denied`. Layer 1 mint
+API enforces by comparing the new gate's evidence_id set
+against the expired gate's evidence_id set.
 
 **No `allowed_for_gate` boolean**. ADR 0019 v3
 CoordinationFact's promotion workflow (false → true via
@@ -368,10 +478,70 @@ the meta-gate's `proven` transition.
 
 **Audit-chain attribution:** the meta-gate's `evidence_refs`
 cites the four sub-gates by `gate_id` (via `evidenceRefSchema`
-where the subject kind is `quality_gate`); audit consumers can
-trace which sub-gate failed when the meta-gate is denied.
+where the subject kind is `quality_gate`). When the meta-gate
+transitions to `denied`, the typed Decision record carries an
+explicit `failing_sub_gate_id` field naming which sub-gate
+caused the denial — audit consumers can trace failure paths
+without traversing the full `evidence_refs` chain. If multiple
+sub-gates are simultaneously failing, the field carries the
+first-failing sub-gate (kernel-determined ordering;
+audit-chain rejection-events for the others are co-emitted).
 
 ### Cross-cutting rules
+
+#### Three-lifecycle separation
+
+HCS now carries three distinct durable Ring 0 entities with
+their own state lifecycles, addressing orthogonal concerns:
+
+- **`Lease`** (ADR 0031 v1): governs *temporal-extent
+  ownership* (who holds the right to a worktree at a given
+  time; states: `active | expired | released | force_broken`).
+- **`CoordinationFact`** (ADR 0019 v3): governs *authored-
+  claim verification* (whether a typed claim has been
+  promoted to gate-eligible; promotion-workflow-driven via
+  `allowed_for_gate` boolean).
+- **`QualityGate`** (this ADR): governs *evidence-aggregated
+  typed gates* (whether a cross-dimension evidence aggregate
+  satisfies a typed gate; states: `provisional | proven |
+  expired | denied`).
+
+The three are orthogonal — distinct identity, distinct state
+lifecycle, distinct consumption pattern. No composition risk
+because gates aggregate evidence (potentially including Lease
+or CoordinationFact records via `evidenceRefSchema`), but
+do not subsume the semantics of either.
+
+#### Decision transition record fields
+
+Gate state transitions emit typed `Decision` records with the
+following kernel-set fields (mirrors registry v0.3.1 §Audit-
+chain coverage of rejections inheritance to lifecycle events):
+
+- **`gate_id`** — the gate transitioning.
+- **`prior_state`** — the gate's state before transition.
+- **`new_state`** — the gate's state after transition.
+- **`transition_reason`** — closed-enum discriminator naming
+  why the transition fired (e.g., `evidence_satisfied`,
+  `evidence_failed`, `valid_until_passed`,
+  `target_already_active_rejection`,
+  `evidence_stale_reuse_rejection`,
+  `cross_authority_composition_rejected`).
+- **`evidence_refs_at_transition`** — array of
+  `evidenceRefSchema` references at the time of transition
+  (the evidence chain the gate was evaluated against).
+- **`transition_timestamp`** — kernel-set timestamp.
+- **`failing_sub_gate_id`** — present iff `gate_kind:
+  mutation_class` AND `new_state: denied`; names the first-
+  failing sub-gate.
+- **`agent_client_id`** + **`session_id`** — per registry
+  v0.3.1 §Audit-chain coverage of rejections canonical
+  attribution. Names the requesting agent client + session
+  that triggered the transition.
+
+Forensic reconstruction of gate history recovers the full
+state trajectory by querying audit-chain records for a given
+`gate_id` ordered by `transition_timestamp`.
 
 #### Authority discipline
 
@@ -423,14 +593,34 @@ pattern:
   self-asserted authority rejected at Layer 1 mint API.
   Mirrors ADR 0034 v2 boundary-evidence grant-side rejection
   rule.
-- **Cross-authority gate composition**: a `mutation_class`
-  meta-gate cannot aggregate sub-gates whose underlying
-  evidence carries sandbox/self-asserted authority. The meta-
-  gate's composition rule forbids it.
+- **Cross-authority composition (universal — closes Security
+  S-B1)**: **any consumer (gate or operation) MUST reject
+  `evidence_refs` whose transitive chain touches
+  `Evidence.authority` in `{sandbox-observation,
+  self-asserted}`**. The rule applies universally:
+  - **All six gate_kinds**, not just `mutation_class`. A
+    `tool_provenance` gate cannot reach `proven` if its
+    cited `ToolProvenance` evidence carries sandbox-
+    observation authority; the gate stays `provisional`.
+  - **Direct operation `evidence_refs`** consuming
+    `quality_gate` subject-kind records. An operation in a
+    host execution context citing a sandbox-minted gate
+    (gate stays `provisional` per evidence-side rule)
+    rejects at Layer 1 mint API with
+    `gate_evidence_insufficient`.
+  - **Transitive chains**. The check follows
+    `evidence_refs` recursively — a host operation citing a
+    host-authority gate whose evidence_refs cite a sandbox-
+    authority observation rejects. The transitive walk
+    terminates at the first sandbox/self-asserted authority
+    or at evidence base records.
+  Closes the sandbox-laundering surface where sandbox-minted
+  gates could be reused by host sessions to launder authority
+  via `evidence_refs` chains.
 
 ### `Decision.reason_kind` reservations
 
-Four new rejection-class names reserved (posture-only;
+Six new rejection-class names reserved (posture-only;
 schema enum lands per `.agents/skills/hcs-schema-change`):
 
 - **`gate_provisional`** — operation cited a gate in
@@ -447,9 +637,24 @@ schema enum lands per `.agents/skills/hcs-schema-change`):
 - **`gate_evidence_insufficient`** — operation cited a gate
   whose `evidence_refs` array does not satisfy the per-
   `gate_kind` composition rules. Layer 1 mint API rejects
-  before gate state is set.
+  before gate state is set. Also covers the cross-authority
+  composition rule rejection (sandbox/self-asserted authority
+  in evidence_refs transitive chain).
+- **`gate_target_already_active`** — Layer 1 mint API rejects
+  duplicate-target gate mint when an existing gate with the
+  same `(target_subject_ref, gate_kind, execution_context_id)`
+  triple is in `proven` or `provisional` state. Closes the
+  acknowledgment-flooding attack where N duplicate gates +
+  N acknowledgment grants could be used (Security S-B2).
+- **`gate_evidence_stale_reuse`** — Layer 1 mint API rejects
+  re-mint after expiry when the new gate's `evidence_refs` set
+  is a subset of the expired gate's `evidence_refs` set
+  (i.e., no fresh evidence). Closes the
+  proven→expired→re-mint laundering loop where producers
+  could cycle marginal evidence to avoid `denied` state
+  (Security S-B3).
 
-Per ADR 0029 v2 §`block` vs forbidden-tier framing, all four
+Per ADR 0029 v2 §`block` vs forbidden-tier framing, all six
 are *Decision-level* (this-invocation rejects); none promotes
 the operation to forbidden tier.
 
