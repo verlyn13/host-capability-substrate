@@ -1,7 +1,7 @@
 ---
 adr_number: 0036
 title: Q-009 HCS workspace manifest projection and diagnostic surface
-status: proposed
+status: accepted
 date: 2026-05-04
 charter_version: 1.3.2
 tags: [workspace-manifest, diagnostic-surface, audit-profile, q-009, phase-1]
@@ -11,12 +11,13 @@ tags: [workspace-manifest, diagnostic-surface, audit-profile, q-009, phase-1]
 
 ## Status
 
-proposed (v2)
+accepted (v2)
 
 ## Date
 
 2026-05-04 (v1); 2026-05-04 (v2 — closes 19 reviewer blockers across
-architect / ontology / security; folds 11 non-blocking items)
+architect / ontology / security; folds 11 non-blocking items);
+2026-05-04 (v2 accepted with 5 mechanical tweaks)
 
 ## Revision history
 
@@ -39,6 +40,21 @@ architect / ontology / security; folds 11 non-blocking items)
   cleanup operations; (vi) named producer class for diagnose
   service rather than asserting `mint_api` is a producer-class
   enum value.
+- **v2 accepted (2026-05-04)**: re-reviewed by architect /
+  ontology / policy / security — zero v2 blockers across all four
+  reviewers. Five mechanical tweaks folded at acceptance:
+  (1) Sub-decision (b) three-state label progression now defers
+  to §Authority discipline as canonical normative statement;
+  (2) §Authority discipline three-state progression adds
+  most-restrictive-label-wins semantics for simultaneous
+  pointer + resolved-secret introduction; (3) Sub-decision (c)
+  Cleanup rules cross-references the canonical closed-list
+  fail-mode tightening rule restatement in §Decision.reason_kind
+  reservations; (4) §Rejects `mcp_canonical_source` rationale
+  cross-references registry v0.3.3 §Naming suffix discipline;
+  (5) §Future amendments adds Layer 1 grounding rule
+  extensibility principle (subject_kinds backed by derived/Layer-2
+  content require Layer 1 grounding at introduction time).
 
 ## Charter version
 
@@ -271,10 +287,11 @@ B-1).** A new `security_label` value distinct from
   referenced"` only if a resolved-secret pattern is detected
   (which forces purge per ADR 0019 v3 chunk-invalidation rule).
 - The label-recheck rule from ADR 0019 v3 §Re-indexing label-recheck
-  applies: re-index transitions `"internal"` →
-  `"secret_pointer"` on first appearance of pointer literals;
-  `"secret_pointer"` → `"secret_referenced"` on first appearance
-  of resolved-secret shapes.
+  applies; the canonical three-state progression
+  (`"internal"` → `"secret_pointer"` → `"secret_referenced"`,
+  including direct upgrade paths and most-restrictive-wins
+  semantics) is committed in §Authority discipline below — see
+  there for the normative statement.
 
 **Universal scrubber rule (NEW, closes security B-2).** Layer 1 mint
 API runs the registry v0.3.3 §Field-level scrubber against
@@ -573,8 +590,10 @@ NEW field on `OperationShape`:
 Cleanup operations citing `deletion_authority_kind: "gitignore"` or
 similar non-typed authority reject at Layer 1 mint API per D-025 +
 inv. 13. Unrecognized `deletion_authority_kind` values default per
-ADR 0029 v2 §Closed-list fail-mode tightening rule (closes policy
-non-blocking #1).
+ADR 0029 v2 §Closed-list fail-mode tightening rule (canonical
+restatement covering all v2-introduced enum surfaces is in
+§Decision.reason_kind reservations §Closed-list fail-mode
+tightening rule below).
 
 ### Sub-decision (d) — Three regression traps staged behind dependencies
 
@@ -784,9 +803,10 @@ Per registry v0.3.2 §Producer-vs-kernel-set:
   `docs_exclusions` arrays; `docs_taxonomy_evidence_refs` array;
   `VerificationCommandSpec.command_shape` (kernel verifier runs
   argv + env scrubber pass at mint).
-- **Audit-profile content-hash re-classification**: when
-  `KnowledgeSource.security_label` upgrades on re-indexed content
-  per the §Re-indexing label-recheck rule:
+- **Audit-profile content-hash re-classification (canonical
+  three-state progression)**: when `KnowledgeSource.security_label`
+  upgrades on re-indexed content per the §Re-indexing label-recheck
+  rule:
   - `"internal"` → `"secret_pointer"` on first appearance of
     pointer literals (`op://...`, etc.); chunks remain
     embedding-eligible; the chunker validates pointer-shape only.
@@ -795,8 +815,12 @@ Per registry v0.3.2 §Producer-vs-kernel-set:
     0019 v3 fires.
   Pure `"internal"` → `"secret_referenced"` direct upgrade is also
   valid when the only change is a resolved-secret appearance with
-  no prior pointer literals. The label-recheck path composes with
-  the universal scrubber rule (see Sub-decision (b)) so that
+  no prior pointer literals. **Most-restrictive label wins**: when
+  a single re-index introduces both pointer literals AND
+  resolved-secret shapes simultaneously, the resulting label is
+  `"secret_referenced"` (the strictest applicable), not
+  `"secret_pointer"`. The label-recheck path composes with the
+  universal scrubber rule (see Sub-decision (b)) so that
   resolved-secret shapes never persist regardless of label.
 
 #### Cross-context binding rules per Ring 1 layer
@@ -1124,7 +1148,8 @@ This ADR does not authorize:
   ambiguity with `KnowledgeSource` / `CredentialSource`; replaced
   by typed field-shape on `OperationShape`).
 - `boundary_dimension: mcp_canonical_source` naming (v1 spelling
-  collided with `_source` entity-name-root convention; renamed to
+  collided with `_source` entity-name-root convention per ontology-
+  registry v0.3.3 §Naming suffix discipline; renamed to
   `mcp_canonical_authority` in v2).
 - `subject_kind: "workspace"` and `subject_kind: "audit_profile"`
   v1 spellings (collided with FK-suffix vocabulary, existing
@@ -1223,6 +1248,23 @@ This ADR does not authorize:
 - Q-010 sub-decisions (separate Q-row).
 - Future Q-row for commit-signature-to-principal mapping
   (cycle-history.md verifier-identity resolution).
+- **Layer 1 grounding rule extensibility principle.** The Layer 1
+  host-observation grounding requirement committed in this ADR
+  names two specific `subject_kind` values: `"workspace_context"`
+  and `"audit_profile_snapshot"`. The architectural principle
+  behind the rule is broader: `subject_kind` values primarily
+  backed by derived or Layer-2 content (audit-framework outputs,
+  retrieval-projection outputs, summarization outputs) require
+  Layer 1 host-observation grounding to promote — they cannot be
+  promoted on derived-only `evidence_refs` chains regardless of
+  verifier visibility-authority. Future ADRs introducing new
+  `subject_kind` values backed by derived/Layer-2 content MUST
+  add the new value to the Layer 1 grounding requirement at
+  introduction time. Subject-kinds primarily backed by direct
+  host-observation Evidence (e.g., existing `release | branch |
+  worktree | ruleset | credential_audience | deployment |
+  external_target` from ADR 0019 v3) inherit ADR 0019 v3's chain-
+  promotion rule and do not require this additional rule.
 - Future ADR for `system.cleanup.plan.v1` composition with this
   ADR's `system.workspace.diagnose.v1` outputs (architect F4).
 - Reopen if the audit framework's `project_profile.yaml` schema
