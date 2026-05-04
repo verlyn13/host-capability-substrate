@@ -11,7 +11,7 @@ tags: [boundary-evidence, quality-gate, dashboard-views, charter-inv-19, q-007, 
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
@@ -21,6 +21,128 @@ proposed (v1)
 
 Written against charter v1.3.2 and
 `docs/host-capability-substrate/ontology-registry.md` v0.3.3.
+
+## Revision history
+
+- **v1** (2026-05-03, commit `367c130`): initial draft. Reviewers
+  surfaced 7 blocking findings (3 policy, 4 security) + ~13
+  non-blocking observations.
+- **v2** (2026-05-03, this revision): closes all 7 blockers and
+  folds 13 non-blocking observations.
+  - **Policy P-B1 + Security S-B4 (combined sandbox-promotion).**
+    Tightened §Sandbox-promotion rejection rule with explicit
+    grant-side rule and contradiction-asymmetry rule. Layer 1
+    mint API rejects `boundary_evidence_*` grants whose cited
+    `boundary_observation_evidence_refs` carry
+    `Evidence.authority` in `{sandbox-observation,
+    self-asserted}`. Sandbox-derived `BoundaryObservation`
+    cannot serve as the host side of a `contradictory`
+    determination; the contradiction-asymmetry rule constrains
+    pair selection so a sandbox observation can only contradict
+    another sandbox observation in the same
+    `execution_context_id`.
+  - **Policy P-B2.** Added Layer 3 gateway evidence-refs
+    binding integrity rule: operation's consumed
+    `evidence_refs` MUST be a subset of the grant's bound
+    `boundary_observation_evidence_refs`. A producer cannot
+    request a grant for one set of stale-but-acceptable
+    evidence_refs and operate against a different (more
+    sensitive) chain. Closes the intra-class evidence-ref
+    substitution gap.
+  - **Policy P-B3.** Charter inv. 17 / 18-candidate / 19-candidate
+    ordering audit. Added explicit freshness-precedence rule:
+    when a `CoordinationFact` (inv. 18 candidate) cites a
+    `BoundaryObservation` (inv. 19 candidate), the underlying
+    `BoundaryObservation.valid_until` is the binding freshness
+    anchor; the `CoordinationFact.valid_until` cannot extend
+    beyond the underlying observation. Layer 2/3 re-check
+    enforces.
+  - **Security S-B1.** Added subtype-level redaction floor:
+    `GitIdentityBinding` requires `Evidence.redaction_mode !=
+    none` at mint API; producers emitting with `redaction_mode:
+    none` rejected at Layer 1. Closes the PII leakage path
+    (charter inv. 5).
+  - **Security S-B2.** `git_signing_key_id` field MUST be a
+    typed FK to a `CredentialSource` record (NOT a string
+    identifier). Dropped the v1 "typed FK or string identifier"
+    escape hatch. Producer-supplied raw GPG long-IDs / SSH
+    fingerprints rejected at Layer 1; the public surface is
+    the `git_signing_format_kind` discriminator + the FK
+    itself.
+  - **Security S-B3.** Added §Path canonicalization rule:
+    `installed_path` and `shim_chain[].shim_path`,
+    `shim_chain[].target_path` are canonicalized at Layer 1
+    mint API to placeholder form (`${HOME}`, `${TMPDIR}`,
+    `${XDG_CACHE_HOME}`, etc.). Raw paths containing username
+    or TMPDIR seed strings rejected at Layer 1. Closes the
+    host-fingerprinting risk in `ToolProvenance`.
+  - **Architect N1.** Added §Sub-decision (b) Out-of-scope
+    posture-vacuum clarification: gate-consuming operations
+    gate on `BoundaryObservation` evidence_refs in the
+    interim; QualityGate is an aggregation/identity layer, not
+    a new threshold layer.
+  - **Architect N2.** Added §Sub-decision (c) selection
+    guidance for direct-subtype vs envelope-payload: mint-time
+    consumers choosing direct subtypes cannot later be
+    re-projected to envelope payloads without a fresh
+    observation (preserves inv. 19 candidate's "no lateral
+    substitution" rule).
+  - **Architect N3.** Clarified §Sub-decision (d) matrix vs
+    policy-YAML scope: per-`boundary_dimension` `valid_until`
+    windows are policy-set in `tiers.yaml` at Milestone 2; the
+    matrix itself is the universal posture (stale-detection
+    threshold is policy, not ADR).
+  - **Architect N4.** Confirmed in §Out of scope and §Future
+    amendments that `provider_observed_via` enum value
+    extensions for the two new subtypes (`git_config_read`,
+    `ssh_config_resolution`, `1password_op_cli_introspection`,
+    `which_command`, `shim_introspection`,
+    `package_manager_query`) land in the same registry update
+    PR queued for the four new `boundary_dimension` candidates.
+  - **Ontology N1.** Added §`ToolProvenance` Sub-rule 5
+    framing comment: `install_source_kind` and
+    `version_drift_kind` discriminate enum values (NOT payload
+    subsets); the schema is flat, not discriminator-and-array.
+    A reviewer should not mistake this for a Sub-rule 5
+    violation.
+  - **Policy non-blocking 1.** Added §Sub-decision (e) note:
+    the `/mutation-queue` dashboard view consumes
+    `boundary_evidence_*` and `anomalous_capture_*`
+    `reason_kind` values uniformly via the `Decision.reason_kind`
+    enum, NOT by re-implementing matrix logic at the view
+    layer.
+  - **Policy non-blocking 2.** Added §Sub-decision (c) future-
+    policy-duplication risk flag: the four `boundary_dimension`
+    candidates and the two direct subtypes overlap
+    conceptually; consumers must select at composition time.
+    Q-007(g) ADR review will flag if any future policy YAML
+    duplicates the choice between subtype and envelope.
+  - **Security non-blocking 1.** Added §Decision.reason_kind
+    reservations rule: `boundary_evidence_contradictory`
+    rejection records co-record both diverging
+    `evidence_ref` records (`divergent_evidence_ref_pair`
+    array of two evidence_refs) so audit can trace which
+    observation contradicted which.
+  - **Security non-blocking 2.** Added §Out of scope note:
+    `version_observed` aggregation across long windows in
+    `/tool-provenance` dashboard view is a cohort-fingerprinting
+    side-channel; dashboard ADR will commit aggregation
+    boundaries (e.g., per-session, not cross-session).
+  - **Security non-blocking 3.** Added §Sub-decision (d)
+    suppression-DoS framing: producer-crash → `missing` →
+    `block` for destructive ops is the correct fail-safe
+    direction; `producer_health_observation` evidence subtype
+    (deferred to Q-008 stage-2 follow-up) tracks suppression
+    patterns visible in `/mutation-queue`.
+  - **Security non-blocking 4.** Added §Decision.required_grant_kind
+    single-use clarification: `boundary_evidence_*`
+    acknowledgment grants are single-use per operation_id
+    (mirrors ADR 0030 v2 / ADR 0031 v1 grant patterns).
+  - **Security non-blocking 5.** Added §Cross-context binding
+    explicit cross-surface rejection rule: a `GitIdentityBinding`
+    minted in surface A consumed by an operation in surface B
+    rejects at Layer 1 with `boundary_evidence_missing` (NOT
+    silent re-resolution).
 
 ## Context
 
@@ -156,17 +278,44 @@ commits final shape):
     identity-fingerprinting strings).
   - `git_user_email` — observed `user.email` Git config value
     (scrubber-eligible; PII).
-  - `git_signing_key_id` — observed `user.signingkey` config
-    value (typed FK or string identifier).
+  - `git_signing_key_id` — typed FK to a `CredentialSource`
+    record naming the signing key / sigstore identity (NOT a
+    raw GPG long-ID or SSH fingerprint string). Producer-
+    supplied raw identifier strings rejected at Layer 1 mint
+    API per Security S-B2 closure. Public surface for the
+    signing identity is the `git_signing_format_kind`
+    discriminator + the FK itself; the underlying credential
+    material remains in the `CredentialSource` record's
+    redaction posture.
   - `git_signing_format_kind: "openpgp" | "x509" | "ssh" |
     "none"` — discriminator per registry Sub-rule 6.
   - `credential_source_evidence_ref` — typed `evidenceRefSchema`
     to a `CredentialSource` record naming the signing key /
-    sigstore identity.
+    sigstore identity. Composes with `git_signing_key_id` FK
+    for full credential-source traceability.
   - `provider_observed_via: "git_config_read" | "ssh_config_resolution"
     | "1password_op_cli_introspection"` — kernel-set per registry
     v0.3.2 (authority-class signal).
   - `provider_verified_at` — kernel-set freshness anchor.
+
+**Subtype-level redaction floor (closes Security S-B1; charter
+inv. 5):** `GitIdentityBinding` records require
+`Evidence.redaction_mode != none` at Layer 1 mint API.
+Producers emitting with `redaction_mode: none` rejected with
+`Decision.reason_kind: secret_resolution_in_chunk` (shared
+class with ADR 0019 v3 KnowledgeChunk). The redaction floor is
+mandatory because both `git_user_name` and `git_user_email`
+encode PII / identity-fingerprinting strings; record-level
+`redaction_mode != none` ensures the field-level scrubber
+applies before audit-chain commit.
+
+**Cross-surface rejection (closes Security non-blocking 5):** a
+`GitIdentityBinding` minted in surface A consumed by an
+operation in surface B rejects at Layer 1 mint API with
+`Decision.reason_kind: boundary_evidence_missing`. The kernel
+does NOT silently re-resolve Git config in surface B; cross-
+surface use requires fresh observation in surface B's
+`execution_context_id`.
 
 One of five load-bearing Q-006 names per dedupe-plan §Q-006
 near-term commitments.
@@ -184,25 +333,67 @@ schema PR commits final shape):
     `BoundaryObservation` precedent (e.g., `npm:7.24.0`,
     `git:2.46.0`, `mise:2024.10.5`, `docker:27.0.0`).
   - `execution_context_id` — typed FK.
-  - `installed_path` — absolute filesystem path to the resolved
-    tool binary (scrubber-eligible per registry v0.3.0).
+  - `installed_path` — canonicalized filesystem path to the
+    resolved tool binary in placeholder form (`${HOME}/...`,
+    `${TMPDIR}/...`, `${XDG_CACHE_HOME}/...`, `${XDG_DATA_HOME}/...`,
+    `/usr/local/...`, `/opt/...`). See §Path canonicalization
+    rule below.
   - `shim_chain` — array of resolved-via-shim hops; each entry
-    is a `{ shim_path, target_path }` pair. Empty array for
-    native (non-shimmed) tools.
+    is a `{ shim_path, target_path }` pair (both
+    canonicalized). Empty array for native (non-shimmed) tools.
   - `shim_depth` — derived integer (`shim_chain.length`); 0 =
     native, >0 = shimmed.
   - `install_source_kind: "homebrew" | "mise" | "asdf" | "npm" |
     "pip" | "uv" | "system_package_manager" | "manual" |
-    "unknown"` — discriminator per registry Sub-rule 6.
+    "unknown"` — discriminator per registry Sub-rule 6 (closed
+    enum; classifies the install source, NOT a sibling-array
+    selector — flat-payload composition per §Sub-rule 5
+    framing comment below).
   - `version_observed` — observed version string from
     `<tool> --version` or equivalent.
   - `version_drift_kind: "matches_lockfile" | "ahead_of_lockfile"
     | "behind_lockfile" | "no_lockfile" | "unknown"` —
-    discriminator (when consuming evidence references a
-    project/repo with a tool-version lockfile).
+    discriminator per Sub-rule 6 (similar flat-payload
+    composition; classifies the drift state, not a sibling-
+    array selector).
   - `provider_observed_via: "which_command" | "shim_introspection"
     | "package_manager_query"` — kernel-set per registry v0.3.2.
   - `provider_verified_at` — kernel-set freshness anchor.
+
+**Path canonicalization rule (closes Security S-B3; charter
+inv. 5):** Layer 1 mint API canonicalizes `installed_path`,
+`shim_chain[].shim_path`, and `shim_chain[].target_path` to
+placeholder form before record sealing. Recognized placeholder
+roots:
+
+- `${HOME}` for `/Users/<username>/`, `/home/<username>/`.
+- `${TMPDIR}` for `/var/folders/<seed>/T/`,
+  `/private/var/folders/<seed>/T/`, `/tmp/`, `/private/tmp/`.
+- `${XDG_CACHE_HOME}` for `${HOME}/.cache/`,
+  `/var/cache/<username>/`.
+- `${XDG_DATA_HOME}` for `${HOME}/.local/share/`.
+- `${XDG_CONFIG_HOME}` for `${HOME}/.config/`.
+- Absolute system paths (`/usr/local/`, `/opt/`,
+  `/Library/Frameworks/`) preserved verbatim (no
+  canonicalization needed; not host-fingerprinting).
+
+Producer-supplied raw paths containing username strings,
+TMPDIR seeds, or other host-fingerprinting tokens (where a
+recognized placeholder root applies) rejected at Layer 1 with
+`Decision.reason_kind: secret_resolution_in_chunk` (shared
+class with ADR 0019 v3 KnowledgeChunk). Closes the host-
+fingerprinting risk where audit-chain co-recording of
+`installed_path` + `repository_id` + `execution_context_id`
+would create a stable cross-session correlator.
+
+**Sub-rule 5 framing (closes Ontology N1):** `install_source_kind`
+and `version_drift_kind` are closed-enum discriminators that
+classify enum values, NOT discriminators that select sibling
+payload subsets. The schema is **flat**: all payload fields
+co-observed at one mint, no OR-shape collapse. Per registry
+Sub-rule 5, this is acceptable (Sub-rule 5 is permissive, not
+mandatory). A future reviewer should not mistake the flat
+shape for a Sub-rule 5 violation.
 
 Subsumes the dedupe-plan §Tool provenance candidate
 (`ShimResolution` is a payload subtype, not a separate entity);
@@ -323,7 +514,12 @@ enum lands per `.agents/skills/hcs-schema-change`):
 - `boundary_evidence_contradictory` — linked
   `BoundaryObservation` records diverge on structural facts;
   the consuming operation cannot determine the canonical
-  boundary state.
+  boundary state. **Audit-chain attribution rule (closes
+  Security non-blocking 1):** rejection records co-record
+  `divergent_evidence_ref_pair` (an array of exactly two
+  `evidence_ref` entries naming the diverging observations),
+  enabling audit consumers to trace which observation
+  contradicted which without joining to the underlying records.
 
 Per ADR 0029 v2 §`block` vs forbidden-tier framing, all three
 are *Decision-level* (this-invocation rejects); none promotes
@@ -343,6 +539,15 @@ Three new grant-kind names reserved (posture-only):
 - `boundary_evidence_absence_acceptance` — typed grant binding
   acknowledgment of missing required boundary evidence for the
   specific operation.
+
+**Single-use semantics (closes Security non-blocking 4):** all
+three `boundary_evidence_*` acknowledgment grants are **single-
+use per operation_id**, mirroring ADR 0030 v2
+`worktree_clean_acknowledgment` / `pr_absence_acknowledgment`
+and ADR 0031 v1 `worktree_lease_force_break_acknowledgment`
+patterns. Re-consumption against a different operation_id
+rejects at Layer 1 mint API; same-operation_id retry consumes
+the grant once and rejects subsequent consumption attempts.
 
 `ApprovalGrant.scope` per-class extension for boundary-evidence-
 gating operations: scope binds the specific
@@ -517,22 +722,95 @@ Per registry v0.3.0 §Cross-context enforcement layer requirement:
 - **`GitIdentityBinding`**: Layer 1 enforces `(workspace_id,
   surface_id)` consistency with `ExecutionContext`; rejects
   cross-context reuse per registry v0.3.0 strict default.
-  Layer 2 re-checks Git config state freshness via
-  `git config --get` re-execution at operation time. Layer 3
-  re-derives at decision time.
+  Layer 1 ALSO rejects records with `redaction_mode == none`
+  per the §Subtype-level redaction floor rule above. Layer 1
+  ALSO rejects raw `git_signing_key_id` strings (must be FK
+  to `CredentialSource` per Security S-B2 closure). Layer 1
+  ALSO rejects cross-surface use (a record minted in surface A
+  cannot be consumed by an operation in surface B). Layer 2
+  re-checks Git config state freshness via `git config --get`
+  re-execution at operation time. Layer 3 re-derives at
+  decision time.
 - **`ToolProvenance`**: Layer 1 enforces
   `(tool_or_provider_ref, execution_context_id)` consistency.
-  Layer 2 re-checks resolved path + version state via
+  Layer 1 ALSO canonicalizes `installed_path` + `shim_chain`
+  paths per §Path canonicalization rule above; raw paths
+  containing username/TMPDIR-seed strings rejected. Layer 2
+  re-checks resolved path + version state via
   `which` / package-manager-query re-execution. Layer 3
   re-derives.
 
+**ApprovalGrant evidence-refs binding integrity (closes Policy
+P-B2).** Layer 3 gateway re-derive enforces that the consuming
+operation's `evidence_refs` set MUST be a subset of the grant's
+bound `boundary_observation_evidence_refs` set. A producer
+cannot request a grant for one set of stale-but-acceptable
+evidence_refs and operate against a different (more sensitive)
+chain. Set-mismatch rejects with `Decision.reason_kind:
+boundary_evidence_missing` (the operation cites evidence the
+grant does not authorize).
+
+**Charter inv. 17 / 18-candidate / 19-candidate freshness-
+precedence (closes Policy P-B3).** When a `CoordinationFact`
+(inv. 18 candidate) cites a `BoundaryObservation` (inv. 19
+candidate) in its `evidence_refs`, the underlying
+`BoundaryObservation.valid_until` is the binding freshness
+anchor; `CoordinationFact.valid_until` cannot extend beyond
+the underlying observation's window. Layer 2 broker FSM
+re-check enforces by re-checking each cited
+`BoundaryObservation`'s freshness; Layer 3 gateway re-derive
+enforces by rejecting any consuming operation whose
+`CoordinationFact` evidence carries a `valid_until` exceeding
+its underlying `BoundaryObservation` chain. This rule prevents
+laundering stale boundary observations through fresh-looking
+coordination facts.
+
 #### Sandbox-promotion rejection (charter inv. 8)
 
-Both new evidence subtypes inherit the inv. 8 rejection rule:
-records with `Evidence.authority` in `{sandbox-observation,
-self-asserted}` cannot be promoted to host-authoritative gate
-evidence. Broker FSM Layer 2 / gateway Layer 3 re-check enforces
-this discipline.
+Both new evidence subtypes inherit the inv. 8 rejection rule
+plus two reinforcing rules surfaced in v1 review:
+
+**Evidence-side rule (existing):** records with
+`Evidence.authority` in `{sandbox-observation, self-asserted}`
+cannot be promoted to host-authoritative gate evidence. Broker
+FSM Layer 2 / gateway Layer 3 re-check enforces this
+discipline.
+
+**Grant-side rule (closes Policy P-B1).** Layer 1 mint API
+rejects `boundary_evidence_freshness_override` /
+`boundary_evidence_contradiction_acknowledgment` /
+`boundary_evidence_absence_acceptance` grants whose cited
+`boundary_observation_evidence_refs` carry `Evidence.authority`
+in `{sandbox-observation, self-asserted}`. A sandbox-derived
+stale observation cannot be acknowledged via grant — that
+would effectively promote sandbox authority to gate-clearing
+authority. Closes the v1 escalation surface where a sandbox
+observation that is `stale` could be acknowledged via grant.
+
+**Contradiction-asymmetry rule (closes Security S-B4).** When
+two `BoundaryObservation` records diverge on structural facts
+(`contradictory` matrix row), the pair-selection rule
+constrains which observations can serve as the contradicting
+sides:
+
+- A `sandbox-observation`-authority observation can only
+  contradict another `sandbox-observation`-authority observation
+  in the same `execution_context_id`.
+- A `sandbox-observation` cannot stand against a
+  `host-observation`-authority observation as the
+  contradicting side; the host observation is authoritative
+  and the sandbox observation is merely a sandbox-context
+  fact.
+- Cross-authority pairs (sandbox vs host) are NOT
+  `contradictory`; they are *expected* divergence from the
+  Codex sandbox example (sandbox sees `/usr/local/bin/git`
+  while host has `/opt/homebrew/bin/git`). The host
+  observation governs; the sandbox observation is recorded for
+  diagnostic value but does not contribute to the matrix's
+  `contradictory` row.
+
+Mirrors ADR 0019 v3 §Secret-referenced sources sandbox-
+asymmetry pattern.
 
 ### Out of scope
 
