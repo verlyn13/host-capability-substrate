@@ -1,7 +1,7 @@
 ---
 adr_number: 0033
 title: Q-006 (b)–(g) GitHub authority, identity reconciliation, and check-source binding
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [github-authority, identity-reconciliation, mcp-credential-split, ruleset-baseline, status-check-source, q-006, phase-1]
@@ -11,11 +11,76 @@ tags: [github-authority, identity-reconciliation, mcp-credential-split, ruleset-
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
+
+## Acceptance note
+
+All four reviewer subagents (`hcs-architect`, `hcs-ontology-reviewer`,
+`hcs-policy-reviewer`, `hcs-security-reviewer`) returned READY-FOR-
+ACCEPTANCE on v2 (commit `774c5c4`) — except for three documentation-
+hygiene fixes (caused by v1→v2 `replace_all` of `mcp_server_name` →
+`mcp_server_kind` catching narrative text in the revision history,
+plus a stale "Q-011 bucket 2" reference in §Accepts that contradicted
+the v2 reclassification of `GitHubMutationAuthority` as an inline
+value type). Three mechanical tweaks applied at acceptance:
+
+1. **Self-referential rename in revision history (Architect / Ontology).**
+   The Policy P-B3 entry "renamed from v1's `mcp_server_kind`" now
+   correctly reads `mcp_server_name`.
+2. **Self-referential rename in revision history (Architect / Ontology).**
+   The Ontology borderline B1 entry "Renamed `mcp_server_kind` →
+   `mcp_server_kind`" now correctly reads `mcp_server_name` →
+   `mcp_server_kind`.
+3. **§Accepts stale Q-011 bucket citation (Architect / Ontology).**
+   The line "`GitHubMutationAuthority` value type committed (Q-011
+   bucket 2)" now correctly reads "inline structured field — NOT a
+   Q-011 review-grammar bucket member; carried on operation-shape
+   evidence and `ApprovalGrant.scope`" matching the v2
+   reclassification.
+
+The two-revision review cycle closed:
+- 8 v1 blockers (1 architect, 3 policy, 4 security)
+- 1 v1 borderline ontology (`mcp_server_name` rename)
+- 11 v1 non-blocking observations folded
+- 3 v2 documentation-hygiene fixes at acceptance
+
+Eight forward-looking concerns deferred to schema PR / Milestone 2 /
+follow-up ADRs (no further ADR-level mechanical tweaks):
+
+- Schema PR per `.agents/skills/hcs-schema-change` for the five new
+  evidence subtypes + the `GitHubMutationAuthority` inline value type
+  + the six new `Decision.reason_kind` reservations + the
+  `ApprovalGrant.scope` per-class extension.
+- `evidenceSubjectKindSchema` enum extension for the four new
+  subject-kind values (`ruleset`,
+  `repository_identity_reconciliation`, `mcp_credential_audience`,
+  `status_check_source`).
+- Canonical policy YAML at Milestone 2 commits per-`mcp_server_kind`
+  audience-class enforcement; per-`repository_id` freshness windows
+  for `StatusCheckSourceObservation`; specific GitHub App
+  installation identifiers for system-config agentic operations;
+  ruleset baseline ID references for HCS / system-config; mutation-
+  class × authority-class matrix entries.
+- ADR 0032 v2 §StatusCheckSourceObservation interim total-block
+  lifts on schema PR landing (NOT on this ADR's acceptance).
+- `Decision.reason_kind` accumulating-cohort registry update PR
+  (~25 reservations across ADRs 0029 v2 / 0030 v2 / 0032 v2 / 0033
+  v2 — consolidation per Architect N5).
+- `ExecutionContext.actor_kind` field commitment (separate Q-*; gates
+  ADR 0032 v2 MacBook always-on cross-context human-driven binding
+  rule).
+- ADR 0026 substrate hook architecture (gated on stage-1
+  `BranchProtectionObservation` schema landing; not gated on this
+  ADR).
+- Q-007 (b)-(f) sub-decisions — `QualityGate` deferral cadence,
+  composition with ExecutionContext / CredentialSource /
+  GitIdentityBinding / ToolProvenance, dashboard views, charter
+  v1.4 candidate. Q-007 is now FULLY UNBLOCKED at the posture layer
+  with Q-005 + Q-006 (b)-(g) settled.
 
 ## Charter version
 
@@ -55,7 +120,7 @@ Written against charter v1.3.2 and
     covers GitHub-side enforcement; both required.
   - **Policy P-B3.** MCP read/mutation split interim grant
     scope now binds `mcp_server_kind` (renamed from v1's
-    `mcp_server_kind` per ontology borderline B1). A grant for
+    `mcp_server_name` per ontology borderline B1). A grant for
     `github` provider PR mutation is NOT consumable by a
     different MCP server instance claiming `github` provider;
     grant scope binds the specific MCP server kind whose
@@ -79,7 +144,7 @@ Written against charter v1.3.2 and
     `self-asserted` cannot be promoted to host-authoritative
     gate evidence (mirrors ADR 0032 v2 Security N-4 pattern for
     `WorkflowRunReceipt.runner_host_evidence_ref`).
-  - **Ontology borderline B1.** Renamed `mcp_server_kind` →
+  - **Ontology borderline B1.** Renamed `mcp_server_name` →
     `mcp_server_kind` throughout. The field is a closed enum
     discriminator per registry §Sub-rule 6, NOT a typed FK to a
     Ring 0 entity (MCP servers are not standalone Ring 0
@@ -884,8 +949,10 @@ This ADR does not authorize:
 
 - Q-006 (b)-(g) settled at the design layer with five new
   evidence subtypes, one value type, and one confirmation row.
-- `GitHubMutationAuthority` value type committed (Q-011 bucket
-  2): `authority_kind` discriminator + per-kind expected-source
+- `GitHubMutationAuthority` value type committed (inline
+  structured field — NOT a Q-011 review-grammar bucket member;
+  carried on operation-shape evidence and `ApprovalGrant.scope`):
+  `authority_kind` discriminator + per-kind expected-source
   fields; agentic GitHub mutations require `github_app` /
   `oidc` authority class for content-write / admin / merge /
   ref-deletion operations. `human_pat` reserved for
