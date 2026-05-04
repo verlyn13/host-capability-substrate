@@ -1,7 +1,7 @@
 ---
 adr_number: 0034
 title: Q-007 (b)–(f) boundary evidence composition, degrade-to-warn matrix, dashboard views, charter inv. 19 candidate
-status: proposed
+status: accepted
 date: 2026-05-03
 charter_version: 1.3.2
 tags: [boundary-evidence, quality-gate, dashboard-views, charter-inv-19, q-007, phase-1]
@@ -11,11 +11,80 @@ tags: [boundary-evidence, quality-gate, dashboard-views, charter-inv-19, q-007, 
 
 ## Status
 
-proposed (v2)
+accepted (v2 final)
 
 ## Date
 
-2026-05-03
+2026-05-03 (accepted)
+
+## Acceptance note
+
+All four reviewer subagents (`hcs-architect`, `hcs-ontology-reviewer`,
+`hcs-policy-reviewer`, `hcs-security-reviewer`) returned READY-FOR-
+ACCEPTANCE on v2 (commit `3bac387`). The two-revision review cycle
+closed:
+
+- 7 v1 blockers (3 policy, 4 security)
+- 13 v1 non-blocking observations folded
+- 2 v2 mechanical tweaks at acceptance for doc-ergonomics polish
+
+Two mechanical tweaks at acceptance:
+
+1. **Architect doc-ergonomics**: posture-vacuum N1 explanation
+   (gate-consuming ops gate on `BoundaryObservation` evidence_refs
+   in interim; QualityGate is aggregation/identity layer, NOT a
+   new threshold layer) promoted from revision history into
+   §Sub-decision (b) body for top-to-bottom readability.
+
+2. **Security non-blocking**: `${USERS_SHARED}` placeholder root
+   added to §Path canonicalization rule for `/Users/Shared/`
+   subpaths (macOS multi-user shared directory; rare host of
+   shimmed binaries; preserves recognized-root discipline without
+   leaking tenant-username strings).
+
+The third minor polish item (security non-blocking: confirm at
+schema PR time that `Evidence.authority` enum has no other
+producer-supplied authority class beyond `{sandbox-observation,
+self-asserted}` that should join the grant-side rejection set) is
+a schema-PR forward-look, not an ADR-text change.
+
+Six forward-looking concerns deferred to schema PR / Milestone 2 /
+follow-up ADRs (no further ADR-level mechanical tweaks):
+
+- Q-007(g) ADR commits `QualityGate` standalone Ring 0 entity (Q-011
+  bucket 2): gate identity, gate_kind discriminator (candidate
+  values: `identity_binding`, `credential_shadow`,
+  `signing_identity`, `filesystem_trust`, `tool_provenance`,
+  `mutation_class`), gate state lifecycle, evidence_refs to
+  BoundaryObservation + Q-005 + Q-006 receipts. Now FULLY UNBLOCKED
+  at the posture layer.
+- Schema PR per `.agents/skills/hcs-schema-change` for the two new
+  evidence subtypes (GitIdentityBinding, ToolProvenance) + six new
+  Decision.reason_kind / Decision.required_grant_kind reservations
+  + ApprovalGrant.scope per-class extension for boundary-evidence-
+  gating operations. Schema PR will also confirm the
+  `Evidence.authority` enum scope of producer-supplied authority
+  classes for the grant-side rejection rule.
+- Registry update PR adding the four new `boundary_dimension`
+  candidates (execution_context_boundary,
+  credential_source_boundary, git_identity_boundary,
+  tool_provenance_boundary), the two new
+  `evidence_subject_kind` enum values
+  (`git_identity_binding`, `tool_provenance`), and the
+  `provider_observed_via` enum extensions for the new subtypes.
+- Charter v1.4.0 amendment PR commits invariant 19 text per the
+  candidate at §Sub-decision (f). May land alongside inv. 18
+  (Q-003 candidate) in a single wave or stand alone.
+- Separate dashboard ADR commits React component implementations
+  for the six views named in §Sub-decision (e); commits
+  `version_observed` aggregation boundaries (per Security
+  non-blocking 2 cohort-fingerprinting concern).
+- Canonical policy YAML at Milestone 2: per-`boundary_dimension`
+  freshness windows; ApprovalGrant.scope per-class extension for
+  boundary-evidence-acknowledgment grants; verifier-class
+  privileges for the three new `*_acknowledgment` grant kinds;
+  matrix entries for `system-config` policy paths (similar to
+  ADR 0033 v2 dual-authority rule).
 
 ## Charter version
 
@@ -240,6 +309,21 @@ Q-005 + Q-006 (b)-(g) just accepted (2026-05-03), QualityGate is
 now structurally unblocked but warrants its own ADR for clean
 review.
 
+**No posture vacuum during the deferral.** Gate-consuming
+operations gate on `BoundaryObservation` evidence_refs in the
+interim — the §Sub-decision (d) three-state matrix already
+provides a Ring 1 enforcement surface for the six operation
+classes against observation-level evidence. QualityGate (when
+it lands) is an **aggregation / identity layer** atop the
+matrix, NOT a new threshold layer. The matrix gates on
+observation-level evidence; QualityGate provides aggregation,
+gate-identity, and gate_kind-specific composition rules — but
+not new gating thresholds beyond what the matrix and existing
+operation-class enforcement already commit. This means
+operations that need boundary-evidence gating today have full
+gating semantics via the matrix; the QualityGate ADR adds a
+higher-level reasoning surface, not a missing-gate filler.
+
 **Out-of-scope for this ADR:** QualityGate field shape,
 gate_kind enum values, gate_state lifecycle, gate-consuming
 operation classes, ApprovalGrant.scope per-class extension for
@@ -367,6 +451,10 @@ placeholder form before record sealing. Recognized placeholder
 roots:
 
 - `${HOME}` for `/Users/<username>/`, `/home/<username>/`.
+- `${USERS_SHARED}` for `/Users/Shared/<sub>/...` (macOS multi-
+  user shared directory; rare but not impossible host of
+  shimmed binaries; preserves the recognized-root discipline
+  without leaking tenant-username strings).
 - `${TMPDIR}` for `/var/folders/<seed>/T/`,
   `/private/var/folders/<seed>/T/`, `/tmp/`, `/private/tmp/`.
 - `${XDG_CACHE_HOME}` for `${HOME}/.cache/`,
