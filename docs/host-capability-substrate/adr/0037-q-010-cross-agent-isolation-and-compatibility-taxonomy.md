@@ -1,7 +1,7 @@
 ---
 adr_number: 0037
 title: Q-010 cross-agent isolation and compatibility taxonomy
-status: proposed
+status: accepted
 date: 2026-05-04
 charter_version: 1.3.2
 tags: [agent-client, containment, remote-agent, compatibility-taxonomy, q-010, phase-1]
@@ -11,23 +11,43 @@ tags: [agent-client, containment, remote-agent, compatibility-taxonomy, q-010, p
 
 ## Status
 
-proposed (v2)
+accepted (v2)
 
 ## Date
 
 2026-05-04 (v1); 2026-05-04 (v2 — closes 5 reviewer blockers
-across architect / ontology; folds 9 mechanical tweaks)
+across architect / ontology; folds 9 mechanical tweaks);
+2026-05-04 (v2 accepted with 4 mechanical tweaks)
 
 ## Revision history
 
 - **v1 (2026-05-04)**: initial draft per user-approved A3 + B3 +
   C2 + D2 + E-ratify recommendation with all precision
   commitments folded.
+- **v2 accepted (2026-05-04)**: re-reviewed by architect /
+  ontology / policy / security. Three reviewers flagged the
+  same single editorial blocker (incomplete `sandbox_kind` →
+  `kernel_sandbox_kind` rename — two stragglers at line 622
+  §Authority discipline kernel-set fields list and line 764
+  under `containment_evidence_producer_supplied` reason_kind
+  text). Security returned zero blockers. Four mechanical
+  tweaks folded at acceptance: (1) line 622
+  `ExecutionContext.sandbox_kind` → `kernel_sandbox_kind`;
+  (2) line 764 same; (3) revision-history self-rename typo
+  fix (B-5 line correctly reads
+  `containment_runtime_exceeds_capability` → renamed to
+  `containment_runtime_capability_exceeded`); (4)
+  §Future amendments §Registry update PR closed-enum count
+  "5 closed enums" → "6 closed enums" (the list correctly
+  enumerates six). Q-010 acceptance closes the Phase 1
+  synthesis-window inventory; ADR 0037 is the final Q-row
+  ADR before schema PR + registry PR sequencing begins.
+
 - **v2 (2026-05-04)**: closes architect B1 (off-by-one count
   "Five new" vs six listed reason_kinds) + B2 (`kernel_sandbox_kind`
   cache cannot distinguish "uncontained" from "non-kernel-
   contained" — renamed to `kernel_sandbox_kind`); ontology B-5
-  (`containment_runtime_capability_exceeded` verb-form renamed
+  (`containment_runtime_exceeds_capability` verb-form renamed
   to `containment_runtime_capability_exceeded`) + B-7 (cross-
   enum value collision `terminal_no_isolation` /
   `ide_host_isolation` between `containment_kind` runtime-class
@@ -619,7 +639,7 @@ Per registry v0.3.2 §Producer-vs-kernel-set:
 
 - **Kernel-set fields**:
   - `ExecutionContext.latest_containment_evidence_ref`,
-    `ExecutionContext.sandbox_kind` (Sub-decision (a)).
+    `ExecutionContext.kernel_sandbox_kind` (Sub-decision (a)).
   - All `AgentClient` axes EXCEPT `permission_mode`
     (Sub-decision (b) — `product_family`, `surface`, `app_build`,
     `dep_bundle_version`, `containment_mechanism`,
@@ -761,7 +781,7 @@ v2:
   `valid_until`). Closes Sub-decision (a) default-state surface.
 - **`containment_evidence_producer_supplied`** — Layer 1 mint API
   rejects a producer-supplied value on the kernel-set
-  `ExecutionContext.sandbox_kind` or
+  `ExecutionContext.kernel_sandbox_kind` or
   `ExecutionContext.latest_containment_evidence_ref` fields.
   Closes Sub-decision (a) authority-class change.
 - **`containment_runtime_capability_exceeded`** — Layer 1 mint API
@@ -1066,7 +1086,7 @@ This ADR does not authorize:
   - Three Evidence subtype names + naming-discipline
     conformance.
   - 6 new `Decision.reason_kind` values.
-  - 5 closed enums (product_family, permission_mode,
+  - 6 closed enums (product_family, permission_mode,
     containment_mechanism, agent_client_state,
     secret_injection_kind, containment_kind).
 - Trap fixtures land when their evidence dependencies clear
