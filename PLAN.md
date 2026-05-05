@@ -5,11 +5,75 @@ Milestone-by-milestone implementation plan. Follow in order. Each milestone has 
 
 Upstream research plan (canonical): `~/Organizations/jefahnierocks/system-config/docs/host-capability-substrate-research-plan.md`.
 
-## Current Focus — Phase 0b closeout / Phase 1 prep
+## Current Focus — Phase 1 synthesis-window closed; Phase 2 schema + registry sequencing
 
-As of 2026-04-26, this repo has completed the compressed **3-day Phase 0b soak** on top of the Milestone 0 scaffold. The same-day post-closeout follow-up landed measurement-only semantic redundancy mapping, and the refreshed brief is now green on the Phase 0b acceptance gate. Phase 1 still owns the larger formal capability ontology/policy work.
+As of 2026-05-04, the **Phase 1 synthesis-window is closed**. All nine
+pending Q-rows in `DECISIONS.md` (Q-003, Q-005, Q-006, Q-007, Q-008,
+Q-009, Q-010, Q-011, Q-012) are accepted via ADRs 0019, 0021, 0029-0037
+on charter v1.3.2. The Phase 0b closeout (2026-04-26) and the Phase 1
+shell-environment research program (2026-04-27 → 2026-05-08) both
+completed in earlier waves; their content remains below as audit trail.
 
-- Soak window: 2026-04-23 through 2026-04-25
+Phase 2 begins schema + registry + canonical-policy-YAML sequencing
+from the §Out of scope sections of the ten settled ADRs.
+
+### Phase 2 entry-point inventory
+
+**Schema PR** (per `.agents/skills/hcs-schema-change`): Zod source for
+the entities and payloads committed across ADRs 0019-0037. New Ring 0
+entities to author: `AgentClient` (ADR 0037), `VerificationCommandSpec`
+(ADR 0036), `KnowledgeSource` / `KnowledgeChunk` / `CoordinationFact` /
+`DerivedSummary` (ADR 0019), `QualityGate` (ADR 0035). Evidence
+subtypes to author: Q-005 six runner receipts (ADR 0032), Q-006 stage-1
++ stage-2 source-control receipts (ADR 0027 / ADR 0030), Q-006 (b)-(g)
+GitHub authority/identity records (ADR 0033), Q-007 envelope payloads
+`ToolProvenance` + `GitIdentityBinding` (ADR 0034), three remote-agent
+subtypes (ADR 0037), `ContainmentObservation` payload (ADR 0037). Plus
+`ExecutionContext` cache refactor with `kernel_sandbox_kind` pointer
+field (ADR 0037), three `filesystem_*` boundary_dimensions (ADR 0036),
+`mcp_canonical_authority` (ADR 0036), `OperationShape.deletion_authority_source_ref`
+polymorphic FK (ADR 0036).
+
+**Registry update PR** (`ontology-registry.md` extensions):
+producer-class allowlist (`kernel_workspace_diagnose`,
+`kernel_agent_client_resolver`); ~20 new closed-enum extensions
+covering subject_kind, predicate_kind, source_kind, security_label
+(`secret_pointer`), reason_kind (~20 new across ADRs), surface enum
+(+`remote_cloud_agent`), boundary_dimension extensions.
+
+**Canonical policy YAML** (in `system-config/policies/host-capability-substrate/`,
+Milestone 2): per-`boundary_dimension` freshness windows (containment
+dimension hours-to-day order); `workspace_verify` operation_class
+composition thresholds; per-product-family `permission_mode` verifier
+rules; non-PR remote-agent binding window duration (Phase 1 default
+±5 min); cross-tool exclusion-pattern conflict resolution.
+
+**Trap fixtures** (post-schema): Traps #26-#28 (Q-009), #29-#31
+(Q-010) plus 5 candidate traps from ADR 0037 + coordination-store
+brief reservations #31-#35 — needs deconfliction at fixture-landing
+PR.
+
+**Charter v1.4.0 amendment**: invariants 18 + 19 candidates (Q-003 +
+Q-007 carry-overs).
+
+**Future ADRs queued**: `RemoteAgentInvocationReceipt` aggregator
+(ADR 0037 follow-up); `AgentClient × WorkspaceContext` cardinality;
+`system.cleanup.plan.v1` composition (ADR 0036 follow-up); cross-cutting
+derived-content subject_kind grounding rule extension (ADR 0036
+extensibility principle).
+
+### Historical record — Phase 0b closeout / Phase 1 prep / synthesis-window
+
+The blocks below are kept as audit trail. They describe completed work.
+
+As of 2026-04-26, this repo had completed the compressed **3-day
+Phase 0b soak** on top of the Milestone 0 scaffold. The same-day
+post-closeout follow-up landed measurement-only semantic redundancy
+mapping, and the refreshed brief is green on the Phase 0b acceptance
+gate. Phase 1 owned the formal capability ontology/policy work,
+which the synthesis-window above closed.
+
+- Soak window: 2026-04-23 through 2026-04-25 (closed)
 - Closeout: 2026-04-26 with `just measure-brief`, charter v1.2.0, ADR 0012-0015, D-029-D-032, and scanner/hook parity for traps #16-#18
 - Post-closeout measurement follow-up: `semantic-tool-map-v1` in `measure-redundancy.sh`, latest-partition redundancy selection in `measure-brief.sh`, advisory scanner catch-up for traps #37/#38, and `redundancy-fixture` / `trap-fixture` wired into `just verify`
 - Kickoff battery: `just day1`
@@ -124,7 +188,7 @@ Phase 1 work items (queued, unordered here — sequenced in ADR 0012, ADR 0015, 
 - **Charter v1.3.0 candidate invariant 19** — "boundary claims are freshness-bound and execution-context-bound": HCS must model contradictory or missing boundary evidence explicitly and must not promote a boundary inference across macOS app, shell, package-manager, Git/GitHub, or MCP surfaces without a matching observed context. Queue-only; Q-007 decides whether this becomes a charter invariant or remains a Phase 1 design principle.
 - **Charter v1.3.0 candidate invariant 20** — "command symptoms are not diagnoses": HCS-mediated agents must distinguish tool/runtime failure from command failure, must not promote command evidence across unmatched execution modes, and must block destructive Git cleanup unless branch/worktree safety is proven by typed evidence. Queue-only; Q-008 decides whether this becomes a charter invariant or remains an agent operating-contract rule.
 
-### CI runner compatibility items (gated by Q-005)
+### CI runner compatibility items (Q-005 settled by ADR 0032 v2; entries below are pre-settlement audit trail)
 
 The 2026-04-26 runner architecture brief is for a separate CI/runner project,
 but HCS must stay compatible with it. Treat the report as Ring 3 planning and
@@ -136,7 +200,7 @@ do not implement runner infrastructure from this repo.
 - **Regression-trap candidates:** `public-fork-self-hosted-runner`, `macbook-ambient-credential-runner`, `persistent-runner-workspace-authority`, `ci-cache-promoted-to-evidence`, `runner-token-in-opentofu-state`, `status-check-from-wrong-source`, `docker-socket-on-untrusted-runner`, and `workflow-yaml-as-build-system`. Do not add them to the committed corpus until a concrete observed failure or human-approved trap expansion exists.
 - **Phase 1 synthesis dependency:** fold runner observations into ResourceBudget/external-control-plane synthesis after Wave 1C/1D verification, not before.
 
-### Coordination / shared-state items (gated by Q-003)
+### Coordination / shared-state items (Q-003 settled by ADR 0019 v3; entries below are pre-settlement audit trail)
 
 The 2026-04-24 coordination-lessons brief (`docs/host-capability-substrate/research/external/2026-04-24-coordination-lessons.md`) proposes a three-layer shared-state architecture. The brief is highly aligned with existing HCS posture (charter inv. 1/2/5/7/8/10, D-025/D-026, ADR 0004/0010/0011), but committing to the architecture is a whole-system design commitment. **Five sub-decisions are bundled as Q-003 in DECISIONS.md pending** and must be resolved before any of the items below land on main:
 

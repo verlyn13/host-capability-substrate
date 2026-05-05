@@ -114,7 +114,7 @@ Update `AGENTS.md` only after repeated mistakes. Add traps to the regression cor
 
 ## Required subagent reviews
 
-Per charter v1.1.0:
+Per charter v1.3.2:
 
 - PR touches any `packages/schemas/` file or `docs/host-capability-substrate/ontology.md` → `hcs-ontology-reviewer` objections required
 - PR touches `system-config/policies/host-capability-substrate/` (via workspace) or any file that classifies operations → `hcs-policy-reviewer` objections required
