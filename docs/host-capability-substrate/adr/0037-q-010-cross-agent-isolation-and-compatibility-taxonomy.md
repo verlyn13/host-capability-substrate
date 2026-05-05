@@ -11,11 +11,38 @@ tags: [agent-client, containment, remote-agent, compatibility-taxonomy, q-010, p
 
 ## Status
 
-proposed (v1)
+proposed (v2)
 
 ## Date
 
-2026-05-04
+2026-05-04 (v1); 2026-05-04 (v2 — closes 5 reviewer blockers
+across architect / ontology; folds 9 mechanical tweaks)
+
+## Revision history
+
+- **v1 (2026-05-04)**: initial draft per user-approved A3 + B3 +
+  C2 + D2 + E-ratify recommendation with all precision
+  commitments folded.
+- **v2 (2026-05-04)**: closes architect B1 (off-by-one count
+  "Five new" vs six listed reason_kinds) + B2 (`kernel_sandbox_kind`
+  cache cannot distinguish "uncontained" from "non-kernel-
+  contained" — renamed to `kernel_sandbox_kind`); ontology B-5
+  (`containment_runtime_capability_exceeded` verb-form renamed
+  to `containment_runtime_capability_exceeded`) + B-7 (cross-
+  enum value collision `terminal_no_isolation` /
+  `ide_host_isolation` between `containment_kind` runtime-class
+  and `containment_mechanism` capability-class — capability
+  enum normalized to all-`_capable` form, closing B-6
+  heterogeneity simultaneously) + B-1 (absence-naming
+  `none_required` rationale documented in §Authority
+  discipline). Folded mechanical tweaks: polymorphic FK
+  clarification on `*_evidence_ref` fields; AgentClient audit-
+  chain participation field; ±5 min binder secure-default
+  rationale; regression trap candidates #32-#36 added to
+  §Future amendments (fixture-numbering deferred to fixture-
+  landing PR per policy NB-5). Zero policy blockers, zero
+  security blockers in v1; the 5 v1 blockers were ontology /
+  architect naming-discipline + cache-field-ambiguity items.
 
 ## Charter version
 
@@ -93,7 +120,7 @@ research-grounded recommendations + precision commitments:
 
 - (a) `ExecutionContext.sandbox` becomes a denormalized cache (A3-
   pointer): pointer-form `latest_containment_evidence_ref`
-  (`evidenceRefSchema`) plus cached `sandbox_kind` for fast
+  (`evidenceRefSchema`) plus cached `kernel_sandbox_kind` for fast
   gateway lookup; authority class flips from producer-asserted to
   kernel-set; tiebreaker rule = latest-by-kernel-mint-time among
   non-stale observations sharing `boundary_dimension:
@@ -147,14 +174,28 @@ binds `ExecutionContext` to it via a pointer + cached value.
   containment_class` for this `execution_context_id` in `proven`
   state with non-expired `valid_until`. **Kernel-set; cannot be
   producer-supplied.**
-- `sandbox_kind` — denormalized cached value from the resolved
+- `kernel_sandbox_kind` — denormalized cached value from the resolved
   observation's payload; uses the existing shipped
   `sandboxProfileSchema` enum (`none | seatbelt | sandbox_exec |
   workspace_write | read_only | full_access | ide_host |
-  unknown`) for kernel-sandbox-class observations; reads `none` for
-  observations whose containment is non-kernel (container, VM,
-  remote_cloud). **Kernel-set; populated at mint time from the
-  pointer's resolved payload.**
+  unknown`) for kernel-sandbox-class observations only. The field
+  is renamed from v1's `sandbox_kind` to `kernel_sandbox_kind` to
+  disambiguate "no kernel sandbox in use" (the cache value `none`)
+  from the broader containment classification (closes architect
+  B2 from v1 review). For observations whose `containment_kind`
+  is non-kernel-class (`container | vm | remote_cloud_sandbox |
+  ide_host_isolation | terminal_no_isolation`),
+  `kernel_sandbox_kind` reads `none` because no kernel-sandbox is
+  in effect — but consumers MUST NOT interpret this as
+  "uncontained." Consumers needing the broader containment
+  classification dereference the pointer's resolved payload and
+  read `containment_kind` directly. **Gateway re-derive consumers
+  reading `kernel_sandbox_kind` only to make a kernel-sandbox-
+  specific decision; consumers needing container/VM/remote-cloud
+  containment dimension MUST read the resolved
+  `BoundaryObservation` payload's `containment_kind` field.**
+  **Kernel-set; populated at mint time from the pointer's
+  resolved payload.**
 - The pre-substrate flat `sandbox` block (profile + fs/network/
   keychain capability statuses) is retained for legacy reads
   during migration but is **read-only** post-A3 and is itself
@@ -237,7 +278,7 @@ stale pointers (where `valid_until` has passed) read as
 **Cache invalidation rule.** A new `BoundaryObservation` of
 `boundary_dimension: containment_class` minted for an
 `execution_context_id` triggers an atomic update of
-`latest_containment_evidence_ref` and `sandbox_kind` on the
+`latest_containment_evidence_ref` and `kernel_sandbox_kind` on the
 execution context record. The update is kernel-driven; agents
 cannot direct-write the cache. Concurrent mints serialize per
 the existing Ring 1 atomic-insert TOCTOU pattern (per ADR 0031
@@ -303,26 +344,40 @@ self-asserted reject at Layer 1 mint API with NEW
   from Claude Code `--dangerously-skip-permissions` differs from
   Cursor cloud auto-mode).
 - `containment_mechanism` — closed enum, capability-class:
-  `terminal_no_isolation | ide_host_isolation |
-  app_managed_bundle | kernel_sandbox_capable |
-  container_capable | vm_capable | remote_cloud_managed |
-  unknown`. Names what containment the product *can* provide,
-  not what a specific launch *currently has*.
+  `terminal_no_isolation_capable | ide_host_isolation_capable |
+  app_managed_bundle_capable | kernel_sandbox_capable |
+  container_capable | vm_capable | remote_cloud_managed_capable
+  | unknown`. Names what containment the product *can* provide,
+  not what a specific launch *currently has*. **All seven
+  substantive values share the `_capable` suffix to disambiguate
+  from `containment_kind` runtime-class values per registry
+  cross-enum value-collision discipline (closes ontology B-7 +
+  B-6 from v1 review).** The `unknown` sentinel value remains
+  un-suffixed per registry convention.
 - `agent_client_state` — `"active" | "retired"`.
 - `kernel_observed_at` — kernel-set `observed_at` for the
   AgentClient observation (D-026 anchor).
 - `valid_until` — derived from observation freshness window per
   canonical policy at Milestone 2 (containment dimension needs
   tighter window).
+- `audit_chain_link_hash` — kernel-set hash linking the
+  `AgentClient` record into the audit chain per charter inv. 4.
+  Mirrors `Lease.audit_chain_link_hash` from ADR 0031 v1.
+  Required for lifecycle entities so retirement transitions
+  preserve audit-chain hash continuity. Retired AgentClients
+  remain queryable via `agent_client_id` FK on Decision /
+  Evidence / DerivedSummary records (per Sub-decision (b)
+  §Lifecycle).
 
 **Composition with `ExecutionContext.sandbox` via narrower-wins
 rule.** The two records carry structurally different evidence:
 
 - `AgentClient.containment_mechanism` is **capability-class
   evidence** — what containment this product *can* provide per
-  its build / dep_bundle (e.g., "Codex CLI is kernel_sandbox_capable
+  its build / dep_bundle (e.g., "Codex CLI is `kernel_sandbox_capable`
   via Apple Sandbox; Claude Code with no flag is
-  terminal_no_isolation; Devin is remote_cloud_managed").
+  `terminal_no_isolation_capable`; Devin is
+  `remote_cloud_managed_capable`").
 - `ExecutionContext.sandbox` (now via
   `latest_containment_evidence_ref`) is **runtime-class
   evidence** — what containment this specific launch *is
@@ -348,11 +403,11 @@ The gate consumes the narrower of the two. Producers attempting
 to gate on capability-class evidence alone (without runtime
 observation) reject with `containment_evidence_absent`. Producers
 attempting to claim runtime containment that exceeds the
-AgentClient's capability-class (e.g., a `terminal_no_isolation`-
+AgentClient's capability-class (e.g., a `terminal_no_isolation_capable`-
 capable product producing a runtime observation of
 `containment_kind: kernel_sandbox`) reject at Layer 1 mint with
 NEW `Decision.reason_kind:
-containment_runtime_exceeds_capability`. Charter inv. 8
+containment_runtime_capability_exceeded`. Charter inv. 8
 (sandbox-observation cannot be promoted) provides the structural
 backstop; this rule is the explicit ontological enforcement.
 
@@ -386,8 +441,12 @@ and composes via existing receipts where appropriate.
   `base_image_digest: sha256-string`, `base_image_provenance:
   enum (vendor_managed | user_specified | unknown)`,
   `image_published_at: timestamp`,
-  `vendor_observed_via_evidence_ref` (to a vendor API or status
-  receipt).
+  `vendor_observed_via_evidence_ref` (polymorphic FK per
+  registry §Field-name suffixes Sub-rule 4 — resolves to one
+  of: `StatusCheckSourceObservation` (ADR 0033 v2),
+  `RemoteAgentEnvironmentControlPlaneReceipt` (future Q-row),
+  or vendor-API observation kinds queued for stage-2; schema PR
+  commits the closed polymorphic-target set).
 - **Checkout commit** is NOT a payload field. It composes via
   `evidence_ref` to a `GitRepositoryObservation` (ADR 0027 v2);
   cross-receipt commit_sha duplication creates the drift class
@@ -399,12 +458,18 @@ and composes via existing receipts where appropriate.
   remote agent's working environment.
 - **Authority**: `derived` (same rationale).
 - **Field shape** (illustrative): `setup_script_evidence_ref:
-  evidenceRefSchema` (to a setup-script content observation),
+  evidenceRefSchema` (polymorphic FK per Sub-rule 4 — resolves
+  to one of: a setup-script content observation,
+  `GitRepositoryObservation` (ADR 0027 v2) when the script is
+  repo-tracked, `ArtifactReceipt` (ADR 0028 v4) when the script
+  is published, or `RawScriptObservation` (future Q-row);
+  schema PR commits the closed polymorphic-target set),
   `setup_exit_code: int`, `setup_observed_at: timestamp`,
   `secret_injection_kind: enum`, `setup_duration_ms: int`,
-  `setup_log_evidence_ref: evidenceRefSchema` (to a separate
-  Evidence record carrying log content with appropriate
-  `redaction_mode`).
+  `setup_log_evidence_ref: evidenceRefSchema` (polymorphic FK
+  per Sub-rule 4 — resolves to a separate Evidence record
+  carrying log content with appropriate `redaction_mode`;
+  field is by-construction a reference, not inline content).
 - **`secret_injection_kind` discriminator** (closed enum):
   `env_at_setup | env_at_runtime | mounted_secret_volume |
   brokered_at_request | none_required`. Names the mechanism
@@ -422,9 +487,11 @@ and composes via existing receipts where appropriate.
 - **Authority**: `derived` (same rationale).
 - **Field shape** (illustrative): `egress_kind: enum (none |
   allowlist_only | proxy_mediated | open | unknown)`,
-  `firewall_kind: enum`, `egress_observed_via_evidence_ref` (to
-  a vendor API or status receipt),
-  `network_posture_observed_at: timestamp`.
+  `firewall_kind: enum`, `egress_observed_via_evidence_ref`
+  (polymorphic FK per Sub-rule 4 — resolves to a vendor API
+  observation or status receipt; schema PR commits the closed
+  polymorphic-target set), `network_posture_observed_at:
+  timestamp`.
 
 **Source-app identity composition.** PR-mediated cloud-agent
 runs (Copilot cloud when PR-driven, Codex cloud when PR-driven,
@@ -448,7 +515,20 @@ invocation via `(execution_context_id, observed_at_window)`:
 - Their `observed_at` timestamps fall within a kernel-defined
   window (canonical policy at Milestone 2 commits the window
   duration; default Phase 1 posture: ±5 minutes from the
-  earliest observation in the binding set).
+  earliest observation in the binding set). **Defense-in-depth
+  rationale**: the binding window is bounded by TWO independent
+  dimensions, not by the window duration alone — (i) all three
+  subtypes must share the same kernel-resolved
+  `execution_context_id` (the `kernel_agent_client_resolver`-
+  resolved value cannot be self-asserted by producers), AND
+  (ii) all three `observed_at` values must fall within the
+  freshness window. A racing producer cannot bypass the binding
+  by clustering subtype mints because the
+  `execution_context_id` constraint forces them onto the same
+  kernel-resolved invocation; producers cannot fork the
+  invocation. The ±5 minute Phase 1 default is the canonical-
+  policy-deferred number; security adequacy is documented at
+  the canonical policy commit per security NB-1.
 - Layer 3 gateway re-derive treats partial bindings (only one or
   two of the three subtypes present) as missing evidence; gate
   consumption rejects with NEW `Decision.reason_kind:
@@ -555,6 +635,42 @@ Per registry v0.3.2 §Producer-vs-kernel-set:
     `Evidence.authority: "derived"`. Remote-agent producers
     cannot self-claim host-observation authority.
 
+#### Absence-naming convention (`none` vs `none_required`)
+
+(Closes ontology B-1 v1 review.) The `secret_injection_kind`
+enum on `RemoteAgentSetupReceipt` uses `none_required` while
+six other absence-state enum values across this ADR
+(`containment_kind: none`, `network_egress_posture: none`,
+`filesystem_write_scope: none`, `keychain_access: none`,
+`egress_kind: none`, etc.) use bare `none`. The distinction is
+intentional and load-bearing:
+
+- **`none`** is used when the enum value answers **what is
+  observed** ("no egress was observed", "no kernel sandbox is
+  in effect", "no filesystem-write scope is granted"). The
+  predicate is observation-state.
+- **`none_required`** is used when the enum value answers
+  **why no mechanism applies** ("no secret-injection mechanism
+  is required by the agent's design"; e.g., a stateless agent
+  that resolves secrets at every request via a cloud
+  metadata service does not need any of the four other
+  injection mechanisms). The predicate is requirement-state.
+
+The two predicates are ontologically distinct: an observation
+of "no egress" is a runtime fact about a specific launch; a
+classification of "no secret injection required" is a
+capability-class fact about the agent's design. Conflating
+them by renaming `none_required` → `none` would lose the
+distinction between "no secrets observed in injection" (a
+runtime claim that may be wrong if observation missed them)
+and "this agent design does not use injected secrets" (a
+capability-class claim about the agent's secret-resolution
+model). The schema PR enforces the predicate distinction via
+the field's parent context (`secret_injection_kind` lives on
+`RemoteAgentSetupReceipt` capability/design metadata, whereas
+the bare `none` values live on per-launch runtime
+observations).
+
 #### Remote-agent-produced evidence default authority class (NEW)
 
 **Pre-empts security-reviewer escalation concern; closes a real
@@ -632,7 +748,7 @@ Inherited from ADR 0019 v3 / ADR 0034 v2 / ADR 0035 v2 / ADR
 
 ### `Decision.reason_kind` reservations
 
-Five new rejection-class names reserved (posture-only; schema
+Six new rejection-class names reserved (posture-only; schema
 enum lands per `.agents/skills/hcs-schema-change`). All match
 `<subject>_<state>` form per the precedent codified in ADR 0036
 v2:
@@ -648,11 +764,11 @@ v2:
   `ExecutionContext.sandbox_kind` or
   `ExecutionContext.latest_containment_evidence_ref` fields.
   Closes Sub-decision (a) authority-class change.
-- **`containment_runtime_exceeds_capability`** — Layer 1 mint API
+- **`containment_runtime_capability_exceeded`** — Layer 1 mint API
   rejects a runtime `BoundaryObservation` of `boundary_dimension:
   containment_class` whose `containment_kind` exceeds the
   capability-class committed by the active AgentClient's
-  `containment_mechanism` (e.g., a `terminal_no_isolation`-
+  `containment_mechanism` (e.g., a `terminal_no_isolation_capable`-
   capable product producing a runtime observation of
   `containment_kind: kernel_sandbox`). Closes Sub-decision (b)
   narrower-wins attack surface.
@@ -747,7 +863,7 @@ This ADR does not authorize:
 - Zod schema source for `AgentClient` Ring 0 entity, the three
   remote-agent subtype envelopes, the `containment_class`
   payload shape, or `ExecutionContext` field changes
-  (`latest_containment_evidence_ref`, `sandbox_kind` cache
+  (`latest_containment_evidence_ref`, `kernel_sandbox_kind` cache
   semantics). Schema lands per `.agents/skills/hcs-schema-change`.
 - Registry update PR for:
   - `ExecutionContext.surface` enum extension: 1 new value
@@ -937,7 +1053,7 @@ This ADR does not authorize:
   `AgentClient` Ring 0 entity (six axes + lifecycle); three
   remote-agent `Evidence` subtypes; `boundary_dimension:
   containment_class` payload; `ExecutionContext` field
-  refactor (`latest_containment_evidence_ref`, `sandbox_kind`
+  refactor (`latest_containment_evidence_ref`, `kernel_sandbox_kind`
   cache, deprecation of pre-substrate flat `sandbox` block to
   read-only); six new `Decision.reason_kind` reservations.
 - Registry update PR for:
@@ -956,7 +1072,37 @@ This ADR does not authorize:
 - Trap fixtures land when their evidence dependencies clear
   (Trap #29: AgentClient schema + containment_class payload
   + Layer 3 gateway re-derive; Trap #30: AgentClient schema;
-  Trap #31: three remote-agent subtype schemas).
+  Trap #31: three remote-agent subtype schemas). **Final trap
+  numbering deferred to fixture-landing PR per policy NB-5
+  v1 review** — the coordination-store brief
+  (`MEMORY.md`) reserves trap candidates #31–#35; the
+  fixture-landing PR deconflicts the actual numbers.
+- **Additional regression trap candidates** (per security
+  reviewer recommendation in v1 review; staged on the same
+  evidence-dependency discipline as Traps #29–#31; final
+  numbering at fixture-landing PR):
+  - **Non-PR-binding-partial rejection trap** — exercises
+    Layer 3 gateway rejection of partial
+    `(execution_context_id, observed_at_window)` bindings with
+    `non_pr_remote_agent_binding_partial` reason_kind.
+  - **Remote-agent permission-mode host-gate rejection trap** —
+    exercises Layer 3 chain-promotion rejection when a
+    `remote_cloud_agent`-surface AgentClient's
+    `permission_mode: approve_all` is cited as authority for
+    a host-gate operation.
+  - **Containment-cache stale-pointer rejection trap** —
+    exercises `containment_evidence_absent` when
+    `latest_containment_evidence_ref` resolves to an expired
+    `BoundaryObservation` regardless of cached
+    `kernel_sandbox_kind` value.
+  - **Setup-log secret-resolution rejection trap** —
+    exercises the existing `secret_resolution_in_chunk`
+    rejection on `RemoteAgentSetupReceipt.setup_log_evidence_ref`
+    content matching resolved-secret shape.
+  - **Cross-workspace AgentClient reuse rejection trap** —
+    exercises Layer 1 mint rejection when an `AgentClient`
+    minted in workspace A is cited as authority for a
+    Decision in workspace B.
 - Canonical policy YAML at Milestone 2 commits: per-
   `boundary_dimension` freshness windows (containment
   dimension hours-to-day order); non-PR remote-agent binding
